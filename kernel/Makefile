@@ -1,4 +1,5 @@
-ASFLAGS = -msyntax=intel
+ASFLAGS = -msyntax=att
 
 kernel.o: kernel/arch/i686/boot.s
 	$(AS) $(ASFLAGS) $^ -o $@
+

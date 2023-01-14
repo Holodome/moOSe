@@ -9,8 +9,16 @@ OBJCOPY = $(CROSSCOMPILE)objcopy
 
 export CC LD AS OBJCOPY
 
-moose.img: kernel.o
+all: moose
+
+moose: kernel.o
+	$(OBJCOPY) -O binary $^ $@
 
 kernel.o:
 	$(MAKE) -f kernel/Makefile
+
+qemu: all
+	qemu-system-i386 -fda moose
+
+.PHONY: all
 
