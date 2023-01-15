@@ -37,5 +37,5 @@ print_msg:
 
     ret
 
-intro_msg: .ascii "running moOSe bootloader"
+intro_msg: .ascii "running moOSe bootloader\r\n"
 intro_msg_len: .word (. - intro_msg)
