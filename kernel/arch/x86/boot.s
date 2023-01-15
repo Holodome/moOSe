@@ -1,6 +1,5 @@
 .code16
 .global _start
-
 .text
 
 _start:
@@ -16,12 +15,13 @@ _start:
     sti
     cld
 
-    # push intro_msg_len
-    # push intro_msg
+    push intro_msg_len
+    push $intro_msg
     call print_msg
 halt:
     jmp halt
 
+# Prints message with str, len passed on stack
 print_msg:
     movw %sp, %bp
     # Get cursor position
@@ -31,10 +31,11 @@ print_msg:
     int $0x10
     # Write string, move cursor
     movw $0x1301, %ax
-    movw $24, %cx
-    movw $intro_msg, %bp
+    movw 4(%bp), %cx
+    movw 2(%bp), %bp
     int $0x10
 
     ret
 
 intro_msg: .ascii "running moOSe bootloader"
+intro_msg_len: .word (. - intro_msg)

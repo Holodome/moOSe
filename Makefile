@@ -28,5 +28,5 @@ qemu: all
 clean: 
 	rm -f $(shell find . -name "*.o" -o -name "*.elf" -o -name "*.img")
 
-.PHONY: all clean
+.PHONY: all clean qemu
 
