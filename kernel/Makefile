@@ -1,5 +1,3 @@
-ASFLAGS = -msyntax=att
-
-kernel.o: kernel/arch/i686/boot.s
+kernel/kernel.o: kernel/arch/x86/boot.s
 	$(AS) $(ASFLAGS) $^ -o $@
 

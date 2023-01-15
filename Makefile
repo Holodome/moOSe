@@ -1,4 +1,3 @@
-
 # Select the toolchain to compile with
 CROSSCOMPILE=i686-elf-
 
@@ -9,16 +8,25 @@ OBJCOPY = $(CROSSCOMPILE)objcopy
 
 export CC LD AS OBJCOPY
 
-all: moose
+ASFLAGS = -msyntax=att --warn --fatal-warnings
 
-moose: kernel.o
-	$(OBJCOPY) -O binary $^ $@
+export ASFLAGS 
 
-kernel.o:
-	$(MAKE) -f kernel/Makefile
+all: moose.img
+
+moose.img: moose.elf
+	$(OBJCOPY) -O binary $< $@
+
+moose.elf: kernel/kernel.o
+	$(LD) -o $@ -T kernel/link.x --build-id=none $^
+
+include kernel/Makefile
 
 qemu: all
-	qemu-system-i386 -fda moose
+	qemu-system-i386 -fda moose.img
 
-.PHONY: all
+clean: 
+	rm -f $(shell find . -name "*.o" -o -name "*.elf" -o -name "*.img")
+
+.PHONY: all clean
 
