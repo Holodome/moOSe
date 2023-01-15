@@ -1,3 +1,4 @@
-build
-moose.img
+*.img
+*.elf
+*.o
 .ccls-cache
