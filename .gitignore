@@ -2,3 +2,4 @@
 *.elf
 *.o
 .ccls-cache
+.idea
