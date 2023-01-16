@@ -9,6 +9,7 @@ OBJCOPY = $(CROSSCOMPILE)objcopy
 export CC LD AS OBJCOPY
 
 ASFLAGS = -msyntax=att --warn --fatal-warnings
+CFLAGS = -Wall -Werror -Wextra -Wpedantic -std=c99 -ffreestanding -nostdlib -nostartfiles
 
 export ASFLAGS 
 
@@ -18,7 +19,8 @@ moose.img: moose.elf
 	$(OBJCOPY) -O binary $< $@
 
 moose.elf: kernel/kernel.o
-	$(LD) -o $@ -T kernel/link.x --build-id=none $^
+	cp $< $@
+	#$(LD) -o $@ $^
 
 include kernel/Makefile
 
