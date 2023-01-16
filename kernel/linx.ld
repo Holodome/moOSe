@@ -1,3 +1,4 @@
+/* FIXME: This seems to be architecture and media-dependent */
 SECTIONS {
     . = 0x7c00;
     .text : {
