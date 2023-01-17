@@ -20,7 +20,6 @@ moose.img: moose.elf
 
 moose.elf: kernel/kernel.o
 	cp $< $@
-	#$(LD) -o $@ $^
 
 include kernel/Makefile
 
