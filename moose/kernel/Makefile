@@ -4,8 +4,11 @@ KERNEL := $(D)/kernel
 $(KERNEL): $(D)/boot.bin $(D)/kernel.bin
 	cat $^ > $@
 
-$(D)/boot.bin: $(D)/boot.o
-	$(LD) --oformat=binary -T $(D)/arch/boot/link.ld -o $@ $^
+$(D)/boot.bin: $(D)/boot.elf
+	$(OBJCOPY) -O binary $^ $@
+
+$(D)/boot.elf: $(D)/boot.o
+	$(LD) -T $(D)/arch/boot/link.ld -o $@ $^
 
 $(D)/boot.o: $(D)/arch/boot/boot.s
 	$(AS) $(ASFLAGS) -o $@ $^
