@@ -1,11 +1,23 @@
 D := moose/kernel
-KERNEL := $(D)/kernel.elf
+KERNEL := $(D)/kernel
 
-$(KERNEL): $(D)/boot.bin
+$(KERNEL): $(D)/boot.bin $(D)/kernel.bin
+	cat $^ > $@
 
-BOOT_LDS := $(D)/arch/boot/link.ld
-$(D)/boot.bin: $(D)/boot.o | $(BOOT_LDS)
-	$(LD) --oformat=binary -T $(BOOT_LDS) -o $@ $^
+$(D)/boot.bin: $(D)/boot.o
+	$(LD) --oformat=binary -T $(D)/arch/boot/link.ld -o $@ $^
 
 $(D)/boot.o: $(D)/arch/boot/boot.s
-	$(AS) -I$(D)/arch/boot $(ASFLAGS) -o $@ $^
+	$(AS) $(ASFLAGS) -o $@ $^
+
+$(D)/kernel.bin: $(D)/kernel.elf
+	$(OBJCOPY) -O binary $^ $@
+
+$(D)/kernel.elf: $(D)/kernel-entry.o $(D)/kernel.o
+	$(LD) -T $(D)/link.ld -o $@ $^
+
+$(D)/kernel-entry.o: $(D)/arch/entry.s
+	$(AS) $(ASFLAGS) -o $@ $^
+
+$(D)/kernel.o: $(D)/kmain.c
+	$(CC) $(CFLAGS) -o $@ $^

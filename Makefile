@@ -9,7 +9,7 @@ OBJCOPY := $(CROSSCOMPILE)objcopy
 export CC LD AS OBJCOPY
 
 ASFLAGS := -msyntax=att --warn --fatal-warnings
-CFLAGS  := -Wall -Werror -Wextra -Wpedantic -std=c99 -ffreestanding -nostdlib -nostartfiles
+CFLAGS  := -Wall -Werror -Wextra -Wpedantic -std=c99 -ffreestanding -nostdlib -nostartfiles -Wl,-r
 
 export ASFLAGS CFLAGS
 
@@ -19,7 +19,7 @@ include moose/Makefile
 
 all: $(TARGET_IMG)
 
-$(TARGET_IMG): $(KERNEL_IMG)
+$(TARGET_IMG): $(OS_IMG)
 	cp $< $@
 
 qemu: all
