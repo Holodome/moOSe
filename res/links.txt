@@ -1,0 +1,1 @@
+Recursive make considered harmful - https://web.archive.org/web/20230117102559/https://aegis.sourceforge.net/auug97.pdf
