@@ -11,7 +11,7 @@ GDB     := i386-elf-gdb
 export CC LD AS OBJCOPY
 
 ASFLAGS = -msyntax=att --warn --fatal-warnings
-CFLAGS  = -Wall -Werror -Wextra -Wpedantic -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
+CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
 			-Imoose/include
 
 ifneq ($(DEBUG),)
