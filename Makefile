@@ -31,7 +31,7 @@ $(TARGET_IMG): $(OS_IMG)
 	cp $< $@
 
 qemu: all
-	$(QEMU) -fda moose.img
+	$(QEMU) -fda $(TARGET_IMG)
 
 qemu-debug: all
 	$(QEMU) -s -S -fda moose.img -d guest_errors,int & \

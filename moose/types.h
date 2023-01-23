@@ -1,7 +1,7 @@
 #pragma once
 
 // FIXME: Adjust architectures
-#include "../kernel/arch/types.h"
+#include "arch/types.h"
 
 #define CHECK_TYPE(_type, _size) \
     _Static_assert(sizeof(_type) == _size, "Type " #_type " size does not equal " #_size)

@@ -1,6 +1,6 @@
 #include "vga.h"
 
-#include "../kernel/arch/ports.h"
+#include "arch/ports.h"
 
 #define VMEM_ADDR 0xb8000
 #define VMEM ((u8 *)VMEM_ADDR)
