@@ -30,11 +30,11 @@ $(TARGET_IMG): $(OS_IMG)
 	cp $< $@
 
 qemu: all
-	qemu-system-i386 -fda moose.img
+	$(QEMU) -fda moose.img
 
 qemu-debug: all
-	qemu-system-i386 -s -S -fda moose.img -d guest_errors,int &
-  	i386-elf-gdb -ex "target remote localhost:1234" -ex "symbol-file moose/kernel/kernel.elf"
+	$(QEMU) -s -S -fda moose.img -d guest_errors,int & \
+  	$(GDB) -ex "target remote localhost:1234" -ex "symbol-file moose/kernel/kernel.elf"
 
 clean:
 	rm $(shell find . -name "*.o" \
