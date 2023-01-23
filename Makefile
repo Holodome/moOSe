@@ -40,6 +40,7 @@ clean:
 	rm $(shell find . -name "*.o" \
 		-o -name "*.d" \
 		-o -name "*.bin" \
+		-o -name "*.elf" \
 		-o -name "*.img")
 
 %.o: %.c

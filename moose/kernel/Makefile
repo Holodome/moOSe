@@ -1,5 +1,5 @@
 D := moose/kernel
-KERNEL := $(D)/kernel
+KERNEL := $(D)/kernel.img
 
 $(KERNEL): $(D)/boot.bin $(D)/kernel.bin
 	cat $^ > $@
