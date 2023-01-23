@@ -3,3 +3,4 @@
 *.o
 .ccls-cache
 .idea
+*.bin
