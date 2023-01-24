@@ -12,6 +12,8 @@ CHECK_TYPE(i16, 2);
 CHECK_TYPE(u16, 2);
 CHECK_TYPE(i32, 4);
 CHECK_TYPE(u32, 4);
+CHECK_TYPE(i64, 8);
+CHECK_TYPE(u64, 8);
 
 #undef CHECK_TYPE
 
@@ -21,8 +23,9 @@ CHECK_TYPE(u32, 4);
 #define U16_MAX ((u16)0xFFFF)
 #define I32_MAX ((i32)0x7FFFFFFF)
 #define U32_MAX ((u32)0xFFFFFFFF)
+#define I64_MAX ((i64)0x7FFFFFFFFFFFFFFF)
+#define U64_MAX ((u64)0xFFFFFFFFFFFFFFFF)
 
-typedef u32 size_t;
 typedef u32 uintptr_t;
 
 #define CHAR_BIT 8
