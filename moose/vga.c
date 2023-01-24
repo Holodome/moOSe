@@ -54,7 +54,6 @@ static u16 next_line(u16 cursor) {
     col = 0;
     row += 1;
     cursor = adjust_cursor(pos_to_cursor(col, row));
-    set_cursor(cursor);
     return cursor;
 }
 
