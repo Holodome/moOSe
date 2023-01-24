@@ -3,11 +3,11 @@
 #include "arch/ports.h"
 
 #define VMEM_ADDR 0xb8000
-#define VMEM ((u8 *)VMEM_ADDR)
+#define VMEM ((volatile u8 *)VMEM_ADDR)
 
 #define MAX_ROWS 25
 #define MAX_COLS 80
-#define MAX_CURSOR MAX_ROWS *MAX_COLS * 2
+#define MAX_CURSOR MAX_ROWS *MAX_COLS
 
 #define WHITE_ON_BLACK 0x0f
 
@@ -30,18 +30,17 @@ static void set_cursor(u16 cursor) {
 }
 
 static void setc(u16 location, u8 cp, u8 flags) {
-    u8 *slot = VMEM + location;
+    volatile u8 *slot = VMEM + location * 2;
     *slot++ = cp;
     *slot = flags;
 }
 
 static void cursor_to_pos(u16 cursor, u16 *col, u16 *row) {
-    cursor >>= 1;
     *row = cursor / MAX_COLS;
     *col = cursor % MAX_COLS;
 }
 
-static u16 pos_to_cursor(u16 col, u16 row) { return 2 * (row * MAX_COLS + col); }
+static u16 pos_to_cursor(u16 col, u16 row) { return (row * MAX_COLS + col); }
 
 static u16 adjust_cursor(u16 cursor) {
     if (cursor >= MAX_CURSOR)
@@ -61,19 +60,17 @@ static u16 next_line(u16 cursor) {
 
 void kputc(int cp) {
     u16 cursor = get_cursor();
-    if (cp == '\n') {
+    if (cp == '\n')
         cursor = next_line(cursor);
-    } else {
-        setc(cursor, cp, WHITE_ON_BLACK);
-        cursor += 2;
-    }
+    else
+        setc(cursor++, cp, WHITE_ON_BLACK);
     set_cursor(cursor);
 }
 
 void kputs(const char *str) {
     for (;;) {
         int c = *str++;
-        if (c == '\0') 
+        if (c == '\0')
             break;
 
         kputc(c);
@@ -82,7 +79,7 @@ void kputs(const char *str) {
 
 void kcls(void) {
     for (u16 i = 0; i < MAX_ROWS * MAX_COLS; ++i)
-        VMEM[i * 2] = ' ';
+        setc(i, ' ', WHITE_ON_BLACK);
 
     set_cursor(0);
 }

@@ -5,7 +5,7 @@ boot:
     mov %bp, %sp
 
     mov $0x1000, %bx
-    mov $0x2, %dh
+    mov $0x31, %dh
     mov $0x00, %dl
 
     pusha
