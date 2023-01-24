@@ -1,5 +1,7 @@
 #include "kprint.h"
 
+#include "vga.h"
+
 typedef enum {
     TY_INT,
     TY_PTR,
@@ -17,7 +19,7 @@ typedef enum {
 typedef enum { FMT_REG, FMT_HEX, FMT_OCT, FMT_STR, FMT_PTR, FMT_CHAR } fmt_t;
 
 typedef union {
-    u32 i;
+    size_t i;
     long double f;
     void *p;
 } arg_t;
@@ -217,7 +219,7 @@ static void format_int(char **dstp, char *dst_end, unsigned *lenp, u32 val,
         base = 10;
         break;
     default:
-        return;
+        __builtin_unreachable();
     }
 
     u8 temp_buf[CHAR_BIT * sizeof(u32)];
@@ -242,7 +244,7 @@ static void format_arg(char **dstp, char *dst_end, unsigned *lenp, arg_t *arg,
                        fmt_t fmt) {
     switch (fmt) {
     case FMT_PTR:
-        format_int(dstp, dst_end, lenp, (u32)arg->p, 16);
+        format_int(dstp, dst_end, lenp, (size_t)arg->p, 16);
         break;
     case FMT_STR:
         format_str(dstp, dst_end, lenp, arg->p);
@@ -263,10 +265,7 @@ static void format_arg(char **dstp, char *dst_end, unsigned *lenp, arg_t *arg,
     }
 }
 
-int my_snprintf(char *dst, size_t dst_size, const char *src, ...) {
-    va_list args;
-    va_start(args, src);
-
+int vsnprintf(char *dst, size_t dst_size, const char *src, va_list lst) {
     if (dst_size != 0)
         *dst = '\0';
 
@@ -291,7 +290,7 @@ int my_snprintf(char *dst, size_t dst_size, const char *src, ...) {
             return -1;
 
         arg_t arg;
-        get_arg(&arg, ty, &args);
+        get_arg(&arg, ty, &lst);
         format_arg(&dst, dst_end, &len, &arg, fmt);
     }
 
@@ -300,7 +299,29 @@ int my_snprintf(char *dst, size_t dst_size, const char *src, ...) {
     else if (dst_size != 0)
         *dst = '\0';
 
-    va_end(args);
     return len;
+}
+
+int snprintf(char *dst, size_t dst_size, const char *src, ...) {
+    va_list lst;
+    va_start(lst, src);
+    int result = vsnprintf(dst, dst_size, src, lst);
+    va_end(lst);
+    return result;
+}
+
+int kvprintf(const char *fmt, va_list lst) {
+    char buffer[256];
+    int result = vsnprintf(buffer, sizeof(buffer), fmt, lst);
+    kputs(buffer);
+    return result;
+}
+
+int kprintf(const char *fmt, ...) {
+    va_list lst;
+    va_start(lst, fmt);
+    int result = kvprintf(fmt, lst);
+    va_end(lst);
+    return result;
 }
 

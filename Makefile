@@ -12,7 +12,7 @@ export CC LD AS OBJCOPY
 
 ASFLAGS = -msyntax=att --warn --fatal-warnings
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
-			-Imoose/include
+			-Imoose/include -g
 
 ifneq ($(DEBUG),)
 	ASFLAGS += -ggdb
@@ -42,6 +42,7 @@ clean:
 		-o -name "*.d" \
 		-o -name "*.bin" \
 		-o -name "*.elf" \
+		-o -name "*.i" \
 		-o -name "*.img")
 
 %.o: %.c
@@ -52,3 +53,6 @@ clean:
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $^ $@
+
+%.i: %.c
+	$(CC) $(CFLAGS) -E -o $@ $^

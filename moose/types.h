@@ -26,8 +26,10 @@ CHECK_TYPE(u64, 8);
 #define I64_MAX ((i64)0x7FFFFFFFFFFFFFFF)
 #define U64_MAX ((u64)0xFFFFFFFFFFFFFFFF)
 
-typedef u32 uintptr_t;
-
-#define CHAR_BIT 8
-
 #define NULL ((void *)0)
+
+typedef __builtin_va_list va_list;
+
+#define va_start(_list, _arg) __builtin_va_start(_list, _arg)
+#define va_arg(_list, _type) __builtin_va_arg(_list, _type)
+#define va_end(_list) __builtin_va_end(_list)

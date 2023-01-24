@@ -1,12 +1,13 @@
 #include "moose.h"
 
+#include "kprint.h"
 #include "vga.h"
 
 void _kmain(void) {
     kcls();
-    kputs("hello, moOSe\n");
 
-    /* kputs("hello, moOSe\n"); */
+    kprintf("int: %d\n", 1);
 
-    for (;;);
+    for (;;)
+        ;
 }
