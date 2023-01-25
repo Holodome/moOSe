@@ -5,8 +5,7 @@
 
 void _kmain(void) {
     kcls();
-
-    kprintf("int: %d\n", 1);
+    kprintf("running moOSe kernel\n");
 
     for (;;)
         ;

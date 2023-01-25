@@ -12,11 +12,11 @@ export CC LD AS OBJCOPY
 
 ASFLAGS = -msyntax=att --warn --fatal-warnings
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
-			-Imoose/include -g
+			-Imoose/include -O2
 
 ifneq ($(DEBUG),)
-	ASFLAGS += -ggdb
-	CFLAGS += -ggdb
+	ASFLAGS += -ggdb 
+	CFLAGS += -ggdb -O0
 endif
 
 export ASFLAGS CFLAGS
