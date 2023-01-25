@@ -34,8 +34,6 @@ irq_common_stub:
 
     mov %ds, %ax
     push %eax
-    mov %ds, %ax
-    push %eax
     mov $0x10, %ax
     mov %ax, %ds
     mov %ax, %es
@@ -46,7 +44,14 @@ irq_common_stub:
     call irq_handler
     pop %ebx
 
+    pop %ebx
+    mov %bx, %ds
+    mov %bx, %es
+    mov %bx, %fs
+    mov %bx, %gs
+
     popa 
+    add $8, %esp
     iret
 
 .global isr0

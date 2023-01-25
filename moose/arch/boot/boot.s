@@ -5,7 +5,7 @@ boot:
     mov %bp, %sp
 
     mov $0x1000, %bx
-    mov $0x31, %dh
+    mov $20, %dh
     mov $0x00, %dl
 
     pusha
@@ -77,16 +77,13 @@ gdt_descriptor:
     .word gdt_end - gdt_start - 1 // size
     .long gdt_start               // address
 
-.equ CODE_SEG, gdt_code - gdt_start
-.equ DATA_SEG, gdt_data - gdt_start
-
 .code16
 switch_to_32bit:
     cli
     lgdt gdt_descriptor
-    movl %cr0, %eax
-    orl $0x1, %eax // enable protected mode
-    movl %eax, %cr0
+    mov %cr0, %eax
+    or $0x1, %eax // enable protected mode
+    mov %eax, %cr0
     ljmp $0x0008, $init_32bit
 
 .code32
@@ -98,8 +95,8 @@ init_32bit:
     mov %ax, %fs
     mov %ax, %gs
 
-    movl $0x90000, %ebp
-    movl %ebp, %esp
+    mov $0x90000, %ebp
+    mov %ebp, %esp
 
     ljmp $0x0008,$0x1000
 

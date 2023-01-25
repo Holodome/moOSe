@@ -15,7 +15,7 @@ CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfile
 			-Imoose/include -O2
 
 ifneq ($(DEBUG),)
-	ASFLAGS += -ggdb 
+	ASFLAGS += -g
 	CFLAGS += -ggdb -O0
 endif
 
@@ -31,7 +31,7 @@ $(TARGET_IMG): $(OS_IMG)
 	cp $< $@
 
 qemu: all
-	$(QEMU) -fda $(TARGET_IMG)
+	$(QEMU) -d guest_errors,int -fda $(TARGET_IMG)
 
 qemu-debug: all
 	$(QEMU) -s -S -fda moose.img -d guest_errors,int & \

@@ -8,7 +8,7 @@ struct __attribute__((packed)) idt_gate {
     u8 reserved;
     u8 flags;
     u16 isr_high;
-} __attribute__((aligned(16)));
+};
 
 struct __attribute__((packed)) idt_reg {
     u16 limit;

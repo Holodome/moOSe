@@ -15,9 +15,8 @@
 #define PIC_EOI 0x20 /* End-of-interrupt command code */
 #define IRQ_BASE 32
 
-static struct idt_gate idt[256];
+static struct idt_gate idt[256] __attribute__((aligned(16)));
 static struct idt_reg idt_reg;
-
 static isr_t isrs[256];
 
 static void set_idt_gate(u8 n, u32 isr) {
@@ -30,9 +29,9 @@ static void set_idt_gate(u8 n, u32 isr) {
 }
 
 static void load_idt(void) {
-    idt_reg.base = (u32)&idt;
+    idt_reg.base = (u32)&idt[0];
     idt_reg.limit = 256 * sizeof(struct idt_gate) - 1;
-    asm volatile("lidt (%0)" : : "r"(&idt_reg));
+    asm volatile("lidt %0" : : "m"(idt_reg));
 }
 
 void exception_handler(void) {
@@ -57,7 +56,9 @@ void irq_handler(struct isr_regs *regs) {
     eoi(regs->int_no - IRQ_BASE);
 }
 
-void isr_handler(struct isr_regs *regs) { kprintf("isr %x\n", regs->int_no); }
+void isr_handler(struct isr_regs *regs) {
+    kprintf("isr %d %x\n", regs->int_no, regs->err_code);
+}
 
 extern void isr0();
 extern void isr1();
@@ -173,5 +174,6 @@ void init_interrupts(void) {
     set_idt_gate(46, (u32)irq14);
     set_idt_gate(47, (u32)irq15);
 
-    load_idt(); // Load with ASM
+    load_idt();
+    asm volatile("sti");
 }
