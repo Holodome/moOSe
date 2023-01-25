@@ -48,8 +48,8 @@ clean:
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ $^
 
-%.o: %.s
-	$(AS) $(ASFLAGS) -o $@ $^
+%.o: %.S
+	$(CC) $(CFLAGS) -o $@ $^
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $^ $@
