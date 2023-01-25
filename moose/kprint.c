@@ -1,3 +1,4 @@
+// TODO: Specificator modifiers
 #include "kprint.h"
 
 #include "vga.h"
@@ -244,12 +245,14 @@ static void format_arg(char **dstp, char *dst_end, unsigned *lenp, arg_t *arg,
                        fmt_t fmt) {
     switch (fmt) {
     case FMT_PTR:
+        // FIXME: uintptr_t
         format_int(dstp, dst_end, lenp, (size_t)arg->p, 16);
         break;
     case FMT_STR:
         format_str(dstp, dst_end, lenp, arg->p);
         break;
     case FMT_REG:
+        // FIXME: Change I32_MAX to max of arg->i (which should be uintmax_t)
         if (arg->i > I32_MAX) {
             arg->i = -arg->i;
             write_constrained(dstp, dst_end, lenp, '-');
@@ -266,6 +269,7 @@ static void format_arg(char **dstp, char *dst_end, unsigned *lenp, arg_t *arg,
 }
 
 int vsnprintf(char *dst, size_t dst_size, const char *src, va_list lst) {
+    // TODO: Check if this is needed
     if (dst_size != 0)
         *dst = '\0';
 
@@ -285,8 +289,7 @@ int vsnprintf(char *dst, size_t dst_size, const char *src, va_list lst) {
 
         fmt_t fmt = FMT_REG;
         ty_t ty = TY_INT;
-        int parse_res = parse_spec(&src, &fmt, &ty);
-        if (parse_res != 0)
+        if (parse_spec(&src, &fmt, &ty) != 0)
             return -1;
 
         arg_t arg;
