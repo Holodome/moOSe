@@ -40,7 +40,7 @@ void exception_handler(void) {
 }
 
 static void eoi(u8 irq) {
-    if (irq >= 8)
+    if (irq >= 8 + IRQ_BASE)
         port_u8_out(PIC2_CMD, PIC_EOI);
 
     port_u8_out(PIC1_CMD, PIC_EOI);
@@ -53,7 +53,7 @@ void irq_handler(struct isr_regs *regs) {
     if (isr != NULL)
         isr(regs);
 
-    eoi(regs->int_no - IRQ_BASE);
+    eoi(regs->int_no);
 }
 
 void isr_handler(struct isr_regs *regs) {
