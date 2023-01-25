@@ -77,7 +77,6 @@ putc:
     // ebx is cursor position
 
     mov 8(%esp), %eax
-    ; and $0xff, %eax
     mov $WHITE_ON_BLACK, %ah
     mov $VMEM, %ecx
     lea (%ecx, %ebx, 2), %ecx
