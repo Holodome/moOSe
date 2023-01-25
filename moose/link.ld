@@ -3,4 +3,9 @@ SECTIONS {
     .text : {
         *(.text)
     }
+    __bss_start = .;
+    .bss : {
+        *(.bss)
+    }
+    __bss_end = .;
 }
