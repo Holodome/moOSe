@@ -1,11 +1,17 @@
+ENTRY(_kmain)
 SECTIONS {
     . = 0x1000;
     .text : {
         *(.text)
+        *(.data)
+        *(.rodata)
+        *(.rodata.*)
     }
-    __bss_start = .;
+    __bss_start = . ;
     .bss : {
         *(.bss)
+        *(.bss.*)
     }
-    __bss_end = .;
+    . = ALIGN(4);
+    __bss_end = . ;
 }
