@@ -4,3 +4,4 @@
 .ccls-cache
 .idea
 *.bin
+.DS_Store
