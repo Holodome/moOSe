@@ -23,11 +23,9 @@ export ASFLAGS CFLAGS
 
 TARGET_IMG := moose.img
 
-include moose/Makefile
-
 all: $(TARGET_IMG)
 
-$(TARGET_IMG): $(OS_IMG)
+$(TARGET_IMG): moose/moose.img
 	cp $< $@
 
 qemu: all
@@ -56,3 +54,5 @@ clean:
 
 %.i: %.c
 	$(CC) $(CFLAGS) -E -o $@ $^
+
+include moose/Makefile

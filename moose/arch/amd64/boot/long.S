@@ -14,6 +14,7 @@ enable_long_mode:
     mov $4096, %ecx
     rep stosl
     mov %cr3, %edi
+
     // set up page tables
     movl $0x2003, (%edi)
     add $0x1000, %edi
