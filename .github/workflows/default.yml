@@ -16,7 +16,7 @@ jobs:
 
       - name: Run Buildx
         run: |
-          docker buildx build -f Dockerfile --output . .
+          docker buildx build --output . .
 
       - name: check binary
         run: ls -la
