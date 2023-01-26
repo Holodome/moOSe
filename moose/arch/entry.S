@@ -6,6 +6,10 @@ start:
     call print
     sub $4, %esp
 
+    call enable_a20
+    test %eax, %eax
+    jne no_a20
+
     call check_has_cpuid
     call check_long_mode_supported
 
@@ -13,7 +17,7 @@ start:
     call print
     sub $4, %esp
 
-    jmp .
+    jmp enable_long_mode
 
 check_has_cpuid:
     pushf
@@ -59,6 +63,12 @@ no_long_mode:
     sub $4, %esp
     jmp die
 
+no_a20:
+    push $no_a20_msg
+    call print
+    sub $4, %esp
+    jmp die
+
 die: 
     hlt 
     jmp die
@@ -68,3 +78,4 @@ intro_msg: .asciz "entered protected mode"
 no_cpuid_msg: .asciz "cpu has no cpuid instruction"
 no_long_mode_msg: .asciz "cpu does not support long mode"
 switching_to_long_msg: .asciz "switching to long mode"
+no_a20_msg: .asciz "failed to enable a20 line",
