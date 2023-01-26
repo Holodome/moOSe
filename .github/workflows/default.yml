@@ -2,7 +2,7 @@ name: build moOSe kernel
 
 on:
   push:
-    branches: [main, cicd]
+    branches: [main]
   pull_request:
 
 jobs:
@@ -20,9 +20,6 @@ jobs:
       - name: Run Buildx
         run: |
           docker buildx build --output . .
-
-      - name: check binary
-        run: ls -la
 
       - name: upload artifact
         uses: actions/upload-artifact@v3
