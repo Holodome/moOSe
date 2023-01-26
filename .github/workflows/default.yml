@@ -11,6 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: test
+        run: export DOCKER_BUILDKIT=0 |
+          export COMPOSE_DOCKER_CLI_BUILD=0
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
@@ -21,7 +25,7 @@ jobs:
       - name: check binary
         run: ls -la
 
-      - name: upload artefact
+      - name: upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: moose.img
