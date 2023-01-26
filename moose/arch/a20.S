@@ -14,7 +14,7 @@ enable_a20:
     mov $0x012345, %esi
     mov %esi, (%esi)
     mov %edi, (%edi)
-    cmps
+    cmpsl
     popa
     je 1f
     mov $0, %eax
