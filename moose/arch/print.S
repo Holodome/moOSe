@@ -66,6 +66,18 @@ print_loop:
 
     jmp print_loop
 print_end:
+    // move cursor to next line
+    // do not bother with scrolling because there should not be much messages
+    // anyway
+    xor %edx, %edx
+    mov %ecx, %eax
+    mov $MAX_COLS, %ebx
+    idivl %ebx
+    inc %eax
+    mov $MAX_COLS, %ebx
+    mul %ebx
+    mov %eax, %ecx
+
     // update cursor
     mov $14, %al
     mov $P_SCRCTL, %dx
@@ -85,8 +97,8 @@ print_end:
     pop %ebp
     ret
 
-.equ MAX_COLS, 25
-.equ MAX_ROWS, 80
+.equ MAX_ROWS, 25
+.equ MAX_COLS, 80
 .equ P_SCRCTL, 0x3d4
 .equ P_SCRDAT, 0x3d5
 .equ VMEM, 0xb8000
