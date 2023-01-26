@@ -1,0 +1,21 @@
+name: build moOSe kernel
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  build:
+    name: build kernel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: build kernel with docker
+        run: DOCKER_BUILDKIT=1 docker build --output . .
+
+      - name: upload artefact
+        uses: actions/upload-artifact@v3
+        with:
+          name: moose.img
+          path: moose.img
