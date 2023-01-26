@@ -1,14 +1,18 @@
+.code32
+
 start:
     call cls
     push $intro_msg
     call print
     sub $4, %esp
 
-    jmp .
     call check_has_cpuid
     call check_long_mode_supported
 
-    call _kmain
+    push $switching_to_long_msg
+    call print
+    sub $4, %esp
+
     jmp .
 
 check_has_cpuid:
@@ -30,6 +34,7 @@ check_has_cpuid:
     xor %ecx, %eax
     jz no_cpuid
     ret
+
 no_cpuid:
     push $no_cpuid_msg
     call print
@@ -46,14 +51,12 @@ check_long_mode_supported:
     cpuid
     test $1 << 29, %edx
     jz no_long_mode_msg
-    
     ret
 
 no_long_mode:
     push $no_long_mode_msg
     call print
     sub $4, %esp
-
     jmp die
 
 die: 
@@ -64,3 +67,4 @@ die:
 intro_msg: .asciz "entered protected mode"
 no_cpuid_msg: .asciz "cpu has no cpuid instruction"
 no_long_mode_msg: .asciz "cpu does not support long mode"
+switching_to_long_msg: .asciz "switching to long mode"
