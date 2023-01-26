@@ -17,7 +17,7 @@ start:
     call print
     sub $4, %esp
 
-    jmp .
+    jmp enable_long_mode
 
 check_has_cpuid:
     pushf
