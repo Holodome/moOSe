@@ -4,7 +4,6 @@
 //
 .global print
 .global cls
-.global putc
 
 cls:
     mov $' ', %al
@@ -34,71 +33,55 @@ cls_loop:
 
 print:
     push %ebp
+    push %ebx
     mov %esp, %ebp
-    mov 8(%ebp), %eax
-    xor %ebx, %ebx
+
+    // get cursor to ecx
+    xor %ecx, %ecx
+    mov $14, %al
+    mov $P_SCRCTL, %dx
+    out %al, %dx
+    mov $P_SCRDAT, %dx
+    in %dx, %al
+    mov %al, %ch
+    mov $15, %al
+    mov $P_SCRCTL, %dx
+    out %al, %dx
+    mov $P_SCRDAT, %dx
+    in %dx, %al
+    mov %al, %cl
+    // ecx is cursor position
+    mov 12(%ebp), %eax
 print_loop:
     mov (%eax), %bl
-    cmp $0, %bx
+    cmp $0, %bl
     je print_end
     inc %eax
 
-    push %eax
-    push %bx
-    call putc
-    pop %bx
-    pop %eax
+    mov $WHITE_ON_BLACK, %bh
+    mov $VMEM, %edx
+    lea (%edx, %ecx, 2), %edx
+    mov %bx, (%edx)
+    inc %ecx
 
     jmp print_loop
 print_end:
-    mov %ebp, %esp
-    pop %ebp
-    ret
-
-putc:
-    push %ebp
-    mov %esp, %ebp
-    
-    // get cursor
-    xor %ebx, %ebx
+    // update cursor
     mov $14, %al
     mov $P_SCRCTL, %dx
     out %al, %dx
-    mov $P_SCRDAT, %dx
-    in %dx, %al
-    mov %al, %bh
-    mov $15, %al
-    mov $P_SCRCTL, %dx
-    out %al, %dx
-    mov $P_SCRDAT, %dx
-    in %dx, %al
-    mov %al, %bl
-
-    // ebx is cursor position
-
-    mov 8(%esp), %eax
-    mov $WHITE_ON_BLACK, %ah
-    mov $VMEM, %ecx
-    lea (%ecx, %ebx, 2), %ecx
-    mov %ax, (%ecx)
-    inc %bx
-
-    // set cursor to next line
-
-    mov $14, %al
-    mov $P_SCRCTL, %dx
-    out %al, %dx
-    mov %bh, %al
+    mov %ch, %al
     mov $P_SCRDAT, %dx
     out %al, %dx
     mov $15, %al
     mov $P_SCRCTL, %dx
     out %al, %dx
-    mov %bl, %al
+    mov %cl, %al
     mov $P_SCRDAT, %dx
     out %al, %dx
 
     mov %ebp, %esp
+    pop %ebx
     pop %ebp
     ret
 

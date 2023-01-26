@@ -1,12 +1,8 @@
-
 start:
     call cls
-    push $'a'
-    call putc
-
-    push $str
+    push $intro_msg
     call print
-
+    sub $4, %esp
 
     jmp .
     call check_has_cpuid
@@ -14,8 +10,6 @@ start:
 
     call _kmain
     jmp .
-
-str: .asciz "hello"
 
 check_has_cpuid:
     pushf
@@ -37,6 +31,9 @@ check_has_cpuid:
     jz no_cpuid
     ret
 no_cpuid:
+    push $no_cpuid_msg
+    call print
+    sub $4, %esp
     jmp die
 
 check_long_mode_supported:
@@ -48,15 +45,22 @@ check_long_mode_supported:
     mov $0x80000001, %eax
     cpuid
     test $1 << 29, %edx
-    jz no_long_mode
+    jz no_long_mode_msg
     
     ret
 
 no_long_mode:
+    push $no_long_mode_msg
+    call print
+    sub $4, %esp
+
     jmp die
 
 die: 
     hlt 
     jmp die
 
-
+.section ".rodata"
+intro_msg: .asciz "entered protected mode"
+no_cpuid_msg: .asciz "cpu has no cpuid instruction"
+no_long_mode_msg: .asciz "cpu does not support long mode"
