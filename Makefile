@@ -1,12 +1,12 @@
-# Select the toolchain to compile with
-CROSSCOMPILE = i686-elf-
+# Select the toolchain toD compile with
+CROSSCOMPILE = x86_64-elf-
 
 CC      := $(CROSSCOMPILE)gcc
 LD      := $(CROSSCOMPILE)ld
 AS      := $(CROSSCOMPILE)as
 OBJCOPY := $(CROSSCOMPILE)objcopy
-QEMU    := qemu-system-i386
-GDB     := i386-elf-gdb
+QEMU    := qemu-system-x86_64
+GDB     := x86_64-elf-gdb
 
 export CC LD AS OBJCOPY
 

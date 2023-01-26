@@ -4,6 +4,7 @@
 //
 .global print
 .global cls
+.code32
 
 cls:
     mov $' ', %al
