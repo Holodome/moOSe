@@ -13,6 +13,17 @@ start:
     call check_has_cpuid
     call check_long_mode_supported
 
+    mov $0x100000, %edi
+    mov $1, %ebp
+    mov $2, %esi
+    call ata_read_sectors
+    jc read_fail
+
+    push $0x100000 + 239
+    call print
+
+    jmp .
+
     push $switching_to_long_msg
     call print
     sub $4, %esp
@@ -69,6 +80,12 @@ no_a20:
     sub $4, %esp
     jmp die
 
+read_fail:
+    push $failed_to_read
+    call print
+    sub $4, %esp
+    jmp die
+
 die: 
     hlt 
     jmp die
@@ -79,3 +96,4 @@ no_cpuid_msg: .asciz "cpu has no cpuid instruction"
 no_long_mode_msg: .asciz "cpu does not support long mode"
 switching_to_long_msg: .asciz "switching to long mode"
 no_a20_msg: .asciz "failed to enable a20 line",
+failed_to_read: .asciz "failed to read disk"

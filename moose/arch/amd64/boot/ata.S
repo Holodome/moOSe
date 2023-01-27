@@ -20,7 +20,7 @@
 #define STAT_CMD_REG 0x7
 
 /*
- ecx = sector count 
+ ebp = sector count 
  esi = sector addr
  edi = dest addr
 
@@ -29,28 +29,30 @@
 ata_read_sectors:
     /* 0xe0 indicates that we will use lba */
     mov $0xe0, %al
-    mov %esi, %ebx
-    shr $24, %ebx
-    or %bl, %al
     mov $PRIMARY_BUS + DRIVE_HEAD_REG, %dx
     out %al, %dx
+
     mov $0, %al
     mov $PRIMARY_BUS + FEAT_REG, %dx
     out %al, %dx
-    mov %cl, %al
+
+    mov %ebp, %eax
     mov $PRIMARY_BUS + SEC_CNT_REG, %dx
     out %al, %dx
+
     mov %esi, %eax
     mov $PRIMARY_BUS + SEC_NUM_REG, %dx
     out %al, %dx
+
     shr $8, %eax
     mov $PRIMARY_BUS + CYL_LOW_REG, %dx
     out %al, %dx
+
     shr $8, %eax
     mov $PRIMARY_BUS + CYL_HIG_REG, %dx
     out %al, %dx
     /* send read sectors command */
-    mov $20, %al
+    mov $0x20, %al
     mov $PRIMARY_BUS + STAT_CMD_REG, %dx
     out %al, %dx
     /* perform io delay */
@@ -71,8 +73,9 @@ ata_read_sectors:
     test $0x21, %al
     jne fail
 4:
-    mov $PRIMARY_BUS + DATA_REG, %dx
+    /* read 512 bytes of data ot edi */
     mov $256, %cx
+    mov $PRIMARY_BUS + DATA_REG, %dx
     rep insw
     /* delay for 400ns */
     mov $PRIMARY_BUS + STAT_CMD_REG, %dx
@@ -81,11 +84,12 @@ ata_read_sectors:
     in %dx, %al
     in %dx, %al
 
-    dec %ecx
+    dec %ebp
     test %cl, %cl
     jne 3b
 
-    jmp done
+    test $0x21, %al
+    je done
 fail:
     stc
 done:

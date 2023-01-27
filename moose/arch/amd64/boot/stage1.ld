@@ -8,6 +8,6 @@ SECTIONS {
 
     /* Include fat boot signature */
     .sig : AT(ADDR(.text) + 512 - 2) {
-      SHORT(0xaa55);
+        SHORT(0xaa55);
     }
 }

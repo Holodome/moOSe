@@ -24,11 +24,6 @@ boot:
 
     jmp switch_to_32bit
 halt:
-    mov $'E', %al
-    mov $0x0e, %ah
-    mov $0x00, %bh
-    mov $0x07, %bl
-    int $0x10
     jmp halt
 
 /* GDT that resembles flat memory model */

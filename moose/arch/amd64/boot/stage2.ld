@@ -4,13 +4,6 @@ SECTIONS {
         *(.text*)
         *(.data*)
         *(.rodata*)
+        . = ALIGN(512);
     }
-
-    . = ALIGN(4);
-    __bss_start = . ;
-    .bss : {
-        *(.bss*)
-    }
-    . = ALIGN(4);
-    __bss_end = . ;
 }
