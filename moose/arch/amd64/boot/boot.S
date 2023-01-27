@@ -4,85 +4,66 @@ boot:
     mov $0x9000, %bp
     mov %bp, %sp
 
-    mov $0x1000, %bx
-    mov $20, %dh
-    mov $0x00, %dl
+    xor %ax, %ax
+    mov %ax, %ss
+    mov %ax, %ds
 
-    pusha
-    push %dx
-    mov $0x02, %ah
-    mov %dh, %al      // sectors to read
-    mov $0x02, %cl      // sector number
-    mov $0x00, %ch      // cylinder
-    mov $0x00, %dh      // head
-
+    mov $0x500, %si
+    movb $0x10, (%si)
+    movb $0, 1(%si)
+    movw $2, 2(%si)
+    movw $0x1000, 4(%si)
+    movw $0, 6(%si)
+    movw $1, 8(%si)
+    movw $0, 10(%si)
+    movw $0, 12(%si)
+    movw $0, 14(%si)
+    mov $0x42, %ah
     int $0x13
     jc halt
 
     jmp switch_to_32bit
 halt:
+    mov $'E', %al
+    mov $0x0e, %ah
+    mov $0x00, %bh
+    mov $0x07, %bl
+    int $0x10
     jmp halt
 
-// Prints message with str, len passed on stack
-print_msg:
-    pusha
+/* GDT that resembles flat memory model */
 
-    # Get cursor position
-    mov $0x03, %ah
-    # Set the color for next interrupt and page 0
-    mov $0x0007, %bx
-    int $0x10
-    # Write string, move cursor
-    mov $0x1301, %ax
-    mov disk_error_msg_len, %cx
-    mov $disk_error_msg, %bp
-    int $0x10
-
-    popa
-    ret
-
-disk_error:
-    //push disk_error_msg_len
-    //push $disk_error_msg
-    //call print_msg
-    jmp halt
-
-// GDT that resembles flat memory model
-
-// null segment
 gdt_start:
     .quad 0x0
 
-// code segment
 gdt_code:
-    .word 0xffff // segment length
-    .word 0x0000 // segment base
-    .byte 0x00   // segment base upper bits
-    .byte 0b10011010   // flags
-    .byte 0b11001111   // flags + segment length
-    .byte 0x00   // segment base upper bits
+    .word 0xffff /* segment length */
+    .word 0x0000 /* segment base */
+    .byte 0x00   /* segment base upper bits */
+    .byte 0b10011010   /* flags */
+    .byte 0b11001111   /* flags + segment length */
+    .byte 0x00   /* segment base upper bits */
 
-// data segment
 gdt_data:
-    .word 0xffff // segment length
-    .word 0x0000 // segment base
-    .byte 0x00   // segment base upper bits
-    .byte 0b10010010   // flags
-    .byte 0b11001111   // flags + segment length
-    .byte 0x00   // segment base upper bits
+    .word 0xffff /* segment length */
+    .word 0x0000 /* segment base */
+    .byte 0x00   /* segment base upper bits */
+    .byte 0b10010010   /* flags */
+    .byte 0b11001111   /* flags + segment length */
+    .byte 0x00   /* segment base upper bits */
 
 gdt_end:
 
 gdt_descriptor:
-    .word gdt_end - gdt_start - 1 // size
-    .long gdt_start               // address
+    .word gdt_end - gdt_start - 1 /* size */
+    .long gdt_start               /* address */
 
 .code16
 switch_to_32bit:
     cli
     lgdt gdt_descriptor
     mov %cr0, %eax
-    or $0x1, %eax // enable protected mode
+    or $0x1, %eax /* enable protected mode */
     mov %eax, %cr0
     ljmp $0x0008, $init_32bit
 
@@ -101,9 +82,3 @@ init_32bit:
     ljmp $0x0008,$0x1000
 
 boot_drive: .byte 0
-intro_msg: .ascii "running moOSe stage 1 bootloader\r\n"
-intro_msg_len: .word (. - intro_msg)
-disk_error_msg: .ascii "failed to read disk\r\n"
-disk_error_msg_len: .word (. - disk_error_msg)
-finish_msg: .ascii "bootloader finished\r\n"
-finish_msg_len: .word (. - finish_msg)

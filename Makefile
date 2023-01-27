@@ -29,11 +29,11 @@ $(TARGET_IMG): moose/moose.img
 	cp $< $@
 
 qemu: all
-	$(QEMU) -d guest_errors -fda $(TARGET_IMG)
+	$(QEMU) -d guest_errors -hda $(TARGET_IMG)
 
 qemu-debug: all
-	$(QEMU) -s -S -fda moose.img -d guest_errors,int & \
-  	$(GDB) -ex "target remote localhost:1234" -ex "symbol-file moose/kernel/kernel.elf"
+	$(QEMU) -s -S -fda moose.img -d guest_errors & 
+  	$(GDB) -ex "target remote localhost:1234" -ex "symbol-file moose/arch/boot/adm64/stage2.elf"
 
 clean:
 	rm $(shell find . -name "*.o" \
