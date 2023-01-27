@@ -1,7 +1,7 @@
-//
-// This file contains code for 'print' procedure 
-// that outputs null-terminated string using VGA MMIO
-//
+/*
+ This file contains code for 'print' procedure 
+ that outputs null-terminated string using VGA MMIO
+*/
 .global print
 .global cls
 .code32
@@ -51,7 +51,7 @@ print:
     mov $P_SCRDAT, %dx
     in %dx, %al
     mov %al, %cl
-    // ecx is cursor position
+    /* ecx is cursor position */
     mov 12(%ebp), %eax
 print_loop:
     mov (%eax), %bl
@@ -67,9 +67,9 @@ print_loop:
 
     jmp print_loop
 print_end:
-    // move cursor to next line
-    // do not bother with scrolling because there should not be much messages
-    // anyway
+    /* move cursor to next line
+     do not bother with scrolling because there should not be much messages
+     anyway */
     xor %edx, %edx
     mov %ecx, %eax
     mov $MAX_COLS, %ebx

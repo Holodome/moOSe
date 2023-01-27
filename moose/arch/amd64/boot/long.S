@@ -1,13 +1,13 @@
-// 
-// Long mode (64-bit) enabling related procedures
-//
+/* 
+ Long mode (64-bit) enabling related procedures
+*/
 .code32
 .global enable_long_mode
 
 enable_long_mode:
-    // first set up paging
+    /* first set up paging */
 
-    // clear the page tables
+    /* clear the page tables */
     mov $0x1000, %edi   
     mov %edi, %cr3
     xor %eax, %eax
@@ -15,7 +15,7 @@ enable_long_mode:
     rep stosl
     mov %cr3, %edi
 
-    // set up page tables
+    /* set up page tables */
     movl $0x2003, (%edi)
     add $0x1000, %edi
     movl $0x3003, (%edi)
@@ -35,7 +35,7 @@ set_entry:
     or $1<<5, %eax
     mov %eax, %cr4
 
-    // now paging is set up, time to enable it
+    /* now paging is set up, time to enable it */
 
     mov $0xc0000080, %ecx
     rdmsr
@@ -46,13 +46,13 @@ set_entry:
     or $1<<31, %eax
     mov %eax, %cr0
 
-    // now we are at long mode, but in 32-bit compatibility mode
-    // load new gdt
+    /* now we are at long mode, but in 32-bit compatibility mode
+     load new gdt */
 
     lgdt gdt_descriptor
     ljmp $0x8, $amd64
 
-// access bits
+/* access bits */
 #define AB_PRESENT  (1 << 7)
 #define AB_NOT_SYS  (1 << 4)
 #define AB_EXEC     (1 << 3)
@@ -60,7 +60,7 @@ set_entry:
 #define AB_RW       (1 << 1)
 #define AB_ACCESSED (1 << 0)
 
-// flag bits
+/* flag bits */
 #define FB_GRAN4K    (1 << 7)
 #define FB_SZ32      (1 << 6)
 #define FB_LONG_MODE (1 << 5)
