@@ -9,3 +9,5 @@ kstart:
 .code64
 kstart64:
     jmp .
+
+data: .ascii "hello"
