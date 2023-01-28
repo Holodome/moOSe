@@ -1,7 +1,7 @@
 D := moose/arch/amd64/boot
 
 STAGE1_OBJS := $(D)/boot.o
-STAGE2_OBJS := $(D)/entry.o $(D)/long.o $(D)/print.o $(D)/a20.o $(D)/ata.o
+STAGE2_OBJS := $(D)/entry.o $(D)/print.o $(D)/a20.o $(D)/ata.o
 STAGE1_LINK := $(D)/stage1.ld
 STAGE2_LINK := $(D)/stage2.ld
 

@@ -1,8 +1,11 @@
 D := moose
-OS_IMG_DEPS := $(D)/arch/amd64/boot/boot.bin
 OS_IMG := $(D)/moose.img
+KERNEL_LINK := $(D)/arch/amd64/link.ld
 
-$(OS_IMG): $(OS_IMG_DEPS)
-	cp $^ $@
+$(OS_IMG): $(D)/arch/amd64/boot/boot.bin $(D)/kernel.bin
+	cat $^ > $@
+
+$(D)/kernel.elf: $(D)/arch/amd64/kstart.o $(D)/arch/amd64/long.o
+	$(LD) -T $(KERNEL_LINK) -o $@ $^
 
 include moose/arch/amd64/boot/Makefile

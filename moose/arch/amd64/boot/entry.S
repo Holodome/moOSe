@@ -15,20 +15,15 @@ start:
 
     mov $0x100000, %edi
     mov $1, %ebp
-    mov $2, %esi
+    mov $3, %esi
     call ata_read_sectors
     jc read_fail
 
-    push $0x100000 + 239
-    call print
-
-    jmp .
-
-    push $switching_to_long_msg
+    push $jumping_to_kernel_msg
     call print
     sub $4, %esp
 
-    jmp enable_long_mode
+    ljmp $0x8, $0x100000
 
 check_has_cpuid:
     pushf
@@ -94,6 +89,6 @@ die:
 intro_msg: .asciz "entered protected mode"
 no_cpuid_msg: .asciz "cpu has no cpuid instruction"
 no_long_mode_msg: .asciz "cpu does not support long mode"
-switching_to_long_msg: .asciz "switching to long mode"
+jumping_to_kernel_msg: .asciz "jumping to kernel"
 no_a20_msg: .asciz "failed to enable a20 line",
 failed_to_read: .asciz "failed to read disk"
