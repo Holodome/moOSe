@@ -85,7 +85,7 @@ ata_read_sectors:
     in %dx, %al
 
     dec %ebp
-    test %cl, %cl
+    test %ebp, %ebp
     jne 3b
 
     test $0x21, %al
