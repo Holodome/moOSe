@@ -14,7 +14,7 @@ start:
     call check_long_mode_supported
 
     mov $0x100000, %edi
-    mov $2, %ebp
+    mov $1024, %ebp
     mov $3, %esi
     call ata_read_sectors
     jc read_fail
