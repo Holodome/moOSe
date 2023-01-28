@@ -180,7 +180,8 @@ int kvprintf(const char *fmt, va_list args) {
     char buffer[256];
     int count = vsnprintf(buffer, 256, fmt, args);
 
-    kputs(buffer);
+    u32 len = strlen(buffer);
+    console_print(buffer, len);
 
     return count;
 }
