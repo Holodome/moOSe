@@ -9,4 +9,4 @@ int kprintf(const char *fmt, ...);
 int kvprintf(const char *fmt, va_list args);
 
 int kputc(int c);
-int puts(const char *str);
+int kputs(const char *str);

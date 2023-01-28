@@ -1,6 +1,17 @@
 #include "kstdio.h"
 #include "console_display.h"
 
+int snprintf(char *buffer, size_t size, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    int count = vsnprintf(buffer, size, fmt, args);
+
+    va_end(args);
+
+    return count;
+}
+
 #define NUMBER_BUFFER_SIZE 32
 
 static void reverse_buffer(char *buffer, size_t size) {
@@ -40,7 +51,7 @@ static void print_minus(char *buffer, size_t size, size_t *counter) {
     *counter = *counter + 1;
 }
 
-static void print_signed(char *buffer, size_t buffer_size, size_t *counter, u64 number, int base) {
+static void print_signed(char *buffer, size_t buffer_size, size_t *counter, i64 number, int base) {
     if (number < 0) {
         print_minus(buffer, buffer_size, counter);
         number *= -1;
@@ -150,18 +161,33 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
     else if (counter >= size && size)
         buffer[size - 1] = '\0';
 
-    va_end(args);
-
     return (int) counter;
 }
 
-int snprintf(char *buffer, size_t size, const char *fmt, ...) {
+int kprintf(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
-    int count = vsnprintf(buffer, size, fmt, args);
+    int count = kvprintf(fmt, args);
 
     va_end(args);
 
     return count;
+}
+
+int kvprintf(const char *fmt, va_list args) {
+    char buffer[256];
+    int count = vsnprintf(buffer, 256, fmt, args);
+
+    kputs(buffer);
+
+    return count;
+}
+
+int kputc(int c) {
+
+}
+
+int kputs(const char *str) {
+
 }
