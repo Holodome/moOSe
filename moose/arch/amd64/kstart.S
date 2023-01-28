@@ -1,4 +1,5 @@
 .code32
+.global kstart
 .global kstart64
 
 kstart:
