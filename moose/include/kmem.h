@@ -6,4 +6,8 @@
 #define memset __builtin_memset
 #define memmove __builtin_memmove
 
-u32 strlen(const char *str);
+static inline u32 strlen(const char *str) {
+    const char *cur = str;
+    while (*++cur);
+    return cur - str;
+}

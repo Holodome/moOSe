@@ -193,5 +193,6 @@ int kputc(int c) {
 int kputs(const char *str) {
     u32 len = strlen(str);
     console_print(str, len);
+    kputc('\n');
     return len;
 }
