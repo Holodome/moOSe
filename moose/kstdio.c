@@ -1,5 +1,6 @@
 #include "kstdio.h"
 #include "console_display.h"
+#include "kmem.h"
 
 int snprintf(char *buffer, size_t size, const char *fmt, ...) {
     va_list args;
@@ -185,9 +186,12 @@ int kvprintf(const char *fmt, va_list args) {
 }
 
 int kputc(int c) {
-
+    console_print((char *) &c, 1);
+    return 1;
 }
 
 int kputs(const char *str) {
-
+    u32 len = strlen(str);
+    console_print(str, len);
+    return len;
 }
