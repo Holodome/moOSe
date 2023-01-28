@@ -99,9 +99,4 @@ amd64:
     mov %ax, %fs
     mov %ax, %gs
     mov %ax, %ss
-    mov $0xb8000, %edi
-    mov $0x1F201F201F201F20, %rax
-    mov $500, %ecx
-    rep stosq
-    hlt
-    jmp .
+    jmp kstart64
