@@ -8,6 +8,16 @@ kstart:
 
 .code64
 kstart64:
-    jmp .
+    mov $__bss_start, %rdi
+    mov $__bss_end, %rcx
+    xor %rax, %rax
+    sub %rdi, %rcx
+    shr $3, %rcx
+    rep stosq
 
-data: .ascii "hello"
+    call kmain
+halt:
+    cli
+    hlt
+    jmp halt
+
