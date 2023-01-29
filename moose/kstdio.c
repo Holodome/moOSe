@@ -15,14 +15,6 @@ int snprintf(char *buffer, size_t size, const char *fmt, ...) {
 
 #define NUMBER_BUFFER_SIZE 32
 
-static void reverse_buffer(char *buffer, size_t size) {
-    for (size_t i = 0; i < size / 2; i++) {
-        char temp = buffer[i];
-        buffer[i] = buffer[size - i - 1];
-        buffer[size - i - 1] = temp;
-    }
-}
-
 static void copy_buffer(char *dst, const char *src, size_t dst_size, size_t *counter, size_t src_size) {
     for (size_t i = 0; i < src_size; i++) {
         if (*counter < dst_size)
@@ -31,7 +23,7 @@ static void copy_buffer(char *dst, const char *src, size_t dst_size, size_t *cou
     }
 }
 
-static size_t convert_number(char *buffer, u64 number, int base) {
+static size_t print_number(char *buffer, u64 number, int base) {
     size_t counter = 0;
     char *charset = "0123456789abcdef";
     if (number == 0)
@@ -41,6 +33,12 @@ static size_t convert_number(char *buffer, u64 number, int base) {
         int digit = number % base;
         buffer[counter++] = charset[digit];
         number /= base;
+    }
+
+    for (size_t i = 0; i < counter / 2; i++) {
+        char temp = buffer[i];
+        buffer[i] = buffer[counter - i - 1];
+        buffer[counter - i - 1] = temp;
     }
 
     return counter;
@@ -59,15 +57,13 @@ static void print_signed(char *buffer, size_t buffer_size, size_t *counter, i64 
     }
 
     char number_buffer[NUMBER_BUFFER_SIZE];
-    size_t printed = convert_number(number_buffer, number, base);
-    reverse_buffer(number_buffer, printed);
+    size_t printed = print_number(number_buffer, number, base);
     copy_buffer(buffer, number_buffer, buffer_size, counter, printed);
 }
 
 static void print_unsigned(char *buffer, size_t buffer_size, size_t *counter, u64 number, int base) {
     char number_buffer[NUMBER_BUFFER_SIZE];
-    size_t printed = convert_number(number_buffer, number, base);
-    reverse_buffer(number_buffer, printed);
+    size_t printed = print_number(number_buffer, number, base);
     copy_buffer(buffer, number_buffer, buffer_size, counter, printed);
 }
 
@@ -80,11 +76,15 @@ static void print_string(char *buffer, size_t buffer_size, size_t *counter, char
     }
 }
 
+static u8 isdigit(char c) {
+    return c >= '0' && c <= '9';
+}
+
 int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
     size_t counter = 0;
     
     while (*fmt) {
-        while (*fmt && *fmt != '%') {
+        if (*fmt != '%') {
             if (counter < size) {
                 buffer[counter] = *fmt++;
                 counter++;
@@ -92,12 +92,38 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                 counter++;
                 fmt++;
             }
+            continue;
         }
-        
-        if (*fmt == '\0')
-            break;
 
         fmt++;
+
+        i32 length = 0;
+        u8 left_align_set = 0;
+        char padding_char = ' ';
+        u8 plus_char_set = 0;
+        u8 hex_fmt_set = 0;
+
+        for (;;) {
+            char c = *fmt;
+            if (c == '+')
+                plus_char_set = 1;
+            else if (c == '-')
+                left_align_set = 1;
+            else if (c == '#')
+                hex_fmt_set = 1;
+            else break;
+            fmt++;
+        }
+
+        while (isdigit(*fmt)) {
+            length = 10 * length + (*fmt - '0');
+            fmt++;
+        }
+
+        if (*fmt == '0') {
+            padding_char = '0';
+            fmt++;
+        }
 
         switch (*fmt) {
         case 'h':
@@ -180,7 +206,7 @@ int kvprintf(const char *fmt, va_list args) {
     char buffer[256];
     int count = vsnprintf(buffer, 256, fmt, args);
 
-    u32 len = strlen(buffer);
+    size_t len = strlen(buffer);
     console_print(buffer, len);
 
     return count;
@@ -192,7 +218,7 @@ int kputc(int c) {
 }
 
 int kputs(const char *str) {
-    u32 len = strlen(str);
+    size_t len = strlen(str);
     console_print(str, len);
     kputc('\n');
     return len;
