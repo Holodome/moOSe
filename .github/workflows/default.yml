@@ -6,6 +6,18 @@ on:
   pull_request:
 
 jobs:
+  formatting:
+    env:
+      SRCS: moose
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch
+        uses: actions/checkout@master
+      - uses: DoozyX/clang-format-lint-action@v0.13
+        with:
+          source: '.'
+          extensions: 'h,c'
+          clangFormatVersion: 12
   build:
     name: build kernel
     runs-on: ubuntu-latest
