@@ -1,6 +1,11 @@
-.code32
+.global start32
 
+.code16
 start:
+    call get_memory_map
+    jmp switch_to_32bit
+.code32
+start32:
     call cls
     push $intro_msg
     call print
