@@ -35,6 +35,9 @@ qemu-debug: all
 	$(QEMU) -s -S -fda moose.img -d guest_errors & 
   	$(GDB) -ex "target remote localhost:1234" -ex "symbol-file moose/arch/boot/adm64/stage2.elf"
 
+format:
+	find . -name "*.c" -o -name "*.h" -exec clang-format -i {} \;
+
 clean:
 	rm $(shell find . -name "*.o" \
 		-o -name "*.d" \
@@ -56,3 +59,5 @@ clean:
 	$(CC) $(CFLAGS) -E -o $@ $^
 
 include moose/Makefile
+
+.PHONY: qemu qemu-debug all clean format
