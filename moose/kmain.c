@@ -1,8 +1,11 @@
 #include "kstdio.h"
 
+#include "arch/amd64/idt.h"
 #include "arch/amd64/memory_map.h"
 
 __attribute__((noreturn)) void kmain(void) {
+    setup_idt();
+
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
