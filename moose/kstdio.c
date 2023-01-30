@@ -220,6 +220,7 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
 
         struct printf_opts opts = {0};
         opts.padding_char = ' ';
+        opts.base = 10;
 
         for (;;) {
             char c = *fmt;
@@ -250,7 +251,6 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
             switch (*fmt) {
             case 'i':
             case 'd':
-                opts.base = 10;
                 print_signed(buffer, size, &counter, va_arg(args, int), opts);
                 break;
             case 'o':
@@ -259,7 +259,6 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                                va_arg(args, unsigned int), opts);
                 break;
             case 'u':
-                opts.base = 10;
                 print_unsigned(buffer, size, &counter,
                                va_arg(args, unsigned int), opts);
                 break;
@@ -273,7 +272,6 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                 switch (*fmt) {
                 case 'i':
                 case 'd':
-                    opts.base = 10;
                     print_signed(buffer, size, &counter, va_arg(args, int),
                                  opts);
                     break;
@@ -283,7 +281,6 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                                    va_arg(args, unsigned int), opts);
                     break;
                 case 'u':
-                    opts.base = 10;
                     print_unsigned(buffer, size, &counter,
                                    va_arg(args, unsigned int), opts);
                     break;
@@ -300,7 +297,6 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
             switch (*fmt) {
             case 'i':
             case 'd':
-                opts.base = 10;
                 print_signed(buffer, size, &counter, va_arg(args, long int),
                              opts);
                 break;
@@ -310,7 +306,6 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                                va_arg(args, unsigned long int), opts);
                 break;
             case 'u':
-                opts.base = 10;
                 print_unsigned(buffer, size, &counter,
                                va_arg(args, unsigned long int), opts);
                 break;
@@ -324,7 +319,6 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                 switch (*fmt) {
                 case 'i':
                 case 'd':
-                    opts.base = 10;
                     print_signed(buffer, size, &counter,
                                  va_arg(args, long long int), opts);
                     break;
@@ -334,7 +328,6 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                                    va_arg(args, unsigned long long int), opts);
                     break;
                 case 'u':
-                    opts.base = 10;
                     print_unsigned(buffer, size, &counter,
                                    va_arg(args, unsigned long long int), opts);
                     break;
@@ -348,7 +341,6 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
             break;
         case 'i':
         case 'd':
-            opts.base = 10;
             print_signed(buffer, size, &counter, va_arg(args, int), opts);
             break;
         case 'o':
@@ -357,7 +349,6 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                            opts);
             break;
         case 'u':
-            opts.base = 10;
             print_unsigned(buffer, size, &counter, va_arg(args, unsigned int),
                            opts);
             break;
