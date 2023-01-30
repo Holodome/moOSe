@@ -8,6 +8,7 @@
 
 static inline size_t strlen(const char *str) {
     const char *cur = str;
-    while (*++cur);
+    while (*++cur)
+        ;
     return cur - str;
 }
