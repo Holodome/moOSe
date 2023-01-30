@@ -7,10 +7,6 @@ start:
 .code32
 start32:
     call cls
-    push $intro_msg
-    call print
-    sub $4, %esp
-
     call enable_a20
     test %eax, %eax
     jne no_a20
@@ -23,10 +19,6 @@ start32:
     mov $3, %esi
     call ata_read_sectors
     jc read_fail
-
-    push $jumping_to_kernel_msg
-    call print
-    sub $4, %esp
 
     ljmp $0x8, $0x100000
 
@@ -91,9 +83,7 @@ die:
     jmp die
 
 .section ".rodata"
-intro_msg: .asciz "entered protected mode"
 no_cpuid_msg: .asciz "cpu has no cpuid instruction"
 no_long_mode_msg: .asciz "cpu does not support long mode"
-jumping_to_kernel_msg: .asciz "jumping to kernel"
 no_a20_msg: .asciz "failed to enable a20 line",
 failed_to_read: .asciz "failed to read disk"
