@@ -1,8 +1,22 @@
 #include "kstdio.h"
 
+#include "arch/memory_map.h"
+
 __attribute__((noreturn)) void kmain(void) {
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
+
+    const struct memmap_entry *memmap;
+    u32 memmap_size;
+    get_memmap(&memmap, &memmap_size);
+    kprintf("Bios-provided physical RAM map:\n");
+    for (u32 i = 0; i < memmap_size; ++i) {
+        const struct memmap_entry *entry = memmap + i;
+        kprintf("%llu-%llu: %u, %u\n", (unsigned long long)entry->base,
+                (unsigned long long)(entry->base + entry->length),
+                (unsigned)entry->type, (unsigned)entry->acpi);
+    }
+
     for (;;)
         ;
 }
