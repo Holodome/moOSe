@@ -168,12 +168,34 @@ static void print_unsigned(char *buffer, size_t size, size_t *counter,
     }
 }
 
-static void print_string(char *buffer, size_t buffer_size, size_t *counter, char *str) {
+static void print_string(char *buffer, size_t size, size_t *counter,
+                         char *str, printf_opts_t opts) {
+    size_t length = strlen(str);
+    if (opts.length >= length)
+        opts.length -= length;
+    else opts.length = 0;
+
+    if (!opts.is_left_aligned) {
+        while (opts.length--) {
+            if (*counter < size)
+                buffer[*counter] = ' ';
+            *counter = *counter + 1;
+        }
+    }
+
     while (*str) {
-        if (*counter < buffer_size)
+        if (*counter < size)
             buffer[*counter] = *str;
         *counter = *counter + 1;
         str++;
+    }
+
+    if (opts.is_left_aligned) {
+        while (opts.length--) {
+            if (*counter < size)
+                buffer[*counter] = ' ';
+            *counter = *counter + 1;
+        }
     }
 }
 
@@ -233,6 +255,10 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                 opts.base = 8;
                 print_unsigned(buffer, size, &counter, (u64) va_arg(args, u32), opts);
                 break;
+            case 'u':
+                opts.base = 10;
+                print_unsigned(buffer, size, &counter, (u64) va_arg(args, u32), opts);
+                break;
             case 'x':
                 opts.base = 16;
                 print_unsigned(buffer, size, &counter, (u64) va_arg(args, u32), opts);
@@ -251,6 +277,10 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                 opts.base = 8;
                 print_unsigned(buffer, size, &counter, (u64) va_arg(args, u64), opts);
                 break;
+            case 'u':
+                opts.base = 10;
+                print_unsigned(buffer, size, &counter, (u64) va_arg(args, u64), opts);
+                break;
             case 'x':
                 opts.base = 16;
                 print_unsigned(buffer, size, &counter, (u64) va_arg(args, u64), opts);
@@ -264,6 +294,10 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
             break;
         case 'o':
             opts.base = 8;
+            print_unsigned(buffer, size, &counter, (u64) va_arg(args, u32), opts);
+            break;
+        case 'u':
+            opts.base = 10;
             print_unsigned(buffer, size, &counter, (u64) va_arg(args, u32), opts);
             break;
         case 'x':
@@ -281,7 +315,12 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
             counter++;
             break;
         case 's':
-            print_string(buffer, size, &counter, (char *) va_arg(args, char *));
+            print_string(buffer, size, &counter, (char *) va_arg(args, char *), opts);
+            break;
+        case 'p':
+            opts.base = 16;
+            opts.is_hex_fmt = 1;
+            print_unsigned(buffer, size, &counter, (u64) va_arg(args, void *), opts);
             break;
         default:
             if (counter < size)
