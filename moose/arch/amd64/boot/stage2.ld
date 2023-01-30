@@ -6,4 +6,9 @@ SECTIONS {
         *(.rodata*)
         . = ALIGN(512);
     }
+
+    /DISCARD/ : {
+        *(.comment)
+        *(.note.gnu.property)
+    }
 }

@@ -8,10 +8,10 @@ STAGE2_LINK := $(D)/stage2.ld
 $(D)/boot.bin: $(D)/stage1.bin $(D)/stage2.bin
 	cat $^ > $@
 
-$(D)/stage1.elf: $(STAGE1_OBJS)
+$(D)/stage1.elf: $(STAGE1_OBJS) | $(STAGE1_LINK)
 	$(LD) -T $(STAGE1_LINK) -o $@ $^
 
-$(D)/stage2.elf: $(STAGE2_OBJS)
+$(D)/stage2.elf: $(STAGE2_OBJS) | $(STAGE2_LINK)
 	$(LD) -T $(STAGE2_LINK) -o $@ $^
 
 

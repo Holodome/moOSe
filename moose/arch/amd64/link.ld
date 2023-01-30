@@ -14,4 +14,9 @@ SECTIONS {
         . = ALIGN(8);
         __bss_end = . ;
     }
+
+    /DISCARD/ : {
+        *(.comment)
+        *(.note.gnu.property)
+    }
 }
