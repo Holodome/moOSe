@@ -13,3 +13,4 @@ typedef unsigned int size_t;
 typedef unsigned int uintptr_t;
 
 #define CHAR_BIT 8
+#define NULL ((void *)0)

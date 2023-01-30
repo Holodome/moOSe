@@ -10,3 +10,4 @@ struct memmap_entry {
 } __attribute__((packed));
 
 void get_memmap(const struct memmap_entry **map, u32 *count);
+const char *get_memmap_type_str(u32 type);

@@ -9,3 +9,15 @@ void get_memmap(const struct memmap_entry **map, u32 *count) {
     *map = (void *)((char *)MEMMAP_ADDR + 4);
 #pragma GCC diagnostic pop
 }
+
+const char *get_memmap_type_str(u32 type) {
+    static const char *strings[] = {"usable", "reserved", "acpi data",
+                                    "acpi nvs", "bad"};
+    --type;
+    const char *result = NULL;
+    if (type < sizeof(strings) / sizeof(strings[0])) {
+        result = strings[type];
+    }
+
+    return result;
+}

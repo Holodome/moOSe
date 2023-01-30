@@ -18,7 +18,7 @@ get_memory_map:
     incl (%ebp)
     test %ebx, %ebx
     jz 2f
-    add $0x20, %edi
+    add $24, %edi
     jmp 1b
 2:
     ret
