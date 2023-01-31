@@ -342,6 +342,11 @@ static int pfatfs__parse_bpb(pfatfs *fs) {
     u16 fatsz16 = pfatfs__read16(bytes + 11);
     u32 tot_sec32 = pfatfs__read32(bytes + 21);
 
+    // prevent divide by zero
+    if (byts_per_sec == 0) {
+        return PFATFS_ECORRUPTED;
+    }
+
     u32 bytes_per_cluster = byts_per_sec * sec_per_clus;
     u32 root_dir_sectors =
         ((root_ent_cnt * PFATFS_DIRENT_SIZE) + (byts_per_sec - 1)) /

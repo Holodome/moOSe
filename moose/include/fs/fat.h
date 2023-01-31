@@ -43,11 +43,11 @@ typedef enum {
 // Hidden file
 #define PFATFS_FATTR_HID 0x8
 
-typedef struct {
+typedef struct pfatfs_settings {
     void *handle;
     ssize_t (*read)(void *handle, void *buf, size_t size);
     ssize_t (*write)(void *handle, const void *buf, size_t size);
-    ssize_t (*seek)(void *handle, i32 off, pfatfs_whence whence);
+    ssize_t (*seek)(void *handle, i32 off, int whence);
 } pfatfs_settings;
 
 typedef struct pfatfs {

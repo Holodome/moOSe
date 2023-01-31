@@ -9,8 +9,8 @@ typedef unsigned int u32;
 typedef signed long long int i64;
 typedef unsigned long long int u64;
 
-typedef unsigned int size_t;
-typedef unsigned int uintptr_t;
+typedef unsigned long long int size_t;
+typedef unsigned long long int uintptr_t;
 typedef signed long long int ssize_t;
 
 #define CHAR_BIT 8

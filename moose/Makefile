@@ -8,7 +8,7 @@ KERNEL_OBJS := $(D)/arch/amd64/kstart.o $(D)/arch/amd64/long.o \
 	$(D)/arch/amd64/idt.o $(D)/arch/amd64/ata.o $(D)/fs/fat.o
 
 
-$(OS_IMG): $(D)/arch/amd64/boot/boot.bin $(D)/kernel.bin
+$(OS_IMG): $(D)/arch/amd64/boot/boot.bin $(D)/kernel.bin $(D)/fat.img
 	cat $^ > $@
 
 $(D)/kernel1.elf: $(KERNEL_OBJS) | $(KERNEL_LINK)
@@ -17,5 +17,10 @@ $(D)/kernel1.elf: $(KERNEL_OBJS) | $(KERNEL_LINK)
 $(D)/kernel.bin: $(D)/kernel1.bin
 	cp $^ $@
 	truncate -s 512KB $@
+
+$(D)/fat.img:
+	dd if=/dev/zero of=$@ bs=1K count=256
+	mformat -F -i $@
+	mcopy -i $@ Makefile ::
 
 include moose/arch/amd64/boot/Makefile
