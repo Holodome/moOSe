@@ -11,6 +11,7 @@ typedef unsigned long long int u64;
 
 typedef unsigned int size_t;
 typedef unsigned int uintptr_t;
+typedef signed long long int ssize_t;
 
 #define CHAR_BIT 8
 #define NULL ((void *)0)

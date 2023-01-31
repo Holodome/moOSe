@@ -1,5 +1,6 @@
 #include <arch/amd64/memory_map.h>
 #include <arch/amd64/idt.h>
+#include <arch/amd64/ata.h>
 #include <kstdio.h>
 
 __attribute__((noreturn)) void kmain(void) {
@@ -18,6 +19,17 @@ __attribute__((noreturn)) void kmain(void) {
     }
 
     setup_idt();
+
+    char buffer[512] = { 0 };
+    int a = ata_pio_read(buffer, 2, 1);
+    if (a != 0) {
+        kprintf("failed to read disk\n");
+    } else {
+        for (int i = 0; i < 512; ++i) {
+            kprintf("%c", buffer[i]);
+        }
+        kprintf("\n");
+    }
 
     for (;;)
         ;
