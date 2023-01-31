@@ -19,8 +19,8 @@ $(D)/kernel.bin: $(D)/kernel1.bin
 	truncate -s 512KB $@
 
 $(D)/fat.img:
-	dd if=/dev/zero of=$@ bs=1K count=256
-	mformat -F -i $@
+	dd if=/dev/zero of=$@ bs=1K count=160
+	mformat -i $@ -f 160
 	mcopy -i $@ Makefile ::
 
 include moose/arch/amd64/boot/Makefile
