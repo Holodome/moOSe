@@ -1,6 +1,5 @@
-#include "kstdio.h"
-
-#include "arch/amd64/memory_map.h"
+#include <kstdio.h>
+#include <arch/amd64/memory_map.h>
 
 __attribute__((noreturn)) void kmain(void) {
     kputs("running moOSe kernel");

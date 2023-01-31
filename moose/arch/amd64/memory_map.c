@@ -1,4 +1,4 @@
-#include "memory_map.h"
+#include <arch/amd64/memory_map.h>
 
 #define MEMMAP_ADDR ((void *)0x500)
 

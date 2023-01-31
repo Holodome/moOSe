@@ -1,3 +1,3 @@
 #pragma once
 
-#include "../arch/amd64/types.h"
+#include <arch/amd64/types.h>

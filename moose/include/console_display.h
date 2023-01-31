@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.h"
+#include <types.h>
 
 u32 console_get_width(void);
 u32 console_get_height(void);

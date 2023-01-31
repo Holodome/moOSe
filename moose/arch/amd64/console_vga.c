@@ -1,6 +1,5 @@
-#include "console_display.h"
-
-#include "io.h"
+#include <console_display.h>
+#include <arch/amd64/io.h>
 
 #define WIDTH 80
 #define HEIGHT 25
