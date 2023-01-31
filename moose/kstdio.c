@@ -1,6 +1,6 @@
-#include <kstdio.h>
 #include <console_display.h>
 #include <kmem.h>
+#include <kstdio.h>
 
 struct printf_opts {
     size_t length;
@@ -246,17 +246,78 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
         }
 
         switch (*fmt) {
+        case 't':
+            fmt++;
+            switch (*fmt) {
+            case 'i':
+            case 'd':
+            case 'u':
+                print_signed(buffer, size, &counter, va_arg(args, ptrdiff_t),
+                             opts);
+                break;
+            case 'o':
+                opts.base = 8;
+                print_signed(buffer, size, &counter, va_arg(args, ptrdiff_t),
+                             opts);
+                break;
+            case 'X':
+                opts.base = 16;
+                print_signed(buffer, size, &counter, va_arg(args, ptrdiff_t),
+                             opts);
+                break;
+            }
+            break;
+        case 'j':
+            fmt++;
+            switch (*fmt) {
+            case 'i':
+            case 'd':
+                print_signed(buffer, size, &counter, va_arg(args, intmax_t),
+                             opts);
+                break;
+            case 'u':
+                print_unsigned(buffer, size, &counter, va_arg(args, uintmax_t),
+                               opts);
+                break;
+            case 'o':
+                opts.base = 8;
+                print_unsigned(buffer, size, &counter, va_arg(args, uintmax_t),
+                               opts);
+                break;
+            case 'X':
+                opts.base = 16;
+                print_unsigned(buffer, size, &counter, va_arg(args, uintmax_t),
+                               opts);
+                break;
+            }
+            break;
+        case 'z':
+            fmt++;
+            switch (*fmt) {
+            case 'i':
+            case 'd':
+            case 'u':
+                print_unsigned(buffer, size, &counter, va_arg(args, size_t),
+                               opts);
+                break;
+            case 'o':
+                opts.base = 8;
+                print_unsigned(buffer, size, &counter, va_arg(args, size_t),
+                               opts);
+                break;
+            case 'X':
+                opts.base = 16;
+                print_unsigned(buffer, size, &counter, va_arg(args, size_t),
+                               opts);
+                break;
+            }
+            break;
         case 'h':
             fmt++;
             switch (*fmt) {
             case 'i':
             case 'd':
                 print_signed(buffer, size, &counter, va_arg(args, int), opts);
-                break;
-            case 'o':
-                opts.base = 8;
-                print_unsigned(buffer, size, &counter,
-                               va_arg(args, unsigned int), opts);
                 break;
             case 'u':
                 print_unsigned(buffer, size, &counter,
