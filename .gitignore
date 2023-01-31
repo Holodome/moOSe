@@ -5,3 +5,4 @@
 .idea
 *.bin
 .DS_Store
+*.d

@@ -10,9 +10,10 @@ GDB     := x86_64-elf-gdb
 
 export CC LD AS OBJCOPY
 
+DEPFLAGS = -MT $@ -MMD -MP -MF $*.d
 ASFLAGS = -msyntax=att --warn --fatal-warnings
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
-			-Imoose/include -O2 -mno-sse -mno-sse2 -mno-sse3 
+			-Imoose/include -O2 -mno-sse -mno-sse2 -mno-sse3 $(DEPFLAGS)
 
 ifneq ($(DEBUG),)
 	ASFLAGS += -g
@@ -47,10 +48,10 @@ clean:
 		-o -name "*.img")
 
 %.o: %.c
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $<
 
 %.o: %.S
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $<
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $^ $@
@@ -59,5 +60,6 @@ clean:
 	$(CC) $(CFLAGS) -E -o $@ $^
 
 include moose/Makefile
+-include $(shell find . -name "*.d")
 
 .PHONY: qemu qemu-debug all clean format
