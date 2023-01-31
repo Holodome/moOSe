@@ -1,7 +1,15 @@
+<<<<<<< HEAD
 #include <kstdio.h>
 #include <arch/amd64/memory_map.h>
+=======
+#include "kstdio.h"
+
+#include "arch/amd64/idt.h"
+#include "arch/amd64/memory_map.h"
+>>>>>>> refs/remotes/origin/dev
 
 __attribute__((noreturn)) void kmain(void) {
+
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
@@ -15,6 +23,8 @@ __attribute__((noreturn)) void kmain(void) {
                 (unsigned long long)(entry->base + entry->length),
                 get_memmap_type_str(entry->type), (unsigned)entry->type);
     }
+
+    setup_idt();
 
     for (;;)
         ;

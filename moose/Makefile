@@ -4,7 +4,8 @@ KERNEL_LINK := $(D)/arch/amd64/link.ld
 
 KERNEL_OBJS := $(D)/arch/amd64/kstart.o $(D)/arch/amd64/long.o \
 	$(D)/kstdio.o $(D)/kmem.o $(D)/arch/amd64/console_vga.o \
-	$(D)/kmain.o $(D)/arch/amd64/memory_map.o
+	$(D)/kmain.o $(D)/arch/amd64/memory_map.o $(D)/arch/amd64/isr.o \
+	$(D)/arch/amd64/idt.o
 
 
 $(OS_IMG): $(D)/arch/amd64/boot/boot.bin $(D)/kernel.bin
