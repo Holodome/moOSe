@@ -16,11 +16,8 @@ isr_common_stub:
     pushq %rsi
     pushq %rdi
 
-    pushq %rsp
-
+    mov %rsp, %rdi
     call isr_handler
-
-    popq %rsp
 
     popq %rdi
     popq %rsi
@@ -32,7 +29,6 @@ isr_common_stub:
     popq %rax
     popq %r8
     popq %r9
-    popq %r9
     popq %r10
     popq %r11
     popq %r12
@@ -40,7 +36,8 @@ isr_common_stub:
     popq %r14
     popq %r15
 
-    add $8, %esp
+    /* account for pushed isr_number, exception_code */
+    add $16, %rsp
     iret
 
 .global exception0
@@ -78,188 +75,188 @@ isr_common_stub:
 
 // 0: Divide By Zero Exception
 exception0:
-    push $0x00
-    push $0x00
+    pushq $0x00
+    pushq $0x00
     jmp isr_common_stub
 
 // 1: Debug Exception
 exception1:
-    push $0x00
-    push $0x01
+    pushq $0x00
+    pushq $0x01
     jmp isr_common_stub
 
 // 2: Non Maskable Interrupt Exception
 exception2:
-    push $0x00
-    push $0x02
+    pushq $0x00
+    pushq $0x02
     jmp isr_common_stub
 
 // 3: Int 3 Exception
 exception3:
-    push $0x00
-    push $0x03
+    pushq $0x00
+    pushq $0x03
     jmp isr_common_stub
 
 // 4: INTO Exception
 exception4:
-    push $0x00
-    push $0x04
+    pushq $0x00
+    pushq $0x04
     jmp isr_common_stub
 
 // 5: Out of Bounds Exception
 exception5:
-    push $0x00
-    push $0x05
+    pushq $0x00
+    pushq $0x05
     jmp isr_common_stub
 
 // 6: Invalid Opcode Exception
 exception6:
-    push $0x00
-    push $0x06
+    pushq $0x00
+    pushq $0x06
     jmp isr_common_stub
 
 // 7: Coprocessor Not Available Exception
 exception7:
-    push $0x00
-    push $0x07
+    pushq $0x00
+    pushq $0x07
     jmp isr_common_stub
 
 // 8: Double Fault Exception (With Error Code!)
 exception8:
-    push $0x08
+    pushq $0x08
     jmp isr_common_stub
 
 // 9: Coprocessor Segment Overrun Exception
 exception9:
-    push $0x00
-    push $0x09
+    pushq $0x00
+    pushq $0x09
     jmp isr_common_stub
 
 // 10: Bad TSS Exception (With Error Code!)
 exception10:
-    push $0x0a
+    pushq $0x0a
     jmp isr_common_stub
 
 // 11: Segment Not Present Exception (With Error Code!)
 exception11:
-    push $0x0b
+    pushq $0x0b
     jmp isr_common_stub
 
 // 12: Stack Fault Exception (With Error Code!)
 exception12:
-    push $0x0c
+    pushq $0x0c
     jmp isr_common_stub
 
 // 13: General Protection Fault Exception (With Error Code!)
 exception13:
-    push $0x0d
+    pushq $0x0d
     jmp isr_common_stub
 
 // 14: Page Fault Exception (With Error Code!)
 exception14:
-    push $0x0e
+    pushq $0x0e
     jmp isr_common_stub
 
 // 15: Reserved Exception
 exception15:
-    push $0x00
-    push $0x0f
+    pushq $0x00
+    pushq $0x0f
     jmp isr_common_stub
 
 // 16: Floating Point Exception
 exception16:
-    push $0x00
-    push $0x10
+    pushq $0x00
+    pushq $0x10
     jmp isr_common_stub
 
 // 17: Alignment Check Exception
 exception17:
-    push $0x00
-    push $0x11
+    pushq $0x00
+    pushq $0x11
     jmp isr_common_stub
 
 // 18: Machine Check Exception
 exception18:
-    push $0x00
-    push $0x12
+    pushq $0x00
+    pushq $0x12
     jmp isr_common_stub
 
 // 19: Reserved
 exception19:
-    push $0x00
-    push $0x13
+    pushq $0x00
+    pushq $0x13
     jmp isr_common_stub
 
 // 20: Reserved
 exception20:
-    push $0x00
-    push $0x14
+    pushq $0x00
+    pushq $0x14
     jmp isr_common_stub
 
 // 21: Reserved
 exception21:
-    push $0x00
-    push $0x15
+    pushq $0x00
+    pushq $0x15
     jmp isr_common_stub
 
 // 22: Reserved
 exception22:
-    push $0x00
-    push $0x16
+    pushq $0x00
+    pushq $0x16
     jmp isr_common_stub
 
 // 23: Reserved
 exception23:
-    push $0x00
-    push $0x17
+    pushq $0x00
+    pushq $0x17
     jmp isr_common_stub
 
 // 24: Reserved
 exception24:
-    push $0x00
-    push $0x18
+    pushq $0x00
+    pushq $0x18
     jmp isr_common_stub
 
 // 25: Reserved
 exception25:
-    push $0x00
-    push $0x19
+    pushq $0x00
+    pushq $0x19
     jmp isr_common_stub
 
 // 26: Reserved
 exception26:
-    push $0x00
-    push $0x1a
+    pushq $0x00
+    pushq $0x1a
     jmp isr_common_stub
 
 // 27: Reserved
 exception27:
-    push $0x00
-    push $0x1b
+    pushq $0x00
+    pushq $0x1b
     jmp isr_common_stub
 
 // 28: Reserved
 exception28:
-    push $0x00
-    push $0x1c
+    pushq $0x00
+    pushq $0x1c
     jmp isr_common_stub
 
 // 29: Reserved
 exception29:
-    push $0x00
-    push $0x1d
+    pushq $0x00
+    pushq $0x1d
     jmp isr_common_stub
 
 // 30: Reserved
 exception30:
-    push $0x00
-    push $0x1e
+    pushq $0x00
+    pushq $0x1e
     jmp isr_common_stub
 
 // 31: Reserved
 exception31:
-    push $0x00
-    push $0x1f
+    pushq $0x00
+    pushq $0x1f
     jmp isr_common_stub
 
 .global isr0
@@ -281,81 +278,81 @@ exception31:
 
 // isr handlers
 isr0:
-	push $0x00
-	push $0x20
+	pushq $0x00
+	pushq $0x20
 	jmp isr_common_stub
 
 isr1:
-	push $0x01
-	push $0x21
+	pushq $0x01
+	pushq $0x21
 	jmp isr_common_stub
 
 isr2:
-	push $0x02
-	push $0x22
+	pushq $0x02
+	pushq $0x22
 	jmp isr_common_stub
 
 isr3:
-	push $0x03
-	push $0x23
+	pushq $0x03
+	pushq $0x23
 	jmp isr_common_stub
 
 isr4:
-	push $0x04
-	push $0x24
+	pushq $0x04
+	pushq $0x24
 	jmp isr_common_stub
 
 isr5:
-	push $0x05
-	push $0x25
+	pushq $0x05
+	pushq $0x25
 	jmp isr_common_stub
 
 isr6:
-	push $0x06
-	push $0x26
+	pushq $0x06
+	pushq $0x26
 	jmp isr_common_stub
 
 isr7:
-	push $0x07
-	push $0x27
+	pushq $0x07
+	pushq $0x27
 	jmp isr_common_stub
 
 isr8:
-	push $0x08
-	push $0x28
+	pushq $0x08
+	pushq $0x28
 	jmp isr_common_stub
 
 isr9:
-	push $0x09
-	push $0x29
+	pushq $0x09
+	pushq $0x29
 	jmp isr_common_stub
 
 isr10:
-	push $0x0a
-	push $0x2a
+	pushq $0x0a
+	pushq $0x2a
 	jmp isr_common_stub
 
 isr11:
-	push $0x0b
-	push $0x2b
+	pushq $0x0b
+	pushq $0x2b
 	jmp isr_common_stub
 
 isr12:
-	push $0x0c
-	push $0x2c
+	pushq $0x0c
+	pushq $0x2c
 	jmp isr_common_stub
 
 isr13:
-	push $0x0d
-	push $0x2d
+	pushq $0x0d
+	pushq $0x2d
 	jmp isr_common_stub
 
 isr14:
-	push $0x0e
-	push $0x2e
+	pushq $0x0e
+	pushq $0x2e
 	jmp isr_common_stub
 
 isr15:
-	push $0x0f
-	push $0x2f
+	pushq $0x0f
+	pushq $0x2f
 	jmp isr_common_stub

@@ -12,9 +12,11 @@ struct idt_entry {
     u32 reserved;
 } __attribute__((packed));
 
+static_assert(sizeof(struct idt_entry) == 16);
+
 struct idt_reg {
-    u64 offset;
     u16 size;
+    u64 offset;
 } __attribute__((packed));
 
 struct registers_state {
@@ -34,13 +36,17 @@ struct registers_state {
     u64 r14;
     u64 r15;
 
-    u16 exception_code;
-    u16 isr_number;
+    u64 exception_code;
+    u64 isr_number;
 
     u64 rip;
     u64 cs;
     u64 rflags;
-};
+    u64 ursp;
+    u64 uss;
+} __attribute__((packed));
+
+static_assert(sizeof(struct registers_state) == 176);
 
 typedef void isr_t(const struct registers_state *regs);
 
