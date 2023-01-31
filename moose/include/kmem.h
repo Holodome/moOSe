@@ -5,6 +5,7 @@
 #define memcpy __builtin_memcpy
 #define memset __builtin_memset
 #define memmove __builtin_memmove
+#define memcmp __builtin_memcmp
 
 static inline size_t strlen(const char *str) {
     const char *cur = str;
