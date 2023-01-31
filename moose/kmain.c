@@ -1,15 +1,8 @@
-<<<<<<< HEAD
-#include <kstdio.h>
 #include <arch/amd64/memory_map.h>
-=======
-#include "kstdio.h"
-
-#include "arch/amd64/idt.h"
-#include "arch/amd64/memory_map.h"
->>>>>>> refs/remotes/origin/dev
+#include <arch/amd64/idt.h>
+#include <kstdio.h>
 
 __attribute__((noreturn)) void kmain(void) {
-
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 

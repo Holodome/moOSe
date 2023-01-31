@@ -1,6 +1,5 @@
-#include "idt.h"
-
-#include "io.h"
+#include <arch/amd64/idt.h>
+#include <arch/amd64/io.h>
 #include <kstdio.h>
 
 // Port address for master PIC
