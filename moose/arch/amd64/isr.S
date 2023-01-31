@@ -22,8 +22,8 @@ isr_common_stub:
     popq %rdi
     popq %rsi
     popq %rbp
-    popq %rsp
-    popq %rbx
+    popq %rax
+    popq %rax
     popq %rdx
     popq %rcx
     popq %rax
@@ -38,7 +38,7 @@ isr_common_stub:
 
     /* account for pushed isr_number, exception_code */
     add $16, %rsp
-    iret
+    iretq
 
 .global exception0
 .global exception1

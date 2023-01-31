@@ -43,7 +43,7 @@ set_entry:
     wrmsr
     
     mov %cr0, %eax
-    or $1<<31, %eax
+    or $1<<31 | 1, %eax
     mov %eax, %cr0
 
     /* now we are at long mode, but in 32-bit compatibility mode

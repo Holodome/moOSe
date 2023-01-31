@@ -1,7 +1,7 @@
 #include "idt.h"
 
-#include <kstdio.h>
 #include "io.h"
+#include <kstdio.h>
 
 // Port address for master PIC
 #define PIC1 0x20
@@ -32,8 +32,32 @@ static void set_idt_entry(u8 n, u64 isr_addr) {
 static void load_idt(void) {
     static struct idt_reg idt_reg;
     idt_reg.offset = (u64)&idt[0];
-    idt_reg.size = sizeof(idt) - 1;
-    asm volatile("lidt %0" : : "m"(idt_reg));
+    idt_reg.size = 256 * sizeof(struct idt_entry) - 1;
+    asm volatile("lidt %0\n"
+                 /* "lea some_label(%%rip), %%rax\n" */
+                 /* "push %%rax\n" */
+                 /* "REX.W ljmp (%%rax)\n" */
+                 /* "some_label:\n" */
+                 :
+                 : "m"(idt_reg));
+}
+
+static void print_registers(const struct registers_state *r) {
+    kprintf("exception_code: %u, isr: %u\n", (unsigned)r->exception_code,
+            (unsigned)r->isr_number);
+    kprintf("rdi: %#016llx rsi: %#016llx rbp: %#016llx\n", r->rdi, r->rsi,
+            r->rbp);
+    kprintf("rsp: %#016llx rbx: %#016llx rcx: %#016llx\n", r->rsp, r->rbx,
+            r->rcx);
+    kprintf("rax: %#016llx r8:  %#016llx r9:  %#016llx\n", r->rax, r->r8,
+            r->r9);
+    kprintf("r10: %#016llx r11: %#016llx r12: %#016llx\n", r->r10, r->r11,
+            r->r12);
+    kprintf("r13: %#016llx r14: %#016llx r15: %#016llx\n", r->r13, r->r14,
+            r->r15);
+    kprintf("rip: %#016llx cs:  %#016llx rflags: %#016llx\n", r->rip, r->cs,
+            r->rflags);
+    kprintf("ursp: %#016llx uss: %#016llx\n", r->ursp, r->uss);
 }
 
 static const char *get_exception_name(unsigned exception) {
@@ -140,8 +164,10 @@ static void eoi(u8 irq) {
 void isr_handler(const struct registers_state *regs) {
     unsigned no = regs->isr_number;
     if (no < 32) {
-        kprintf("exception %s(%u)\n", get_exception_name(no), no);
-        asm volatile ("cli; hlt");
+        kprintf("exception %s(%u): %u\n", get_exception_name(no), no,
+                (unsigned)regs->exception_code);
+        print_registers(regs);
+        asm volatile("cli; hlt");
     } else {
         isr_t *isr = isrs[no];
         if (isr != NULL)
@@ -217,6 +243,5 @@ void setup_idt(void) {
 
     load_idt();
     asm volatile("sti");
-    kprintf("enabled\n");
 }
 

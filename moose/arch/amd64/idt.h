@@ -25,6 +25,7 @@ struct registers_state {
     u64 rbp;
     u64 rsp;
     u64 rbx;
+    u64 rdx;
     u64 rcx;
     u64 rax;
     u64 r8;
@@ -36,8 +37,8 @@ struct registers_state {
     u64 r14;
     u64 r15;
 
-    u64 exception_code;
     u64 isr_number;
+    u64 exception_code;
 
     u64 rip;
     u64 cs;
@@ -46,7 +47,7 @@ struct registers_state {
     u64 uss;
 } __attribute__((packed));
 
-static_assert(sizeof(struct registers_state) == 176);
+static_assert(sizeof(struct registers_state) == 184);
 
 typedef void isr_t(const struct registers_state *regs);
 
