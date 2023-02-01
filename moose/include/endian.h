@@ -39,3 +39,21 @@ static inline void write_le64(u8 *dst, u64 data) {
     *dst++ = (data >> 48) & 0xff;
     *dst++ = data >> 56;
 }
+
+static inline u16 __le16(u16 src) {
+    u16 result;
+    write_le16((u8 *)&result, src);
+    return result;
+}
+
+static inline u32 __le32(u32 src) {
+    u32 result;
+    write_le32((u8 *)&result, src);
+    return result;
+}
+
+static inline u64 __le64(u64 src) {
+    u64 result;
+    write_le64((u8 *)&result, src);
+    return result;
+}
