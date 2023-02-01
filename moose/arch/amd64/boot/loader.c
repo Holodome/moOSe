@@ -50,7 +50,15 @@ int load_kernel(void) {
         return result;
     }
 
-    for (;;);
+    u32 addr = 0x100000;
+    u32 iterations = (file.size + 511) / 512;
+    for (; iterations--; addr += 512) {
+        result = pfatfs_read(&fs, &file, (void *)addr, 512);
+        if (result < 0) {
+            print("failed to read");
+            return result;
+        }
+    }
 
     return 0;
 }
