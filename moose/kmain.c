@@ -43,7 +43,7 @@ static ssize_t write(void *handle, const void *buf, size_t size) {
     return -1;
 }
 
-static ssize_t seek(void *handle, i32 off, int whence) {
+static ssize_t seek(void *handle, off_t off, int whence) {
     struct fatfs_cursor *cursor = handle;
     switch (whence) {
     case SEEK_CUR:

@@ -19,7 +19,7 @@ typedef struct pfatfs_settings {
     void *handle;
     ssize_t (*read)(void *handle, void *buf, size_t size);
     ssize_t (*write)(void *handle, const void *buf, size_t size);
-    ssize_t (*seek)(void *handle, i32 off, int whence);
+    ssize_t (*seek)(void *handle, off_t off, int whence);
 } pfatfs_settings;
 
 typedef struct pfatfs {
@@ -79,7 +79,7 @@ int pfatfs_mount(pfatfs *fs);
 ssize_t pfatfs_read(pfatfs *fs, pfatfs_file *file, void *buffer, size_t count);
 ssize_t pfatfs_write(pfatfs *fs, pfatfs_file *file, const void *buffer,
                      size_t count);
-int pfatfs_seek(pfatfs *fs, pfatfs_file *file, ssize_t offset, int whence);
+int pfatfs_seek(pfatfs *fs, pfatfs_file *file, off_t offset, int whence);
 int pfatfs_truncate(pfatfs *fs, pfatfs_file *file, size_t length);
 int pfatfs_readdir(pfatfs *fs, pfatfs_file *file, pfatfs_file *child);
 
