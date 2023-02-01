@@ -1,3 +1,7 @@
+// Note that we use amd64 files here with amd64 types.
+// But it turns out that definitions for basic types (u32) are the same.
+// The only difference is in the size of pointer, but we can work around that
+// (usize sized types) and it makes no difference
 #include <../arch/amd64/ata.c>
 #include <../disk.c>
 #include <../fs/fat.c>
