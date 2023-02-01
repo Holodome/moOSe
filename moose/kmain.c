@@ -46,12 +46,12 @@ static ssize_t write(void *handle, const void *buf, size_t size) {
 static ssize_t seek(void *handle, i32 off, int whence) {
     struct fatfs_cursor *cursor = handle;
     switch (whence) {
-    case PFATFS_SEEK_CUR:
+    case SEEK_CUR:
         cursor->pos = cursor->pos + off;
         break;
-    case PFATFS_SEEK_END:
+    case SEEK_END:
         return -1;
-    case PFATFS_SEEK_SET:
+    case SEEK_SET:
         cursor->pos = off;
         break;
     default:

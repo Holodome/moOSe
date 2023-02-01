@@ -1,7 +1,8 @@
 #include <endian.h>
+#include <errno.h>
 #include <fs/fat.h>
 #include <kmem.h>
-#include <errno.h>
+#include <kstdio.h>
 
 // TODO: Assert
 #define PFATFS_ASSERT(...) (void)(__VA_ARGS__)
@@ -225,7 +226,7 @@ static int pfatfs__write(pfatfs *fs, const void *buf, size_t size) {
     return 0;
 }
 
-static int pfatfs__seek(pfatfs *fs, i32 off, pfatfs_whence whence) {
+static int pfatfs__seek(pfatfs *fs, i32 off, int whence) {
     ssize_t result = fs->settings->seek(fs->settings->handle, off, whence);
     if (result != 0)
         return -EIO;
@@ -239,7 +240,7 @@ static u32 pfatfs__cluster_to_bytes(pfatfs *fs, u32 cluster, u16 offset) {
 }
 
 static int pfatfs__seek_read(pfatfs *fs, i32 off, void *buf, size_t size) {
-    int result = pfatfs__seek(fs, off, PFATFS_SEEK_SET);
+    int result = pfatfs__seek(fs, off, SEEK_SET);
     if (result == 0)
         result = pfatfs__read(fs, buf, size);
     return result;
@@ -247,7 +248,7 @@ static int pfatfs__seek_read(pfatfs *fs, i32 off, void *buf, size_t size) {
 
 static int pfatfs__seek_write(pfatfs *fs, i32 off, const void *buf,
                               size_t size) {
-    int result = pfatfs__seek(fs, off, PFATFS_SEEK_SET);
+    int result = pfatfs__seek(fs, off, SEEK_SET);
     if (result == 0)
         result = pfatfs__write(fs, buf, size);
     return result;
@@ -304,7 +305,7 @@ static pfatfs_kind pfatfs__decide_kind(u32 clusters) {
 
 static int pfatfs__parse_bpb(pfatfs *fs) {
     // skip the boot sector stuff
-    PFATFS_TRY(pfatfs__seek(fs, 11, PFATFS_SEEK_SET));
+    PFATFS_TRY(pfatfs__seek(fs, 11, SEEK_SET));
 
     // read the part of the boot sector that has data we are interested in
     u8 bytes[25];
@@ -529,7 +530,7 @@ static ssize_t pfatfs__allocate_cluster(pfatfs *fs) {
 }
 
 static int pfatfs__read_dirent(pfatfs *fs, u32 loc, pfatfs__dirent *dirent) {
-    int result = pfatfs__seek(fs, loc, PFATFS_SEEK_SET);
+    int result = pfatfs__seek(fs, loc, SEEK_SET);
     if (result == 0)
         result = pfatfs__read_dirent_(fs, dirent);
 
@@ -538,7 +539,7 @@ static int pfatfs__read_dirent(pfatfs *fs, u32 loc, pfatfs__dirent *dirent) {
 
 static int pfatfs__write_dirent(pfatfs *fs, u32 loc,
                                 const pfatfs__dirent *dirent) {
-    int result = pfatfs__seek(fs, loc, PFATFS_SEEK_SET);
+    int result = pfatfs__seek(fs, loc, SEEK_SET);
     if (result == 0)
         result = pfatfs__write_dirent_(fs, dirent);
 
@@ -581,7 +582,7 @@ static int pfatfs__iter_dir_next(pfatfs *fs, pfatfs_file *dir,
         u32 rootdir_offset = fs->rootdir.legacy.offset;
         u32 rootdir_size = fs->rootdir.legacy.size;
         u32 offset = dir->offset;
-        PFATFS_TRY(pfatfs__seek(fs, rootdir_offset + offset, PFATFS_SEEK_SET));
+        PFATFS_TRY(pfatfs__seek(fs, rootdir_offset + offset, SEEK_SET));
         ssize_t new_offset =
             pfatfs__find_dirent(fs, offset, rootdir_size, dirent);
         if (new_offset < 0)
@@ -601,7 +602,7 @@ static int pfatfs__iter_dir_next(pfatfs *fs, pfatfs_file *dir,
     retry:
         PFATFS_TRY(pfatfs__seek(
             fs, pfatfs__cluster_to_bytes(fs, cluster, cluster_offset),
-            PFATFS_SEEK_SET));
+            SEEK_SET));
         ssize_t new_offset = pfatfs__find_dirent(fs, cluster_offset,
                                                  fs->bytes_per_cluster, dirent);
         if (new_offset < 0)
@@ -648,7 +649,7 @@ static ssize_t pfatfs__find_empty_dirent(pfatfs *fs, pfatfs_file *dir) {
         u32 rootdir_offset = fs->rootdir.legacy.offset;
         u32 rootdir_size = fs->rootdir.legacy.size;
         u32 offset = dir->offset;
-        PFATFS_TRY(pfatfs__seek(fs, rootdir_offset + offset, PFATFS_SEEK_SET));
+        PFATFS_TRY(pfatfs__seek(fs, rootdir_offset + offset, SEEK_SET));
         ssize_t new_offset =
             pfatfs__find_empty_dirent_(fs, offset, rootdir_size);
         if (new_offset < 0)
@@ -668,7 +669,7 @@ static ssize_t pfatfs__find_empty_dirent(pfatfs *fs, pfatfs_file *dir) {
     retry:
         PFATFS_TRY(pfatfs__seek(
             fs, pfatfs__cluster_to_bytes(fs, cluster, cluster_offset),
-            PFATFS_SEEK_SET));
+            SEEK_SET));
         ssize_t new_offset = pfatfs__find_empty_dirent_(fs, cluster_offset,
                                                         fs->bytes_per_cluster);
         if (new_offset < 0)
@@ -801,7 +802,7 @@ ssize_t pfatfs_read(pfatfs *fs, pfatfs_file *file, void *buffer, size_t count) {
         PFATFS_TRY(pfatfs__seek(
             fs,
             pfatfs__cluster_to_bytes(fs, file->cluster, file->cluster_offset),
-            PFATFS_SEEK_SET));
+            SEEK_SET));
         PFATFS_TRY(pfatfs__read(fs, cursor, to_read));
 
         cursor += to_read;
@@ -852,7 +853,7 @@ ssize_t pfatfs_write(pfatfs *fs, pfatfs_file *file, const void *buffer,
         PFATFS_TRY(pfatfs__seek(
             fs,
             pfatfs__cluster_to_bytes(fs, file->cluster, file->cluster_offset),
-            PFATFS_SEEK_SET));
+            SEEK_SET));
         PFATFS_TRY(pfatfs__write(fs, cursor, to_write));
 
         cursor += to_write;
@@ -871,7 +872,7 @@ int pfatfs_truncate(pfatfs *fs, pfatfs_file *file, size_t length) {
         return -EISDIR;
 
     // find cluster specified by 'length'
-    PFATFS_TRY(pfatfs_seek(fs, file, length, PFATFS_SEEK_SET));
+    PFATFS_TRY(pfatfs_seek(fs, file, length, SEEK_SET));
     // iterate linker list of clusters marking them all 'empty'
     ssize_t cluster = pfatfs__get_fat(fs, file->cluster);
     if (cluster < 0)
@@ -903,17 +904,16 @@ int pfatfs_truncate(pfatfs *fs, pfatfs_file *file, size_t length) {
     return 0;
 }
 
-int pfatfs_seek(pfatfs *fs, pfatfs_file *file, ssize_t offset,
-                pfatfs_whence whence) {
+int pfatfs_seek(pfatfs *fs, pfatfs_file *file, ssize_t offset, int whence) {
     u32 new_offset;
     switch (whence) {
-    case PFATFS_SEEK_CUR:
+    case SEEK_CUR:
         new_offset = file->offset + offset;
         break;
-    case PFATFS_SEEK_SET:
+    case SEEK_SET:
         new_offset = offset;
         break;
-    case PFATFS_SEEK_END:
+    case SEEK_END:
         new_offset = file->size + offset;
         break;
     default:

@@ -2,37 +2,9 @@
 
 #include <types.h>
 
-enum {
-    // No such file or directory
-    PFATFS_ENOENT = -1,
-    // IO error
-    PFATFS_EIO = -2,
-    // File expected to be a directory is not
-    PFATFS_ENOTDIR = -3,
-    // No free space left on disk
-    PFATFS_ENOSPC = -4,
-    PFATFS_ENAMETOOLONG = -5,
-    // Corrupted filesystem
-    PFATFS_ECORRUPTED = -6,
-    // File expected to be regular file is a directory
-    PFATFS_EISDIR = -7,
-    // Specified operation can not be executed on root dir
-    PFATFS_EROOTDIR = -8,
-    // Directory to be deleted is not empty
-    PFATFS_ENOTEMPTY = -9,
-    PFATFS_EINVAL = -10,
-    PFATFS_EEXIST = -11
-};
-
 typedef enum { PFATFS_FAT12, PFATFS_FAT16, PFATFS_FAT32 } pfatfs_kind;
 
 typedef enum { PFATFS_FILE_REG, PFATFS_FILE_DIR } pfatfs_file_type;
-
-typedef enum {
-    PFATFS_SEEK_SET,
-    PFATFS_SEEK_END,
-    PFATFS_SEEK_CUR
-} pfatfs_whence;
 
 // Archive
 #define PFATFS_FATTR_ARCH 0x1
@@ -107,8 +79,7 @@ int pfatfs_mount(pfatfs *fs);
 ssize_t pfatfs_read(pfatfs *fs, pfatfs_file *file, void *buffer, size_t count);
 ssize_t pfatfs_write(pfatfs *fs, pfatfs_file *file, const void *buffer,
                      size_t count);
-int pfatfs_seek(pfatfs *fs, pfatfs_file *file, ssize_t offset,
-                pfatfs_whence whence);
+int pfatfs_seek(pfatfs *fs, pfatfs_file *file, ssize_t offset, int whence);
 int pfatfs_truncate(pfatfs *fs, pfatfs_file *file, size_t length);
 int pfatfs_readdir(pfatfs *fs, pfatfs_file *file, pfatfs_file *child);
 
