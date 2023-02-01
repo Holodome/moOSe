@@ -220,3 +220,18 @@ void free_page_block(struct page_block page) {
         }
     }
 }
+
+u64 alloc_page(void) {
+    struct page_block block = alloc_page_block(1);
+    return block.addr;
+}
+
+u64 alloc_pages(size_t count) {
+    struct page_block block = alloc_page_block(count);
+    return block.addr;
+}
+
+void free_page(void *addr) {
+    struct page_block block = {.addr = (u64) addr, .count = 1};
+    free_page_block(block);
+}
