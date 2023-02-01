@@ -1,8 +1,11 @@
 #include <arch/amd64/ata.h>
 #include <arch/amd64/idt.h>
+
 #include <arch/amd64/keyboard.h>
 #include <arch/amd64/memory_map.h>
 #include <kmem.h>
+#include <arch/amd64/physmem.h>
+
 #include <kstdio.h>
 #include <tty.h>
 #include <errno.h>
@@ -31,6 +34,8 @@ __attribute__((noreturn)) void kmain(void) {
     char buffer[32];
     ssize_t len = tty_read(buffer, sizeof(buffer));
     kprintf("received %.*s (%d)\n", (int)len, buffer, len);
+
+    init_phys_manager();
 
     for (;;)
         ;
