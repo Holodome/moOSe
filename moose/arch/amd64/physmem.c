@@ -11,6 +11,10 @@ struct arena_allocator {
 
 static struct arena_allocator allocator;
 
+static void init_allocator(void) {
+    allocator.cursor = 0;
+}
+
 static void *alloc(size_t size) {
     if (allocator.cursor + size >= sizeof(allocator.arena))
         return NULL;
@@ -49,6 +53,8 @@ struct phys_manager {
 static struct phys_manager phys_manager;
 
 int init_phys_manager(void) {
+    init_allocator();
+
     const struct memmap_entry *memmap;
     u32 memmap_size;
 
