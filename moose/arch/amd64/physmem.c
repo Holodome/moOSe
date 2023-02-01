@@ -1,19 +1,12 @@
 #include <arch/amd64/physmem.h>
 #include <arch/amd64/memory_map.h>
-#include <kstdio.h>
 
 #define ARENA_SIZE (4 * 4096)
 
-struct arena_allocator {
+static struct arena_allocator {
     char arena[ARENA_SIZE];
     u32 cursor;
-};
-
-static struct arena_allocator allocator;
-
-static void init_allocator(void) {
-    allocator.cursor = 0;
-}
+} allocator;
 
 static void *alloc(size_t size) {
     if (allocator.cursor + size >= sizeof(allocator.arena))
@@ -24,7 +17,6 @@ static void *alloc(size_t size) {
 }
 
 struct free_area {
-    u8 order;
     u32 size;
     u64 *bitmap;
 };
@@ -35,9 +27,6 @@ struct free_area {
 // largest page block for buddy allocator
 #define MAX_BLOCK_SIZE ((PAGE_SIZE << (BUDDY_MAX_ORDER - 1)))
 
-// count of pages in the largest block
-#define MAX_PAGE_COUNT (MAX_BLOCK_SIZE / PAGE_SIZE)
-
 struct mem_zone {
     u64 mem_size;
     u32 used_page_count;
@@ -46,15 +35,16 @@ struct mem_zone {
     struct free_area free_area[BUDDY_MAX_ORDER];
 };
 
-struct phys_manager {
+struct phys_mem {
     struct mem_zone *zones;
     u32 zones_size;
 };
 
-static struct phys_manager phys_manager;
+static struct phys_mem phys_mem;
 
+// TODO: memory zones list as argument
 int init_phys_manager(void) {
-    init_allocator();
+    allocator.cursor = 0;
 
     const struct memmap_entry *memmap;
     u32 memmap_size;
@@ -71,13 +61,13 @@ int init_phys_manager(void) {
     if (!available_count)
         return -1;
 
-    phys_manager.zones = alloc(available_count * sizeof(struct mem_zone));
-    phys_manager.zones_size = available_count;
+    phys_mem.zones = alloc(available_count * sizeof(struct mem_zone));
+    phys_mem.zones_size = available_count;
 
     for (u32 i = 0, zone_idx = 0; i < memmap_size; ++i) {
         const struct memmap_entry *entry = memmap + i;
         if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
-            struct mem_zone *zone = &phys_manager.zones[zone_idx];
+            struct mem_zone *zone = &phys_mem.zones[zone_idx];
             zone->base_addr = entry->base;
 
             // align memory to the largest page block
@@ -98,7 +88,6 @@ int init_phys_manager(void) {
 
                 zone->free_area[index].bitmap = alloc(bitmap_size * 8);
                 zone->free_area[index].size = block_count * (1 << j);
-                zone->free_area[index].order = index;
             }
 
             zone_idx++;
@@ -164,7 +153,7 @@ static void unset_buddies(struct free_area *free_area, u32 buddy, u64 index) {
     }
 }
 
-struct page_block alloc_page_block(size_t count) {
+ssize_t alloc_page_block(void **addr, size_t count) {
     u32 order = log2_32(count);
     if (count != 1u << order)
         order++;
@@ -172,9 +161,8 @@ struct page_block alloc_page_block(size_t count) {
     if (order >= BUDDY_MAX_ORDER)
         order = BUDDY_MAX_ORDER - 1;
 
-    struct page_block block = {0};
-    for (u32 zone_idx = 0; zone_idx < phys_manager.zones_size; zone_idx++) {
-        struct mem_zone *zone = &phys_manager.zones[zone_idx];
+    for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
+        struct mem_zone *zone = &phys_mem.zones[zone_idx];
         struct free_area *area = &zone->free_area[order];
 
         if (zone->used_page_count + count > zone->max_page_count)
@@ -184,54 +172,50 @@ struct page_block alloc_page_block(size_t count) {
             if (!test_buddies(zone->free_area, order, bit_idx)) {
                 set_buddies(zone->free_area, order, bit_idx);
 
-                block.count = count;
-                block.addr = zone->base_addr +
+                *addr = (void *) zone->base_addr +
                               bit_idx * (1l << order) * PAGE_SIZE;
 
                 zone->used_page_count += count;
 
-                return block;
+                return 0;
             }
         }
     }
 
-    return block;
+    return -1;
 }
 
-void free_page_block(struct page_block page) {
-    u32 order = log2_32(page.count);
-    if (page.count != 1u << order)
+void free_page_block(void *addr, size_t count) {
+    u32 order = log2_32(count);
+    if (count != 1u << order)
         order++;
 
     if (order >= BUDDY_MAX_ORDER)
         order = BUDDY_MAX_ORDER - 1;
 
-    for (u32 zone_idx = 0; zone_idx < phys_manager.zones_size; zone_idx++) {
-        struct mem_zone *zone = &phys_manager.zones[zone_idx];
-        if (page.addr >= zone->base_addr &&
-            page.addr < zone->base_addr + zone->mem_size) {
+    for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
+        struct mem_zone *zone = &phys_mem.zones[zone_idx];
+        if ((u64) addr >= zone->base_addr &&
+            (u64) addr < zone->base_addr + zone->mem_size) {
 
-            u64 bit_idx = (page.addr - zone->base_addr) /
+            u64 bit_idx = ((u64) addr - zone->base_addr) /
                           ((1l << order) * PAGE_SIZE);
 
             unset_buddies(zone->free_area, order, bit_idx);
 
-            zone->used_page_count -= page.count;
+            zone->used_page_count -= count;
         }
     }
 }
 
-u64 alloc_page(void) {
-    struct page_block block = alloc_page_block(1);
-    return block.addr;
+ssize_t alloc_page(void **addr) {
+    return alloc_page_block(addr, 1);
 }
 
-u64 alloc_pages(size_t count) {
-    struct page_block block = alloc_page_block(count);
-    return block.addr;
+ssize_t alloc_pages(void **addr, size_t count) {
+    return alloc_page_block(addr, count);
 }
 
 void free_page(void *addr) {
-    struct page_block block = {.addr = (u64) addr, .count = 1};
-    free_page_block(block);
+    free_page_block(addr, 1);
 }
