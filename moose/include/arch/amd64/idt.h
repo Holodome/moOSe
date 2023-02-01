@@ -53,3 +53,4 @@ typedef void isr_t(const struct registers_state *regs);
 
 void isr_handler(const struct registers_state *regs);
 void setup_idt(void);
+void register_isr(int num, isr_t *isr);

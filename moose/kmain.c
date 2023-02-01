@@ -1,8 +1,10 @@
 #include <arch/amd64/ata.h>
 #include <arch/amd64/idt.h>
+#include <arch/amd64/keyboard.h>
 #include <arch/amd64/memory_map.h>
 #include <kmem.h>
 #include <kstdio.h>
+#include <tty.h>
 
 #include <fs/fat.h>
 
@@ -112,6 +114,13 @@ __attribute__((noreturn)) void kmain(void) {
     }
 
     setup_idt();
+    init_keyboard();
+
+    kprintf(">");
+    char buffer[32] = {0};
+    ssize_t len = tty_read(buffer, sizeof(buffer));
+    buffer[len] = 0;
+    kprintf("received %s (%d)\n", buffer, (int)len);
 
     for (;;)
         ;

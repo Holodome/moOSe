@@ -176,6 +176,8 @@ void isr_handler(const struct registers_state *regs) {
     eoi(no);
 }
 
+void register_isr(int num, isr_t *isr) { isrs[IRQ_BASE + num] = isr; }
+
 void setup_idt(void) {
     set_idt_entry(0, (u64)exception0);
     set_idt_entry(1, (u64)exception1);

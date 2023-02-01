@@ -92,3 +92,9 @@ void tty_clear(void) {
 
     set_cursor(0);
 }
+
+void tty_backspace(void) {
+    u16 cursor = get_cursor() - 1;
+    set_char(cursor, ' ');
+    set_cursor(cursor);
+}
