@@ -156,15 +156,15 @@ static void set_buddies(struct free_area *free_area, u32 buddy, u64 index) {
     }
 }
 
-//static void unset_buddies(struct free_area *free_area, u32 buddy, u64 index) {
-//    for (int i = buddy; i >= 0; i--) {
-//        u32 offset = buddy - i;
-//        for (int j = 0; j < (1l << offset); j++)
-//            unset_bit(free_area[i].bitmap, index * (1l << offset) + j);
-//    }
-//}
+static void unset_buddies(struct free_area *free_area, u32 buddy, u64 index) {
+    for (int i = buddy; i >= 0; i--) {
+        u32 offset = buddy - i;
+        for (int j = 0; j < (1l << offset); j++)
+            unset_bit(free_area[i].bitmap, index * (1l << offset) + j);
+    }
+}
 
-struct page_block *alloc_page_block(size_t count) {
+struct page_block alloc_page_block(size_t count) {
     u32 order = log2_32(count);
     if (count != 1u << order)
         order++;
@@ -172,27 +172,51 @@ struct page_block *alloc_page_block(size_t count) {
     if (order >= BUDDY_MAX_ORDER)
         order = BUDDY_MAX_ORDER - 1;
 
+    struct page_block block = {0};
     for (u32 zone_idx = 0; zone_idx < phys_manager.zones_size; zone_idx++) {
         struct mem_zone *zone = &phys_manager.zones[zone_idx];
         struct free_area *area = &zone->free_area[order];
 
+        if (zone->used_page_count + count > zone->max_page_count)
+            continue;
+
         for (u64 bit_idx = 0; bit_idx < area->size; bit_idx++) {
             if (!test_buddies(zone->free_area, order, bit_idx)) {
                 set_buddies(zone->free_area, order, bit_idx);
-                struct page_block *block = alloc(sizeof(struct page_block));
 
-                block->count = count;
-                block->addr = zone->base_addr +
+                block.count = count;
+                block.addr = zone->base_addr +
                               bit_idx * (1l << order) * PAGE_SIZE;
+
+                zone->used_page_count += count;
 
                 return block;
             }
         }
     }
 
-    return NULL;
+    return block;
 }
 
-//void free_page_block(struct page_block *page) {
-//
-//}
+void free_page_block(struct page_block page) {
+    u32 order = log2_32(page.count);
+    if (page.count != 1u << order)
+        order++;
+
+    if (order >= BUDDY_MAX_ORDER)
+        order = BUDDY_MAX_ORDER - 1;
+
+    for (u32 zone_idx = 0; zone_idx < phys_manager.zones_size; zone_idx++) {
+        struct mem_zone *zone = &phys_manager.zones[zone_idx];
+        if (page.addr >= zone->base_addr &&
+            page.addr < zone->base_addr + zone->mem_size) {
+
+            u64 bit_idx = (page.addr - zone->base_addr) /
+                          ((1l << order) * PAGE_SIZE);
+
+            unset_buddies(zone->free_area, order, bit_idx);
+
+            zone->used_page_count -= page.count;
+        }
+    }
+}

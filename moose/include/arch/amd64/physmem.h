@@ -14,9 +14,9 @@ struct page_block {
 
 int init_phys_manager(void);
 
-struct page_block *alloc_page_block(size_t count);
+struct page_block alloc_page_block(size_t count);
 u64 alloc_page(void);
 u64 alloc_pages(size_t count);
 
-void free_page_block(struct page_block *page);
+void free_page_block(struct page_block page);
 void free_page(void *addr);

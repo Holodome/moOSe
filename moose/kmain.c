@@ -37,9 +37,18 @@ __attribute__((noreturn)) void kmain(void) {
 
     init_phys_manager();
 
-    for (size_t i = 0; i < 16; i++) {
-        struct page_block *block = alloc_page_block(64);
-        kprintf("size = %d, addr = %#-16x\n", block->count, block->addr);
+    struct page_block blocks[16];
+    for (size_t i = 0; i < 8; i++) {
+        blocks[i] = alloc_page_block(64);
+        kprintf("size = %d, addr = %#-16x\n", blocks[i].count, blocks[i].addr);
+    }
+
+    for (size_t i = 0; i < 3; i++)
+        free_page_block(blocks[i + 1]);
+
+    for (size_t i = 0; i < 4; i++) {
+        blocks[i] = alloc_page_block(64);
+        kprintf("size = %d, addr = %#-16x\n", blocks[i].count, blocks[i].addr);
     }
 
     for (;;)
