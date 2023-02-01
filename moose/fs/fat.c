@@ -1,3 +1,4 @@
+#include <endian.h>
 #include <fs/fat.h>
 #include <kmem.h>
 
@@ -99,31 +100,6 @@ static size_t pfatfs__extract_basename(const char *filename,
     return last_slash;
 }
 
-static u16 pfatfs__read16(const u8 *src) {
-    return ((u16)src[1] << 8) | (u16)src[0];
-}
-
-static u32 pfatfs__read32(const u8 *src) {
-    return ((u32)src[3] << 24) | ((u32)src[2] << 16) | ((u32)src[1] << 8) |
-           (u32)src[0];
-}
-
-static u8 *pfatfs__write16(u8 *dst, u16 data) {
-    u8 *dstc = dst;
-    *dst++ = data & 0xff;
-    *dst = data >> 8;
-    return dstc;
-}
-
-static u8 *pfatfs__write32(u8 *dst, u32 data) {
-    u8 *dstc = dst;
-    *dst++ = data & 0xff;
-    *dst++ = (data >> 8) & 0xff;
-    *dst++ = (data >> 16) & 0xff;
-    *dst = data >> 24;
-    return dstc;
-}
-
 static int pfatfs__is_illegal_dirname(u8 c) {
     // this LUT is generated using following script:
     /*
@@ -147,7 +123,7 @@ static u8 pfatfs__checksum(u8 name[11]) {
         sum = (((sum & 0x01) != 0) ? 0x80 : 0x00) + (sum >> 1) + *name++;
     return sum;
 }
-#endif 
+#endif
 
 static u16 pfatfs__encode_date(pfatfs_date date) {
     if (date.day < 1)
@@ -174,7 +150,7 @@ static pfatfs_date pfatfs__decode_date(u16 val) {
     date.year = val >> 9;
     return date;
 }
-#endif 
+#endif
 
 static u16 pfatfs__encode_time(pfatfs_time time) {
     time.secs = time.secs >> 1;
@@ -196,7 +172,7 @@ static pfatfs_time pfatfs__decode_time(u16 val) {
     time.hours = val >> 11;
     return time;
 }
-#endif 
+#endif
 
 static int pfatfs__83_eq_reg(const char *n83, const char *reg,
                              size_t reg_length) {
@@ -333,14 +309,14 @@ static int pfatfs__parse_bpb(pfatfs *fs) {
     u8 bytes[25];
     PFATFS_TRY(pfatfs__read(fs, bytes, sizeof(bytes)));
 
-    u16 byts_per_sec = pfatfs__read16(bytes);
+    u16 byts_per_sec = read_le16(bytes);
     u8 sec_per_clus = bytes[2];
-    u16 rsvd_sec_cnt = pfatfs__read16(bytes + 3);
+    u16 rsvd_sec_cnt = read_le16(bytes + 3);
     u8 num_fats = bytes[5];
-    u16 root_ent_cnt = pfatfs__read16(bytes + 6);
-    u16 tot_sec16 = pfatfs__read16(bytes + 8);
-    u16 fatsz16 = pfatfs__read16(bytes + 11);
-    u32 tot_sec32 = pfatfs__read32(bytes + 21);
+    u16 root_ent_cnt = read_le16(bytes + 6);
+    u16 tot_sec16 = read_le16(bytes + 8);
+    u16 fatsz16 = read_le16(bytes + 11);
+    u32 tot_sec32 = read_le32(bytes + 21);
 
     // prevent divide by zero
     if (byts_per_sec == 0) {
@@ -361,8 +337,8 @@ static int pfatfs__parse_bpb(pfatfs *fs) {
         u8 bytes[12];
         PFATFS_TRY(pfatfs__read(fs, bytes, sizeof(bytes)));
 
-        u32 fatsz32 = pfatfs__read32(bytes);
-        root_clus = pfatfs__read32(bytes + 8);
+        u32 fatsz32 = read_le32(bytes);
+        root_clus = read_le32(bytes + 8);
 
         fatsz = fatsz32;
         tot_sec = tot_sec32;
@@ -400,14 +376,14 @@ static int pfatfs__read_dirent_(pfatfs *fs, pfatfs__dirent *dirent) {
     memcpy(dirent->name, bytes, sizeof(dirent->name));
     dirent->attr = bytes[11];
     dirent->crt_time_tenth = bytes[13];
-    dirent->crt_time = pfatfs__read16(bytes + 14);
-    dirent->crt_date = pfatfs__read16(bytes + 16);
-    dirent->lst_acc_date = pfatfs__read16(bytes + 18);
+    dirent->crt_time = read_le16(bytes + 14);
+    dirent->crt_date = read_le16(bytes + 16);
+    dirent->lst_acc_date = read_le16(bytes + 18);
     dirent->fst_clus =
-        ((u32)pfatfs__read16(bytes + 20) << 16) | pfatfs__read16(bytes + 26);
-    dirent->wrt_time = pfatfs__read16(bytes + 22);
-    dirent->wrt_date = pfatfs__read16(bytes + 24);
-    dirent->file_size = pfatfs__read32(bytes + 28);
+        ((u32)read_le16(bytes + 20) << 16) | read_le16(bytes + 26);
+    dirent->wrt_time = read_le16(bytes + 22);
+    dirent->wrt_date = read_le16(bytes + 24);
+    dirent->file_size = read_le32(bytes + 28);
 
     return 0;
 }
@@ -418,13 +394,13 @@ static int pfatfs__write_dirent_(pfatfs *fs, const pfatfs__dirent *dirent) {
     bytes[11] = dirent->attr;
     bytes[12] = 0;
     bytes[13] = dirent->crt_time_tenth;
-    pfatfs__write16(bytes + 16, dirent->crt_time);
-    pfatfs__write16(bytes + 18, dirent->crt_date);
-    pfatfs__write16(bytes + 20, dirent->fst_clus >> 16);
-    pfatfs__write16(bytes + 22, dirent->wrt_time);
-    pfatfs__write16(bytes + 24, dirent->wrt_date);
-    pfatfs__write16(bytes + 26, dirent->fst_clus & 0xFFFF);
-    pfatfs__write32(bytes + 28, dirent->file_size);
+    write_le16(bytes + 16, dirent->crt_time);
+    write_le16(bytes + 18, dirent->crt_date);
+    write_le16(bytes + 20, dirent->fst_clus >> 16);
+    write_le16(bytes + 22, dirent->wrt_time);
+    write_le16(bytes + 24, dirent->wrt_date);
+    write_le16(bytes + 26, dirent->fst_clus & 0xFFFF);
+    write_le32(bytes + 28, dirent->file_size);
 
     return pfatfs__write(fs, bytes, sizeof(bytes));
 }
@@ -446,7 +422,7 @@ static ssize_t pfatfs__get_fat(pfatfs *fs, u32 cluster) {
         fat_off += cluster + (cluster >> 1);
         PFATFS_TRY(pfatfs__seek_read(fs, fat_off, bytes, sizeof(u16)));
 
-        u16 packed = pfatfs__read16(bytes);
+        u16 packed = read_le16(bytes);
         if ((cluster & 1) != 0)
             fat = packed >> 4;
         else
@@ -463,7 +439,7 @@ static ssize_t pfatfs__get_fat(pfatfs *fs, u32 cluster) {
         fat_off += cluster * sizeof(u16);
         PFATFS_TRY(pfatfs__seek_read(fs, fat_off, bytes, sizeof(u16)));
 
-        fat = pfatfs__read16(bytes);
+        fat = read_le16(bytes);
         if (fat == PFATFS_FAT16_FREE)
             fat = PFATFS_FAT_FREE;
         else if (fat == PFATFS_FAT16_BAD)
@@ -474,7 +450,7 @@ static ssize_t pfatfs__get_fat(pfatfs *fs, u32 cluster) {
     case PFATFS_FAT32:
         fat_off += cluster * sizeof(u32);
         PFATFS_TRY(pfatfs__seek_read(fs, fat_off, bytes, sizeof(u32)));
-        fat = pfatfs__read32(bytes);
+        fat = read_le32(bytes);
         break;
     }
 
@@ -498,13 +474,13 @@ static int pfatfs__set_fat(pfatfs *fs, u32 cluster, u32 fat) {
         else if (fat >= PFATFS_FAT_EOF)
             fat = PFATFS_FAT12_EOF;
 
-        u16 old_packed = pfatfs__read16(bytes);
+        u16 old_packed = read_le16(bytes);
         if ((cluster & 1) != 0)
             fat = (old_packed & 0x000F) | (fat << 4);
         else
             fat = (old_packed & 0xF000) | fat;
-        result = pfatfs__seek_write(fs, fat_off, pfatfs__write16(bytes, fat),
-                                    sizeof(u16));
+        write_le16(bytes, fat);
+        result = pfatfs__seek_write(fs, fat_off, bytes, sizeof(u16));
     } break;
     case PFATFS_FAT16:
         fat_off += fs->fat_offset + cluster * sizeof(u16);
@@ -515,14 +491,13 @@ static int pfatfs__set_fat(pfatfs *fs, u32 cluster, u32 fat) {
             fat = PFATFS_FAT16_BAD;
         else if (fat >= PFATFS_FAT_EOF)
             fat = PFATFS_FAT16_EOF;
-
-        result = pfatfs__seek_write(fs, fat_off, pfatfs__write16(bytes, fat),
-                                    sizeof(u16));
+        write_le16(bytes, fat);
+        result = pfatfs__seek_write(fs, fat_off, bytes, sizeof(u16));
         break;
     case PFATFS_FAT32:
         fat_off += cluster * sizeof(u32);
-        result = pfatfs__seek_write(fs, fat_off, pfatfs__write32(bytes, fat),
-                                    sizeof(u32));
+        write_le32(bytes, fat);
+        result = pfatfs__seek_write(fs, fat_off, bytes, sizeof(u32));
         break;
     }
 
