@@ -6,6 +6,13 @@ start:
     jmp switch_to_32bit
 .code32
 start32:
+    mov $__bss_start, %edi
+    mov $__bss_end, %ecx
+    xor %eax, %eax
+    sub %edi, %ecx
+    shr $2, %ecx
+    rep stosl
+
     call cls
     call enable_a20
     test %eax, %eax
@@ -16,7 +23,7 @@ start32:
 
     mov $0x100000, %edi
     mov $1024, %ebp
-    mov $3, %esi
+    mov $17, %esi
     call ata_read_sectors
     jc read_fail
 

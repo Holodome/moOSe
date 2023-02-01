@@ -18,5 +18,6 @@ SECTIONS {
     /DISCARD/ : {
         *(.comment)
         *(.note.gnu.property)
+        *(.eh_frame)
     }
 }
