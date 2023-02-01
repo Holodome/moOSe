@@ -47,6 +47,10 @@ clean:
 		-o -name "*.i" \
 		-o -name "*.img")
 
+
+include moose/Makefile
+-include $(shell find . -name "*.d")
+
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ $<
 
@@ -58,8 +62,5 @@ clean:
 
 %.i: %.c
 	$(CC) $(CFLAGS) -E -o $@ $^
-
-include moose/Makefile
--include $(shell find . -name "*.d")
 
 .PHONY: qemu qemu-debug all clean format
