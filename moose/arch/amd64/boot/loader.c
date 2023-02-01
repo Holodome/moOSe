@@ -39,8 +39,13 @@ static ssize_t seek(void *handle __attribute__((unused)), off_t off,
 extern void print(const char *s);
 
 int load_kernel(void) {
-    struct pfatfs fs = {.settings = &(struct pfatfs_settings){
-                            .seek = seek, .read = read, .write = write}};
+    struct pfatfs_settings settings = {0};
+    settings.seek = seek;
+    settings.read = read;
+    settings.write = write;
+    struct pfatfs fs = {0};
+    fs.settings = &settings;
+
     int result = pfatfs_mount(&fs);
     if (result != 0) {
         print("failed to mount");
