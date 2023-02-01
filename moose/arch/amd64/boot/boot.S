@@ -11,7 +11,7 @@ boot:
     mov $0x500, %si
     movb $0x10, (%si)
     movb $0, 1(%si)
-    movw $2, 2(%si)
+    movw $18, 2(%si)
     movw $0x1000, 4(%si)
     movw $0, 6(%si)
     movw $1, 8(%si)

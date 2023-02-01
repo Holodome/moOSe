@@ -3,6 +3,10 @@
 #include <types.h>
 #include <varargs.h>
 
+#define SEEK_SET 0
+#define SEEK_END 1
+#define SEEK_CUR 2
+
 int snprintf(char *buffer, size_t size, const char *fmt, ...);
 int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args);
 int kprintf(const char *fmt, ...);
