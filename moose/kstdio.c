@@ -1,4 +1,4 @@
-#include <console_display.h>
+#include <tty.h>
 #include <kmem.h>
 #include <kstdio.h>
 
@@ -459,9 +459,7 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
 int kprintf(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-
     int count = kvprintf(fmt, args);
-
     va_end(args);
 
     return count;
@@ -470,21 +468,20 @@ int kprintf(const char *fmt, ...) {
 int kvprintf(const char *fmt, va_list args) {
     char buffer[256];
     int count = vsnprintf(buffer, 256, fmt, args);
-
-    size_t len = strlen(buffer);
-    console_print(buffer, len);
-
-    return count;
+    int write_result = tty_write(buffer, strlen(buffer));
+    return write_result < 0 ? write_result : count;
 }
 
 int kputc(int c) {
-    console_print((char *)&c, 1);
-    return 1;
+    return tty_write((char *)&c, 1);
 }
 
 int kputs(const char *str) {
     size_t len = strlen(str);
-    console_print(str, len);
+    int result = tty_write(str, len);
+    if (result == -1) 
+        return result;
+
     kputc('\n');
     return (int)len;
 }

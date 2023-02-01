@@ -1,4 +1,4 @@
-#include <console_display.h>
+#include <tty.h>
 #include <arch/amd64/io.h>
 
 #define WIDTH 80
@@ -31,6 +31,7 @@ static void set_cursor(u16 cursor) {
     port_out8(PORT_DAT, cursor & 0xff);
 }
 
+#if 0 
 void console_get_cursor(u32 *x, u32 *y) {
     u16 cursor = get_cursor();
     *y = cursor / WIDTH;
@@ -41,6 +42,7 @@ void console_set_cursor(u32 x, u32 y) {
     u16 cursor = y * WIDTH + x;
     set_cursor(cursor);
 }
+#endif 
 
 static void set_char(u16 offset, int symb) {
     volatile u8 *slot = TEXTBUF + offset * 2;
@@ -63,8 +65,9 @@ static u16 scroll_line(void) {
     return last_line_offset;
 }
 
-void console_print(const char *buf, size_t buf_size) {
+ssize_t tty_write(const void *buf_, size_t buf_size) {
     u16 cursor = get_cursor();
+    const char *buf = buf_;
     for (size_t i = 0; i < buf_size; ++i) {
         int c = buf[i];
 
@@ -80,9 +83,10 @@ void console_print(const char *buf, size_t buf_size) {
     }
 
     set_cursor(cursor);
+    return buf_size;
 }
 
-void console_clear(void) {
+void tty_clear(void) {
     for (u16 i = 0; i < WIDTH * HEIGHT; ++i)
         set_char(i, ' ');
 
