@@ -5,6 +5,7 @@
 #include <kmem.h>
 #include <kstdio.h>
 #include <tty.h>
+#include <errno.h>
 
 #include <fs/fat.h>
 
@@ -86,7 +87,7 @@ __attribute__((unused)) static void test_fs(void) {
     for (;; ++i) {
         pfatfs_file new_file = {0};
         r = pfatfs_readdir(&fs, &file, &new_file);
-        if (r == PFATFS_ENOENT) {
+        if (r == -ENOENT) {
             break;
         }
         if (r < 0) {
