@@ -15,6 +15,7 @@ static struct {
 } cursor = {};
 
 ssize_t disk_read(void *buf, size_t size) {
+    size_t total_read = 0;
     while (size) {
         u32 lba = cursor.pos / 512;
         u32 offset = cursor.pos % 512;
@@ -32,9 +33,10 @@ ssize_t disk_read(void *buf, size_t size) {
         memcpy(buf, cursor.block + offset, to_copy);
         cursor.pos += to_copy;
         size -= to_copy;
+        total_read += to_copy;
     }
 
-    return size;
+    return total_read;
 }
 
 ssize_t disk_write(const void *buf, size_t size) {

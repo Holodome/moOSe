@@ -11,3 +11,4 @@ enum ata_dev_kind {
 
 #define ATA_PIO_BLKSZ 512
 int ata_pio_read(void *buf, u32 lba, u8 sector_count);
+int ata_pio_write(const void *buf, u32 lba, u8 sector_count);
