@@ -13,7 +13,7 @@ export CC LD AS OBJCOPY
 DEPFLAGS = -MT $@ -MMD -MP -MF $*.d
 ASFLAGS = -msyntax=att --warn --fatal-warnings
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
-			-Imoose/include -O2 -mno-sse -mno-sse2 -mno-sse3 $(DEPFLAGS) -fno-strict-aliasing
+			-Imoose/include -O2 -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing
 
 ifneq ($(DEBUG),)
 	ASFLAGS += -g
@@ -52,7 +52,7 @@ include moose/Makefile
 -include $(shell find . -name "*.d")
 
 %.o: %.c
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) $(DEPFLAGS) -o $@ $<
 
 %.o: %.S
 	$(CC) $(CFLAGS) -o $@ $<

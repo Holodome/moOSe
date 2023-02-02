@@ -13,7 +13,7 @@ $(D)/stage2.elf: $(STAGE2_OBJS) | $(STAGE2_LINK)
 	$(LD) -m elf_i386 -T $(STAGE2_LINK) -o $@ $^
 
 $(D)/loader.o: $(D)/loader.c moose/fs/fat.c moose/disk.c moose/arch/amd64/ata.c
-	$(CC) $(CFLAGS) -D__i686__ -m32 -c -o $@ $<
+	$(CC) $(CFLAGS) $(DEPFLAGS) -D__i686__ -m32 -c -o $@ $<
 
 $(D)/%.o: $(D)/%.S
 	$(CC) $(CFLAGS) -m32 -c -o $@ $<
