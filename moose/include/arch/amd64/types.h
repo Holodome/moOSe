@@ -66,5 +66,3 @@ typedef unsigned long long int uintmax_t;
 #define ULLONG_MAX ((unsigned long)ULONG_MAX)
 
 #define NULL ((void *)0)
-
-#define INT_MAX 0x7FFFFFFF
