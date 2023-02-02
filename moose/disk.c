@@ -1,8 +1,8 @@
 #include <arch/amd64/ata.h>
 #include <disk.h>
+#include <errno.h>
 #include <fs/fat.h>
 #include <kmem.h>
-#include <errno.h>
 
 ssize_t disk_read(void *buf, size_t size);
 ssize_t disk_write(const void *buf, size_t size);
@@ -15,24 +15,58 @@ static struct {
 } cursor = {};
 
 ssize_t disk_read(void *buf, size_t size) {
-    u32 lba = cursor.pos / 512;
-    u32 offset = cursor.pos % 512;
-    if (cursor.current_block != lba) {
-        if (ata_pio_read(cursor.block, lba, 1)) {
-            return -EIO;
+    char *dst = buf;
+    while (size) {
+        u32 lba = cursor.pos / 512;
+        u32 offset = cursor.pos % 512;
+        if (cursor.current_block != lba) {
+            if (ata_pio_read(cursor.block, lba, 1)) {
+                return -EIO;
+            }
+            cursor.current_block = lba;
         }
-        cursor.current_block = lba;
+
+        size_t to_copy = size;
+        if (offset + to_copy > 512)
+            to_copy = 512 - offset;
+
+        memcpy(dst, cursor.block + offset, to_copy);
+        cursor.pos += to_copy;
+        size -= to_copy;
+        dst += to_copy;
     }
 
-    memcpy(buf, cursor.block + offset, size);
-    cursor.pos += size;
-    return size;
+    return dst - (char *)buf;
 }
 
 ssize_t disk_write(const void *buf, size_t size) {
-    (void)buf;
-    (void)size;
-    return -1;
+    const char *src = buf;
+    size_t total_wrote = 0;
+    while (size) {
+        u32 lba = cursor.pos / 512;
+        u32 offset = cursor.pos % 512;
+        if (cursor.current_block != lba) {
+            if (ata_pio_read(cursor.block, lba, 1)) {
+                return -EIO;
+            }
+            cursor.current_block = lba;
+        }
+
+        size_t to_copy = size;
+        if (offset + to_copy > 512)
+            to_copy = 512 - offset;
+
+        memcpy(cursor.block + offset, src, to_copy);
+        cursor.pos += to_copy;
+        size -= to_copy;
+        total_wrote += to_copy;
+
+        if(ata_pio_write(cursor.block, lba, 1)) {
+            return -EIO;
+        }
+    }
+
+    return total_wrote;
 }
 
 ssize_t disk_seek(off_t off, int whence) {

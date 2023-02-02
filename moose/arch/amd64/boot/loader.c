@@ -31,7 +31,7 @@ static ssize_t write(void *handle __attribute__((unused)), const void *buf,
 static ssize_t seek(void *handle __attribute__((unused)), off_t off,
                     int whence) {
     if (whence == SEEK_SET) {
-        off += 8704;
+        off += 40 * 512 + 512;
     }
     return disk_seek(off, whence);
 }

@@ -14,6 +14,15 @@
 #define DRIVE_HEAD_REG 0x6
 #define STAT_CMD_REG 0x7
 
+#define CMD_READ 0x20
+#define CMD_WRITE 0x30
+
+static void cache_flush(void) {
+    port_out8(PRIMARY_BUS + STAT_CMD_REG, CMD_READ);
+    while ((port_in8(PRIMARY_BUS + STAT_CMD_REG) & 0x80) != 0)
+        ;
+}
+
 int ata_pio_read(void *buf, u32 lba, u8 sector_count) {
     u16 *cursor = buf;
     port_out8(PRIMARY_BUS + DRIVE_HEAD_REG, 0xe0);
@@ -22,7 +31,7 @@ int ata_pio_read(void *buf, u32 lba, u8 sector_count) {
     port_out8(PRIMARY_BUS + SEC_NUM_REG, lba);
     port_out8(PRIMARY_BUS + CYL_LOW_REG, lba >> 8);
     port_out8(PRIMARY_BUS + CYL_HIG_REG, lba >> 16);
-    port_out8(PRIMARY_BUS + STAT_CMD_REG, 0x20);
+    port_out8(PRIMARY_BUS + STAT_CMD_REG, CMD_READ);
 
     for (int i = 4; i--;) {
         int a = port_in8(PRIMARY_BUS + STAT_CMD_REG);
@@ -49,6 +58,44 @@ int ata_pio_read(void *buf, u32 lba, u8 sector_count) {
 
         --sector_count;
     }
+
+    return 0;
+}
+
+int ata_pio_write(const void *buf, u32 lba, u8 sector_count) {
+    const u16 *cursor = buf;
+    port_out8(PRIMARY_BUS + DRIVE_HEAD_REG, 0xe0);
+    port_out8(PRIMARY_BUS + FEAT_REG, 0);
+    port_out8(PRIMARY_BUS + SEC_CNT_REG, sector_count);
+    port_out8(PRIMARY_BUS + SEC_NUM_REG, lba);
+    port_out8(PRIMARY_BUS + CYL_LOW_REG, lba >> 8);
+    port_out8(PRIMARY_BUS + CYL_HIG_REG, lba >> 16);
+    port_out8(PRIMARY_BUS + STAT_CMD_REG, CMD_WRITE);
+
+    for (int i = 4; i--;) {
+        int a = port_in8(PRIMARY_BUS + STAT_CMD_REG);
+        if ((a & 0x80) != 0)
+            continue;
+        if ((a & 0x08) != 0)
+            goto read;
+    }
+
+    while (sector_count) {
+        int a = port_in8(PRIMARY_BUS + STAT_CMD_REG);
+        if ((a & 0x80) != 0)
+            continue;
+        if ((a & 0x21) != 0)
+            return -1;
+    read:
+        for (int i = 256; i--;) {
+            port_out16(PRIMARY_BUS + DATA_REG, *cursor++);
+            port_in8(PRIMARY_BUS + STAT_CMD_REG);
+        }
+
+        --sector_count;
+    }
+
+    cache_flush();
 
     return 0;
 }
