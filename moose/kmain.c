@@ -3,8 +3,9 @@
 
 #include <arch/amd64/keyboard.h>
 #include <arch/amd64/memory_map.h>
-#include <kmem.h>
 #include <arch/amd64/physmem.h>
+#include <arch/amd64/virtmem.h>
+#include <kmem.h>
 
 #include <kstdio.h>
 #include <tty.h>
@@ -26,6 +27,8 @@ __attribute__((noreturn)) void kmain(void) {
                 (unsigned long long)(entry->base + entry->length),
                 get_memmap_type_str(entry->type), (unsigned)entry->type);
     }
+
+    kprintf("%zu", sizeof(struct pt_entry));
 
     setup_idt();
     init_keyboard();
