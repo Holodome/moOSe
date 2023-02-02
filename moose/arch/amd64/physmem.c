@@ -1,5 +1,6 @@
 #include <arch/amd64/physmem.h>
 #include <arch/amd64/memory_map.h>
+#include <kstdio.h>
 
 #define ARENA_SIZE (4 * 4096)
 
@@ -122,13 +123,18 @@ static inline void set_bit(u64 *bitmap, u64 index) {
 }
 
 static inline void unset_bit(u64 *bitmap, u64 index) {
-    bitmap[index / 64] &= ~(1 << (index % 64));
+    bitmap[index / 64] &= ~(1l << (index % 64));
 }
 
-static u64 test_buddies(struct free_area *free_area, u32 buddy, u64 index) {
+static u64 test_buddies(struct free_area *free_area, u32 buddy,
+                        u64 index, size_t count) {
     for (int i = buddy; i >= 0; i--) {
         u32 offset = buddy - i;
-        for (int j = 0; j < (1l << offset); j++) {
+        u32 bit_count = count / (1u << i);
+        if (count % (1u << i) != 0)
+            bit_count++;
+
+        for (u32 j = 0; j < bit_count; j++) {
             if (test_bit(free_area[i].bitmap, index * (1l << offset) + j))
                 return 1;
         }
@@ -137,18 +143,28 @@ static u64 test_buddies(struct free_area *free_area, u32 buddy, u64 index) {
     return 0;
 }
 
-static void set_buddies(struct free_area *free_area, u32 buddy, u64 index) {
+static void set_buddies(struct free_area *free_area, u32 buddy,
+                        u64 index, size_t count) {
     for (int i = buddy; i >= 0; i--) {
         u32 offset = buddy - i;
-        for (u32 j = 0; j < ((u64) 1 << offset); j++)
+        u32 bit_count = count / (1u << i);
+        if (count % (1u << i) != 0)
+            bit_count++;
+
+        for (u32 j = 0; j < bit_count; j++)
             set_bit(free_area[i].bitmap, index * (1l << offset) + j);
     }
 }
 
-static void unset_buddies(struct free_area *free_area, u32 buddy, u64 index) {
+static void unset_buddies(struct free_area *free_area, u32 buddy,
+                          u64 index, size_t count) {
     for (int i = buddy; i >= 0; i--) {
         u32 offset = buddy - i;
-        for (int j = 0; j < (1l << offset); j++)
+        u32 bit_count = count / (1u << i);
+        if (count % (1u << i) != 0)
+            bit_count++;
+
+        for (u32 j = 0; j < bit_count; j++)
             unset_bit(free_area[i].bitmap, index * (1l << offset) + j);
     }
 }
@@ -161,6 +177,7 @@ ssize_t alloc_page_block(void **addr, size_t count) {
     if (order >= BUDDY_MAX_ORDER)
         order = BUDDY_MAX_ORDER - 1;
 
+    // finds first available memory zone
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];
         struct free_area *area = &zone->free_area[order];
@@ -169,8 +186,8 @@ ssize_t alloc_page_block(void **addr, size_t count) {
             continue;
 
         for (u64 bit_idx = 0; bit_idx < area->size; bit_idx++) {
-            if (!test_buddies(zone->free_area, order, bit_idx)) {
-                set_buddies(zone->free_area, order, bit_idx);
+            if (!test_buddies(zone->free_area, order, bit_idx, count)) {
+                set_buddies(zone->free_area, order, bit_idx, count);
 
                 *addr = (void *) zone->base_addr +
                               bit_idx * (1l << order) * PAGE_SIZE;
@@ -201,7 +218,7 @@ void free_page_block(void *addr, size_t count) {
             u64 bit_idx = ((u64) addr - zone->base_addr) /
                           ((1l << order) * PAGE_SIZE);
 
-            unset_buddies(zone->free_area, order, bit_idx);
+            unset_buddies(zone->free_area, order, bit_idx, count);
 
             zone->used_page_count -= count;
         }
