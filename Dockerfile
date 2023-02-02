@@ -2,7 +2,7 @@ FROM randomdude/gcc-cross-x86_64-elf AS builder
 
 RUN apt-get update
 RUN apt-get upgrade -y
-RUN apt-get install -y grub-common mtools
+RUN apt-get install -y grub-common mtools python3
 
 COPY ./ /root/
 
