@@ -10,9 +10,8 @@
 // uses <arch/amd64/memory_map.h>
 int init_phys_manager(void);
 
-ssize_t alloc_page_block(size_t count);
 ssize_t alloc_page(void);
 ssize_t alloc_pages(size_t count);
 
-void free_page_block(u64 addr, size_t count);
+void free_pages(u64 addr, size_t count);
 void free_page(u64 addr);

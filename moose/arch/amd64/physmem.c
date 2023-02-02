@@ -169,7 +169,7 @@ static void unset_buddies(struct free_area *free_area, u32 buddy,
     }
 }
 
-ssize_t alloc_page_block(size_t count) {
+ssize_t alloc_pages(size_t count) {
     u32 order = log2_32(count);
     if (count != 1u << order)
         order++;
@@ -198,7 +198,7 @@ ssize_t alloc_page_block(size_t count) {
     return -1;
 }
 
-void free_page_block(u64 addr, size_t count) {
+void free_pages(u64 addr, size_t count) {
     u32 order = log2_32(count);
     if (count != 1u << order)
         order++;
@@ -221,13 +221,9 @@ void free_page_block(u64 addr, size_t count) {
 }
 
 ssize_t alloc_page(void) {
-    return alloc_page_block(1);
-}
-
-ssize_t alloc_pages(size_t count) {
-    return alloc_page_block(count);
+    return alloc_pages(1);
 }
 
 void free_page(u64 addr) {
-    free_page_block(addr, 1);
+    free_pages(addr, 1);
 }
