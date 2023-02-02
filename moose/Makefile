@@ -8,15 +8,11 @@ KERNEL_OBJS := $(D)/arch/amd64/kstart.o $(D)/arch/amd64/long.o \
 	$(D)/arch/amd64/idt.o $(D)/arch/amd64/ata.o $(D)/fs/fat.o \
 	$(D)/arch/amd64/tty_keyboard.o $(D)/disk.o
 
-$(OS_IMG): $(D)/arch/amd64/boot/boot.bin $(D)/kernel.bin 
-	cat $^ > $@
+$(OS_IMG): $(D)/arch/amd64/boot/stage1.bin $(D)/arch/amd64/boot/stage2.bin \
+	$(D)/kernel.bin
+	./scripts/generate_mbr_image.py $^ $@
 
-$(D)/kernel1.elf: $(KERNEL_OBJS) | $(KERNEL_LINK)
+$(D)/kernel.elf: $(KERNEL_OBJS) | $(KERNEL_LINK)
 	$(LD) -T $(KERNEL_LINK) -o $@ $^
-
-$(D)/kernel.bin: $(D)/kernel1.bin
-	dd if=/dev/zero of=$@ bs=1K count=720
-	mformat -i $@ -f 720
-	mcopy -i $@ $^ ::
 
 include moose/arch/amd64/boot/Makefile
