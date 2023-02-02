@@ -3,7 +3,7 @@
 #include <types.h>
 #include <kstdio.h>
 
-void disk_init(void);
+int disk_init(void);
 
 ssize_t disk_read(void *buf, size_t size);
 ssize_t disk_write(const void *buf, size_t size);

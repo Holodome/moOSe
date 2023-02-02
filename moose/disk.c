@@ -17,7 +17,7 @@ static struct {
     u32 partition_size;
 } cursor = {.current_block = 0xffffffff};
 
-int disk_partition_init(void) {
+int disk_init(void) {
     struct mbr_partition part_info;
     int result = disk_seek(MBR_PARTITION_OFFSET, SEEK_SET);
     if (result != 0) {

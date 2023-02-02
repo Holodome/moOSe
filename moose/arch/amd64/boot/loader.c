@@ -11,7 +11,7 @@
 extern void print(const char *s);
 
 int load_kernel(void) {
-    int result = disk_partition_init();
+    int result = disk_init();
     if (result)
         return result;
 
