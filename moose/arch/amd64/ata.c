@@ -14,7 +14,7 @@
 #define DRIVE_HEAD_REG 0x6
 #define STAT_CMD_REG 0x7
 
-int ata_pio_read(void *buf, size_t lba, size_t sector_count) {
+int ata_pio_read(void *buf, u32 lba, u8 sector_count) {
     u16 *cursor = buf;
     port_out8(PRIMARY_BUS + DRIVE_HEAD_REG, 0xe0);
     port_out8(PRIMARY_BUS + FEAT_REG, 0);
