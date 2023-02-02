@@ -3,14 +3,15 @@
 #include <tty.h>
 
 struct printf_opts {
-    size_t length;
+    size_t width;
     char padding_char;
     int base;
     int precision;
     int is_left_aligned : 1;
     int is_plus_char : 1;
-    int is_hex_fmt : 1;
     int is_hex_uppercase : 1;
+    int has_precision : 1;
+    int force_prefix : 1;
 };
 
 #define outc(_buffer, _size, _counter, _c)                                     \
@@ -64,14 +65,14 @@ static void print_signed(char *buffer, size_t size, size_t *counter,
     char number_buffer[NUMBER_BUFFER_SIZE];
     size_t number_length = print_number(number_buffer, number, 10);
 
-    if (opts->length >= number_length)
-        opts->length -= number_length;
+    if (opts->width >= number_length)
+        opts->width -= number_length;
     else
-        opts->length = 0;
+        opts->width = 0;
 
-    if (opts->padding_char == ' ' && !opts->is_left_aligned) {
-        while (opts->length--)
-            outc(buffer, size, counter, ' ');
+    if (!opts->is_left_aligned && opts->padding_char != '0') {
+        while (opts->width--)
+            outc(buffer, size, counter, opts->padding_char);
     }
 
     if (is_negative)
@@ -79,16 +80,16 @@ static void print_signed(char *buffer, size_t size, size_t *counter,
     else if (opts->is_plus_char)
         outc(buffer, size, counter, '+');
 
-    if (opts->padding_char == '0' && !opts->is_left_aligned) {
-        while (opts->length--)
-            outc(buffer, size, counter, '0');
+    if (!opts->is_left_aligned && opts->padding_char == '0') {
+        while (opts->width--)
+            outc(buffer, size, counter, opts->padding_char);
     }
 
     for (size_t i = 0; i < number_length; i++)
         outc(buffer, size, counter, number_buffer[i]);
 
     if (opts->is_left_aligned) {
-        while (opts->length--)
+        while (opts->width--)
             outc(buffer, size, counter, ' ');
     }
 }
@@ -98,37 +99,34 @@ static void print_unsigned(char *buffer, size_t size, size_t *counter,
     char number_buffer[NUMBER_BUFFER_SIZE];
     size_t number_length = print_number(number_buffer, number, opts->base);
 
-    char *number_prefix = "";
+    const char *prefix = "";
     size_t prefix_length = 0;
-
-    if (opts->is_hex_fmt) {
+    if (opts->force_prefix) {
         if (opts->base == 8)
-            number_prefix = "0";
+            prefix = "0";
         else if (opts->base == 16 && opts->is_hex_uppercase)
-            number_prefix = "0X";
+            prefix = "0X";
         else if (opts->base == 16)
-            number_prefix = "0x";
-        prefix_length = strlen(number_prefix);
+            prefix = "0x";
+        prefix_length = strlen(prefix);
     }
 
-    if (opts->length >= (number_length + prefix_length))
-        opts->length -= (number_length + prefix_length);
+    if (opts->width >= (number_length + prefix_length))
+        opts->width -= (number_length + prefix_length);
     else
-        opts->length = 0;
+        opts->width = 0;
 
-    if (opts->padding_char == ' ' && !opts->is_left_aligned) {
-        while (opts->length--)
+    if (!opts->is_left_aligned && opts->padding_char != '0') {
+        while (opts->width--)
             outc(buffer, size, counter, opts->padding_char);
     }
 
-    if (opts->is_hex_fmt) {
-        for (size_t i = 0; i < prefix_length; i++)
-            outc(buffer, size, counter, number_prefix[i]);
-    }
+    for (size_t i = 0; i < prefix_length; i++)
+        outc(buffer, size, counter, prefix[i]);
 
-    if (opts->padding_char == '0' && !opts->is_left_aligned) {
-        while (opts->length--)
-            outc(buffer, size, counter, '0');
+    if (!opts->is_left_aligned && opts->padding_char == '0') {
+        while (opts->width--)
+            outc(buffer, size, counter, opts->padding_char);
     }
 
     for (size_t i = 0; i < number_length; i++) {
@@ -139,7 +137,7 @@ static void print_unsigned(char *buffer, size_t size, size_t *counter,
     }
 
     if (opts->is_left_aligned) {
-        while (opts->length--)
+        while (opts->width--)
             outc(buffer, size, counter, ' ');
     }
 }
@@ -147,21 +145,25 @@ static void print_unsigned(char *buffer, size_t size, size_t *counter,
 static void print_string(char *buffer, size_t size, size_t *counter, char *str,
                          struct printf_opts *opts) {
     size_t length = strlen(str);
-    if (opts->length >= length)
-        opts->length -= length;
+    if (opts->width >= length)
+        opts->width -= length;
     else
-        opts->length = 0;
+        opts->width = 0;
 
     if (!opts->is_left_aligned) {
-        while (opts->length--)
+        while (opts->width--)
             outc(buffer, size, counter, ' ');
     }
 
-    while (*str)
+    int max_length = INT_MAX;
+    if (opts->has_precision)
+        max_length = opts->precision;
+
+    while (*str && max_length--)
         outc(buffer, size, counter, *str++);
 
     if (opts->is_left_aligned) {
-        while (opts->length--)
+        while (opts->width--)
             outc(buffer, size, counter, ' ');
     }
 }
@@ -190,7 +192,7 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
             else if (c == '-')
                 opts.is_left_aligned = 1;
             else if (c == '#')
-                opts.is_hex_fmt = 1;
+                opts.force_prefix = 1;
             else
                 break;
             fmt++;
@@ -202,12 +204,29 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
         }
 
         // width
-        while (isdigit(*fmt)) {
-            opts.length = 10 * opts.length + (*fmt - '0');
+        if (isdigit(*fmt)) {
+            do {
+                opts.width = 10 * opts.width + (*fmt - '0');
+                fmt++;
+            } while (isdigit(*fmt));
+        } else if (*fmt == '*') {
+            opts.width = va_arg(args, int);
             fmt++;
         }
 
+        // precision
         if (*fmt == '.') {
+            opts.has_precision = 1;
+            fmt++;
+            if (isdigit(*fmt)) {
+                do {
+                    opts.precision = 10 * opts.precision + (*fmt - '0');
+                    fmt++;
+                } while (isdigit(*fmt));
+            } else if (*fmt == '*') {
+                opts.precision = va_arg(args, int);
+                fmt++;
+            }
         }
 
         switch (*fmt) {
@@ -226,6 +245,9 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                              &opts);
                 break;
             case 'X':
+                opts.is_hex_uppercase = 1;
+                // fallthrough
+            case 'x':
                 opts.base = 16;
                 print_signed(buffer, size, &counter, va_arg(args, ptrdiff_t),
                              &opts);
@@ -250,6 +272,9 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                                &opts);
                 break;
             case 'X':
+                opts.is_hex_uppercase = 1;
+                // fallthrough
+            case 'x':
                 opts.base = 16;
                 print_unsigned(buffer, size, &counter, va_arg(args, uintmax_t),
                                &opts);
@@ -271,6 +296,9 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                                &opts);
                 break;
             case 'X':
+                opts.is_hex_uppercase = 1;
+                // fallthrough
+            case 'x':
                 opts.base = 16;
                 print_unsigned(buffer, size, &counter, va_arg(args, size_t),
                                &opts);
@@ -288,6 +316,9 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                 print_unsigned(buffer, size, &counter,
                                va_arg(args, unsigned int), &opts);
                 break;
+            case 'X':
+                opts.is_hex_uppercase = 1;
+                // fallthrough
             case 'x':
                 opts.base = 16;
                 print_unsigned(buffer, size, &counter,
@@ -310,6 +341,9 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                     print_unsigned(buffer, size, &counter,
                                    va_arg(args, unsigned int), &opts);
                     break;
+                case 'X':
+                    opts.is_hex_uppercase = 1;
+                    // fallthrough
                 case 'x':
                     opts.base = 16;
                     print_unsigned(buffer, size, &counter,
@@ -335,6 +369,9 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                 print_unsigned(buffer, size, &counter,
                                va_arg(args, unsigned long int), &opts);
                 break;
+            case 'X':
+                opts.is_hex_uppercase = 1;
+                // fallthrough
             case 'x':
                 opts.base = 16;
                 print_unsigned(buffer, size, &counter,
@@ -357,6 +394,9 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                     print_unsigned(buffer, size, &counter,
                                    va_arg(args, unsigned long long int), &opts);
                     break;
+                case 'X':
+                    opts.is_hex_uppercase = 1;
+                    // fallthrough
                 case 'x':
                     opts.base = 16;
                     print_unsigned(buffer, size, &counter,
@@ -378,14 +418,11 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
             print_unsigned(buffer, size, &counter, va_arg(args, unsigned int),
                            &opts);
             break;
+        case 'X':
+            opts.is_hex_uppercase = 1;
+            // fallthrough
         case 'x':
             opts.base = 16;
-            print_unsigned(buffer, size, &counter, va_arg(args, unsigned int),
-                           &opts);
-            break;
-        case 'X':
-            opts.base = 16;
-            opts.is_hex_uppercase = 1;
             print_unsigned(buffer, size, &counter, va_arg(args, unsigned int),
                            &opts);
             break;
@@ -400,7 +437,7 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
             break;
         case 'p':
             opts.base = 16;
-            opts.is_hex_fmt = 1;
+            opts.force_prefix = 1;
             print_unsigned(buffer, size, &counter,
                            (unsigned long long int)va_arg(args, void *), &opts);
             break;
@@ -442,7 +479,7 @@ int kputc(int c) { return tty_write((char *)&c, 1); }
 int kputs(const char *str) {
     size_t len = strlen(str);
     int result = tty_write(str, len);
-    if (result == -1)
+    if (result < 0)
         return result;
 
     kputc('\n');
