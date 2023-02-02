@@ -15,7 +15,7 @@ static struct {
 } cursor = {};
 
 ssize_t disk_read(void *buf, size_t size) {
-    size_t total_read = 0;
+    char *dst = buf;
     while (size) {
         u32 lba = cursor.pos / 512;
         u32 offset = cursor.pos % 512;
@@ -30,19 +30,43 @@ ssize_t disk_read(void *buf, size_t size) {
         if (offset + to_copy > 512)
             to_copy = 512 - offset;
 
-        memcpy(buf, cursor.block + offset, to_copy);
+        memcpy(dst, cursor.block + offset, to_copy);
         cursor.pos += to_copy;
         size -= to_copy;
-        total_read += to_copy;
+        dst += to_copy;
     }
 
-    return total_read;
+    return dst - (char *)buf;
 }
 
 ssize_t disk_write(const void *buf, size_t size) {
-    (void)buf;
-    (void)size;
-    return -1;
+    const char *src = buf;
+    size_t total_wrote = 0;
+    while (size) {
+        u32 lba = cursor.pos / 512;
+        u32 offset = cursor.pos % 512;
+        if (cursor.current_block != lba) {
+            if (ata_pio_read(cursor.block, lba, 1)) {
+                return -EIO;
+            }
+            cursor.current_block = lba;
+        }
+
+        size_t to_copy = size;
+        if (offset + to_copy > 512)
+            to_copy = 512 - offset;
+
+        memcpy(cursor.block + offset, src, to_copy);
+        cursor.pos += to_copy;
+        size -= to_copy;
+        total_wrote += to_copy;
+
+        if(ata_pio_write(cursor.block, lba, 1)) {
+            return -EIO;
+        }
+    }
+
+    return total_wrote;
 }
 
 ssize_t disk_seek(off_t off, int whence) {
