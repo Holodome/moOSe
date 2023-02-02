@@ -28,10 +28,9 @@ __attribute__((noreturn)) void kmain(void) {
     init_keyboard();
 
     kprintf(">");
-    char buffer[32] = {0};
+    char buffer[32];
     ssize_t len = tty_read(buffer, sizeof(buffer));
-    buffer[len] = 0;
-    kprintf("received %s (%d)\n", buffer, (int)len);
+    kprintf("received %.*s (%d)\n", (int)len, buffer, len);
 
     for (;;)
         ;

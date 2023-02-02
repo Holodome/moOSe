@@ -18,3 +18,5 @@ typedef unsigned long long int uintmax_t;
 
 #define CHAR_BIT 8
 #define NULL ((void *)0)
+
+#define INT_MAX 0x7FFFFFFF
