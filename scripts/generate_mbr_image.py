@@ -19,7 +19,6 @@ def make_part_entry(offset, size):
     arr[0] = 0x80
     arr[8:12] = struct.pack("<I", offset)
     arr[12:16] = struct.pack("<I", size)
-    print(arr)
     return arr
 
 
