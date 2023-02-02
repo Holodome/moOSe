@@ -8,52 +8,14 @@
 
 #include <mbr.h>
 
-static u32 start;
-
-static ssize_t read(void *handle __attribute__((unused)), void *buf,
-                    size_t size) {
-    return disk_read(buf, size);
-}
-
-static ssize_t write(void *handle __attribute__((unused)), const void *buf,
-                     size_t size) {
-    (void)handle;
-    (void)buf;
-    (void)size;
-    return -1;
-}
-
-static ssize_t seek(void *handle __attribute__((unused)), off_t off,
-                    int whence) {
-    if (whence == SEEK_SET) {
-        off += start;
-    }
-    return disk_seek(off, whence);
-}
-
 extern void print(const char *s);
 
 int load_kernel(void) {
-    struct mbr_partition part_info;
-    int result = disk_seek(MBR_PARTITION_OFFSET, SEEK_SET);
-    if (result != 0) {
+    int result = disk_init();
+    if (result)
         return result;
-    }
 
-    result = disk_read(&part_info, sizeof(part_info));
-    if (result != sizeof(part_info)) {
-        print("failed to parse mbr");
-        return result;
-    }
-
-    start = part_info.addr * 512;
-
-    struct pfatfs_settings settings = {0};
-    settings.seek = seek;
-    settings.read = read;
-    settings.write = write;
     struct pfatfs fs = {0};
-    fs.settings = &settings;
 
     result = pfatfs_mount(&fs);
     if (result != 0) {

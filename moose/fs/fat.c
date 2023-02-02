@@ -3,6 +3,7 @@
 #include <fs/fat.h>
 #include <kmem.h>
 #include <kstdio.h>
+#include <disk.h>
 
 // TODO: Assert
 #define PFATFS_ASSERT(...) (void)(__VA_ARGS__)
@@ -211,7 +212,8 @@ static int pfatfs__is_rootdir(pfatfs_file *file) {
 }
 
 static int pfatfs__read(pfatfs *fs, void *buf, size_t size) {
-    ssize_t result = fs->settings->read(fs->settings->handle, buf, size);
+    (void)fs;
+    ssize_t result = disk_partition_read(buf, size);
     if (result < 0 || (size_t)result != size)
         return -EIO;
 
@@ -219,7 +221,8 @@ static int pfatfs__read(pfatfs *fs, void *buf, size_t size) {
 }
 
 static int pfatfs__write(pfatfs *fs, const void *buf, size_t size) {
-    ssize_t result = fs->settings->write(fs->settings->handle, buf, size);
+    (void)fs;
+    ssize_t result = disk_partition_write(buf, size);
     if (result < 0 || (size_t)result != size)
         return -EIO;
 
@@ -227,7 +230,8 @@ static int pfatfs__write(pfatfs *fs, const void *buf, size_t size) {
 }
 
 static int pfatfs__seek(pfatfs *fs, off_t off, int whence) {
-    ssize_t result = fs->settings->seek(fs->settings->handle, off, whence);
+    (void)fs;
+    ssize_t result = disk_partition_seek(off, whence);
     if (result != 0)
         return -EIO;
 

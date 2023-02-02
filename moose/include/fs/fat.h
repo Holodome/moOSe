@@ -15,15 +15,7 @@ typedef enum { PFATFS_FILE_REG, PFATFS_FILE_DIR } pfatfs_file_type;
 // Hidden file
 #define PFATFS_FATTR_HID 0x8
 
-typedef struct pfatfs_settings {
-    void *handle;
-    ssize_t (*read)(void *handle, void *buf, size_t size);
-    ssize_t (*write)(void *handle, const void *buf, size_t size);
-    ssize_t (*seek)(void *handle, off_t off, int whence);
-} pfatfs_settings;
-
 typedef struct pfatfs {
-    pfatfs_settings *settings;
     pfatfs_kind kind;
 
     union {
