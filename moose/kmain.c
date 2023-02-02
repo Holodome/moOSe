@@ -4,6 +4,7 @@
 #include <arch/amd64/keyboard.h>
 #include <arch/amd64/memory_map.h>
 #include <arch/amd64/physmem.h>
+#include <arch/amd64/rtc.h>
 #include <kmem.h>
 
 #include <disk.h>
@@ -31,7 +32,7 @@ __attribute__((noreturn)) void kmain(void) {
     init_keyboard();
     init_phys_manager();
     disk_init();
-
+    init_rtc();
 
     struct pfatfs fs = {0};
     int result = pfatfs_mount(&fs);
@@ -44,6 +45,12 @@ __attribute__((noreturn)) void kmain(void) {
         }
     }
 
-    for (;;)
-        ;
+    u32 secs = 0;
+    for (;;) {
+        u32 new_secs = get_seconds();
+        if (new_secs != secs) {
+            kprintf("time %u\n", new_secs);
+            secs = new_secs;
+        }
+    }
 }
