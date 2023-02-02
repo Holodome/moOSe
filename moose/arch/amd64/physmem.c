@@ -169,7 +169,7 @@ static void unset_buddies(struct free_area *free_area, u32 buddy,
     }
 }
 
-ssize_t alloc_page_block(void **addr, size_t count) {
+ssize_t alloc_page_block(size_t count) {
     u32 order = log2_32(count);
     if (count != 1u << order)
         order++;
@@ -188,13 +188,9 @@ ssize_t alloc_page_block(void **addr, size_t count) {
         for (u64 bit_idx = 0; bit_idx < area->size; bit_idx++) {
             if (!test_buddies(zone->free_area, order, bit_idx, count)) {
                 set_buddies(zone->free_area, order, bit_idx, count);
-
-                *addr = (void *) zone->base_addr +
-                              bit_idx * (1l << order) * PAGE_SIZE;
-
                 zone->used_page_count += count;
 
-                return 0;
+                return zone->base_addr + bit_idx * (1l << order) * PAGE_SIZE;
             }
         }
     }
@@ -202,7 +198,7 @@ ssize_t alloc_page_block(void **addr, size_t count) {
     return -1;
 }
 
-void free_page_block(void *addr, size_t count) {
+void free_page_block(u64 addr, size_t count) {
     u32 order = log2_32(count);
     if (count != 1u << order)
         order++;
@@ -212,27 +208,26 @@ void free_page_block(void *addr, size_t count) {
 
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];
-        if ((u64) addr >= zone->base_addr &&
-            (u64) addr < zone->base_addr + zone->mem_size) {
+        if (addr >= zone->base_addr &&
+            addr < zone->base_addr + zone->mem_size) {
 
-            u64 bit_idx = ((u64) addr - zone->base_addr) /
+            u64 bit_idx = (addr - zone->base_addr) /
                           ((1l << order) * PAGE_SIZE);
 
             unset_buddies(zone->free_area, order, bit_idx, count);
-
             zone->used_page_count -= count;
         }
     }
 }
 
-ssize_t alloc_page(void **addr) {
-    return alloc_page_block(addr, 1);
+ssize_t alloc_page(void) {
+    return alloc_page_block(1);
 }
 
-ssize_t alloc_pages(void **addr, size_t count) {
-    return alloc_page_block(addr, count);
+ssize_t alloc_pages(size_t count) {
+    return alloc_page_block(count);
 }
 
-void free_page(void *addr) {
+void free_page(u64 addr) {
     free_page_block(addr, 1);
 }
