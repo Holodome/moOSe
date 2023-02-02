@@ -12,7 +12,7 @@ static struct {
     u32 pos;
     u8 block[512];
     u32 current_block;
-} cursor = {};
+} cursor = {.current_block = 0xffffffff};
 
 ssize_t disk_read(void *buf, size_t size) {
     char *dst = buf;
@@ -61,7 +61,7 @@ ssize_t disk_write(const void *buf, size_t size) {
         size -= to_copy;
         total_wrote += to_copy;
 
-        if(ata_pio_write(cursor.block, lba, 1)) {
+        if (ata_pio_write(cursor.block, lba, 1)) {
             return -EIO;
         }
     }

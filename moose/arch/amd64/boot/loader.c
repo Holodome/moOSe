@@ -6,14 +6,9 @@
 #include <../disk.c>
 #include <../fs/fat.c>
 
-struct fatfs_cursor {
-    struct pfatfs *fs;
-    u32 pos;
+#include <mbr.h>
 
-    u8 block[512];
-    u32 current_block;
-    u32 start;
-};
+static u32 start;
 
 static ssize_t read(void *handle __attribute__((unused)), void *buf,
                     size_t size) {
@@ -31,7 +26,7 @@ static ssize_t write(void *handle __attribute__((unused)), const void *buf,
 static ssize_t seek(void *handle __attribute__((unused)), off_t off,
                     int whence) {
     if (whence == SEEK_SET) {
-        off += 40 * 512 + 512;
+        off += start;
     }
     return disk_seek(off, whence);
 }
@@ -39,6 +34,20 @@ static ssize_t seek(void *handle __attribute__((unused)), off_t off,
 extern void print(const char *s);
 
 int load_kernel(void) {
+    struct mbr_partition part_info;
+    int result = disk_seek(MBR_PARTITION_OFFSET, SEEK_SET);
+    if (result != 0) {
+        return result;
+    }
+
+    result = disk_read(&part_info, sizeof(part_info));
+    if (result != sizeof(part_info)) {
+        print("failed to parse mbr");
+        return result;
+    }
+
+    start = part_info.addr * 512;
+
     struct pfatfs_settings settings = {0};
     settings.seek = seek;
     settings.read = read;
@@ -46,7 +55,7 @@ int load_kernel(void) {
     struct pfatfs fs = {0};
     fs.settings = &settings;
 
-    int result = pfatfs_mount(&fs);
+    result = pfatfs_mount(&fs);
     if (result != 0) {
         print("failed to mount");
         return result;
@@ -59,7 +68,7 @@ int load_kernel(void) {
         return result;
     }
 
-    u32 addr = 0x100000;
+    uintptr_t addr = 0x100000;
     u32 iterations = (file.size + 511) / 512;
     for (; iterations--; addr += 512) {
         result = pfatfs_read(&fs, &file, (void *)addr, 512);

@@ -12,7 +12,12 @@ $(OS_IMG): $(D)/arch/amd64/boot/stage1.bin $(D)/arch/amd64/boot/stage2.bin \
 	$(D)/kernel.bin
 	./scripts/generate_mbr_image.py $^ $@
 
-$(D)/kernel.elf: $(KERNEL_OBJS) | $(KERNEL_LINK)
+$(D)/kernel1.elf: $(KERNEL_OBJS) | $(KERNEL_LINK)
 	$(LD) -T $(KERNEL_LINK) -o $@ $^
+
+$(D)/kernel.bin: $(D)/kernel1.bin
+	dd if=/dev/zero of=$@ bs=1K count=720
+	mformat -i $@ -f 720
+	mcopy -i $@ $^ ::
 
 include moose/arch/amd64/boot/Makefile

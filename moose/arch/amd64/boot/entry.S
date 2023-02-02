@@ -90,4 +90,4 @@ die:
 no_cpuid_msg: .asciz "cpu has no cpuid instruction"
 no_long_mode_msg: .asciz "cpu does not support long mode"
 no_a20_msg: .asciz "failed to enable a20 line",
-failed_to_read: .asciz "failed to read disk"
+failed_to_read: .asciz "failed to load kernel from disk"

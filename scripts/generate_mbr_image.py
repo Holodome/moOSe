@@ -9,17 +9,17 @@ boot = open(boot_name, "rb").read()
 stage2 = open(stage2_name, "rb").read()
 kernel = open(kernel_name, "rb").read()
 
-kernel_offset = 1 + (len(stage2) + 511) // 512
+stage2_size = (len(stage2) + 511) // 512
+kernel_offset = 1 + stage2_size
 kernel_size = (len(kernel) + 511) // 512
 
-print(kernel_offset, kernel_size)
 
 def make_part_entry(offset, size):
-    print(offset ,size)
     arr = bytearray([0] * 16)
     arr[0] = 0x80
     arr[8:12] = struct.pack("<I", offset)
     arr[12:16] = struct.pack("<I", size)
+    print(arr)
     return arr
 
 
@@ -31,4 +31,5 @@ with open(out_name, "wb+") as f:
     f.write(stage2)
     f.seek(kernel_offset * 512)
     f.write(kernel)
-    
+    f.seek(0x01b0)
+    f.write(struct.pack("<H", stage2_size))
