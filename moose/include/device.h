@@ -27,7 +27,7 @@ struct device {
 
 int init_blk_device(struct blk_device *blk, struct device *dev);
 
-off_t llseek(struct device *dev, off_t off, int whence);
+off_t lseek(struct device *dev, off_t off, int whence);
 ssize_t read(struct device *dev, void *buf, size_t buf_size);
 ssize_t write(struct device *dev, const void *buf, size_t buf_size);
 int flush(struct device *dev);

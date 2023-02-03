@@ -14,6 +14,8 @@
 #include <tty.h>
 #include <kmalloc.h>
 
+int errno;
+
 __attribute__((noreturn)) void kmain(void) {
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);

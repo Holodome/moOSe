@@ -5,10 +5,6 @@
 
 int disk_init(void);
 
-ssize_t disk_read(void *buf, size_t size);
-ssize_t disk_write(const void *buf, size_t size);
-ssize_t disk_seek(off_t off, int whence);
+extern struct device *disk_dev;
+extern struct device *disk_part_dev;
 
-ssize_t disk_partition_read(void *buf, size_t size);
-ssize_t disk_partition_write(const void *buf, size_t size);
-ssize_t disk_partition_seek(off_t off, int whence);

@@ -231,7 +231,7 @@ static int pfatfs__write(pfatfs *fs, const void *buf, size_t size) {
 
 static int pfatfs__seek(pfatfs *fs, off_t off, int whence) {
     (void)fs;
-    ssize_t result = llseek(fs->device, off, whence);
+    ssize_t result = lseek(fs->device, off, whence);
     if (result != 0)
         return -EIO;
 

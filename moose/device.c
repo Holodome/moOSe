@@ -1,7 +1,7 @@
 #include <device.h>
 #include <errno.h>
 
-off_t llseek(struct device *dev, off_t off, int whence) {
+off_t lseek(struct device *dev, off_t off, int whence) {
     off_t result = dev->ops.llseek(dev, off, whence);
     int rc = 0;
     if (result < 0) {

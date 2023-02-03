@@ -5,119 +5,61 @@
 #include <kmem.h>
 #include <mbr.h>
 
-ssize_t disk_read(void *buf, size_t size);
-ssize_t disk_write(const void *buf, size_t size);
-ssize_t disk_seek(off_t off, int whence);
+static struct device disk_dev_;
+static struct device disk_part_dev_;
+struct device *disk_dev = &disk_dev_;
+struct device *disk_part_dev = &disk_part_dev_;
 
-static struct {
-    u32 pos;
-    u8 block[512];
-    u32 current_block;
-    u32 partition_start;
-    u32 partition_size;
-} cursor = {.current_block = 0xffffffff};
+static u32 partition_start;
+
+static int read_partition_info(void) {
+    if (lseek(disk_dev, MBR_PARTITION_OFFSET, SEEK_SET) < 0) {
+        return -1;
+    }
+
+    struct mbr_partition partition;
+    ssize_t read_result = read(disk_dev, &partition, sizeof(partition));
+    if (read_result < 0 || (size_t)read_result != sizeof(partition)) {
+        return -1;
+    }
+
+    partition_start = partition.addr;
+    return 0;
+}
+
+static int partition_read_block(struct device *dev __attribute__((unused)), size_t idx,
+                      void *buf) {
+    return ata_pio_dev->read_block(dev, idx + partition_start, buf);
+}
+
+static int partition_write_block(struct device *dev __attribute__((unused)), size_t idx,
+                       const void *buf) {
+    return ata_pio_dev->write_block(dev, idx + partition_start, buf);
+}
 
 int disk_init(void) {
-    struct mbr_partition part_info;
-    int result = disk_seek(MBR_PARTITION_OFFSET, SEEK_SET);
-    if (result != 0) {
+    struct blk_device *blk_dev = ata_pio_dev;
+    if (init_blk_device(blk_dev, disk_dev)) {
+        kprintf("Failed to initialize disk\n");
         return -1;
     }
 
-    result = disk_read(&part_info, sizeof(part_info));
-    if (result != sizeof(part_info)) {
+    if (read_partition_info()) {
+        kprintf("Failed to read parition info\n");
         return -1;
     }
 
-    cursor.partition_start = part_info.addr * 512;
-    cursor.partition_size = part_info.size * 512;
+    static struct blk_device partition_blk = {
+        .read_block = partition_read_block,
+        .write_block = partition_write_block};
+    partition_blk.block_size_log = blk_dev->block_size_log;
+    partition_blk.block_size = blk_dev->block_size;
 
-    return 0;
-}
-
-ssize_t disk_read(void *buf, size_t size) {
-    char *dst = buf;
-    while (size) {
-        u32 lba = cursor.pos / 512;
-        u32 offset = cursor.pos % 512;
-        if (cursor.current_block != lba) {
-            if (ata_pio_read(cursor.block, lba, 1)) {
-                return -EIO;
-            }
-            cursor.current_block = lba;
-        }
-
-        size_t to_copy = size;
-        if (offset + to_copy > 512)
-            to_copy = 512 - offset;
-
-        memcpy(dst, cursor.block + offset, to_copy);
-        cursor.pos += to_copy;
-        size -= to_copy;
-        dst += to_copy;
-    }
-
-    return dst - (char *)buf;
-}
-
-ssize_t disk_write(const void *buf, size_t size) {
-    const char *src = buf;
-    size_t total_wrote = 0;
-    while (size) {
-        u32 lba = cursor.pos / 512;
-        u32 offset = cursor.pos % 512;
-        if (cursor.current_block != lba) {
-            if (ata_pio_read(cursor.block, lba, 1)) {
-                return -EIO;
-            }
-            cursor.current_block = lba;
-        }
-
-        size_t to_copy = size;
-        if (offset + to_copy > 512)
-            to_copy = 512 - offset;
-
-        memcpy(cursor.block + offset, src, to_copy);
-        cursor.pos += to_copy;
-        size -= to_copy;
-        total_wrote += to_copy;
-
-        if (ata_pio_write(cursor.block, lba, 1)) {
-            return -EIO;
-        }
-    }
-
-    return total_wrote;
-}
-
-ssize_t disk_seek(off_t off, int whence) {
-    switch (whence) {
-    case SEEK_CUR:
-        cursor.pos = cursor.pos + off;
-        break;
-    case SEEK_END:
-        return -1;
-    case SEEK_SET:
-        cursor.pos = off;
-        break;
-    default:
+    if (init_blk_device(&partition_blk, disk_part_dev)) {
+        kprintf("Failed to initialize partition device\n");
         return -1;
     }
 
     return 0;
 }
 
-ssize_t disk_partition_read(void *buf, size_t size) {
-    return disk_read(buf, size);
-}
-
-ssize_t disk_partition_write(const void *buf, size_t size) {
-    return disk_write(buf, size);
-}
-
-ssize_t disk_partition_seek(off_t off, int whence) {
-    if (whence == SEEK_SET) {
-        off += cursor.partition_start;
-    }
-    return disk_seek(off, whence);
-}

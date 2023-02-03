@@ -23,7 +23,7 @@ static void cache_flush(void) {
         ;
 }
 
-int ata_pio_read(void *buf, u32 lba, u8 sector_count) {
+static int ata_pio_read(void *buf, u32 lba, u8 sector_count) {
     u16 *cursor = buf;
     port_out8(PRIMARY_BUS + DRIVE_HEAD_REG, 0xe0);
     port_out8(PRIMARY_BUS + FEAT_REG, 0);
@@ -62,7 +62,7 @@ int ata_pio_read(void *buf, u32 lba, u8 sector_count) {
     return 0;
 }
 
-int ata_pio_write(const void *buf, u32 lba, u8 sector_count) {
+static int ata_pio_write(const void *buf, u32 lba, u8 sector_count) {
     const u16 *cursor = buf;
     port_out8(PRIMARY_BUS + DRIVE_HEAD_REG, 0xe0);
     port_out8(PRIMARY_BUS + FEAT_REG, 0);
@@ -99,3 +99,19 @@ int ata_pio_write(const void *buf, u32 lba, u8 sector_count) {
 
     return 0;
 }
+
+static int read_block(struct device *dev __attribute__((unused)), size_t idx,
+                      void *buf) {
+    return ata_pio_read(buf, idx, 1);
+}
+
+static int write_block(struct device *dev __attribute__((unused)), size_t idx,
+                       const void *buf) {
+    return ata_pio_write(buf, idx, 1);
+}
+
+static struct blk_device ata_pio_dev_ = {.block_size = 512,
+                                         .block_size_log = 9,
+                                         .read_block = read_block,
+                                         .write_block = write_block};
+struct blk_device *ata_pio_dev = &ata_pio_dev_;
