@@ -1,6 +1,7 @@
 #pragma once
 
 #include <types.h>
+#include <device.h>
 
 enum ata_dev_kind {
     ATA_DEV_PATA,
@@ -9,6 +10,4 @@ enum ata_dev_kind {
     ATA_DEV_SATAPI
 };
 
-#define ATA_PIO_BLKSZ 512
-int ata_pio_read(void *buf, u32 lba, u8 sector_count);
-int ata_pio_write(const void *buf, u32 lba, u8 sector_count);
+extern struct blk_device *ata_pio_dev;

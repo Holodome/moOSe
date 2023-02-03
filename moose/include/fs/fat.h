@@ -16,6 +16,7 @@ typedef enum { PFATFS_FILE_REG, PFATFS_FILE_DIR } pfatfs_file_type;
 #define PFATFS_FATTR_HID 0x8
 
 typedef struct pfatfs {
+    struct device *device;
     pfatfs_kind kind;
 
     union {

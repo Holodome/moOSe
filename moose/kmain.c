@@ -12,6 +12,8 @@
 #include <fs/fat.h>
 #include <kstdio.h>
 #include <tty.h>
+#include <kmalloc.h>
+
 
 __attribute__((noreturn)) void kmain(void) {
     kputs("running moOSe kernel");
@@ -31,10 +33,11 @@ __attribute__((noreturn)) void kmain(void) {
     setup_idt();
     init_keyboard();
     init_phys_manager();
+    init_memory();
     disk_init();
     init_rtc();
 
-    struct pfatfs fs = {0};
+    struct pfatfs fs = {.device = disk_part_dev};
     int result = pfatfs_mount(&fs);
     if (result == 0) {
 

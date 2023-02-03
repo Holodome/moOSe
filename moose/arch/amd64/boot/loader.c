@@ -3,19 +3,25 @@
 // The only difference is in the size of pointer, but we can work around that
 // (usize sized types) and it makes no difference
 #include <../arch/amd64/ata.c>
+#include <../arch/amd64/tty_vga.c>
+#include <../device.c>
 #include <../disk.c>
+#include <../errno.c>
+#include <../kmalloc.c>
 #include <../fs/fat.c>
+#include <../kstdio.c>
 
 #include <mbr.h>
 
 extern void print(const char *s);
 
 int load_kernel(void) {
+    init_memory();
     int result = disk_init();
     if (result)
         return result;
 
-    struct pfatfs fs = {0};
+    struct pfatfs fs = {.device = disk_part_dev};
 
     result = pfatfs_mount(&fs);
     if (result != 0) {
