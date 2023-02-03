@@ -33,9 +33,9 @@ __attribute__((noreturn)) void kmain(void) {
     setup_idt();
     init_keyboard();
     init_phys_manager();
+    init_memory();
     disk_init();
     init_rtc();
-    init_memory();
 
     struct pfatfs fs = {.device = disk_part_dev};
     int result = pfatfs_mount(&fs);
