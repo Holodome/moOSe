@@ -12,6 +12,7 @@
 #include <fs/fat.h>
 #include <kstdio.h>
 #include <tty.h>
+#include <kmalloc.h>
 
 __attribute__((noreturn)) void kmain(void) {
     kputs("running moOSe kernel");
@@ -33,6 +34,7 @@ __attribute__((noreturn)) void kmain(void) {
     init_phys_manager();
     disk_init();
     init_rtc();
+    init_memory();
 
     struct pfatfs fs = {0};
     int result = pfatfs_mount(&fs);
