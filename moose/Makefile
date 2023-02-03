@@ -8,7 +8,7 @@ KERNEL_OBJS := $(D)/arch/amd64/kstart.o $(D)/arch/amd64/long.o \
 	$(D)/arch/amd64/idt.o $(D)/arch/amd64/ata.o $(D)/fs/fat.o \
 	$(D)/arch/amd64/tty_keyboard.o $(D)/disk.o $(D)/arch/amd64/physmem.o \
 	$(D)/disk.o $(D)/arch/amd64/rtc.o $(D)/arch/amd64/processor.o \
-	$(D)/kmalloc.o
+	$(D)/kmalloc.o $(D)/device.o
 
 $(OS_IMG): $(D)/arch/amd64/boot/stage1.bin $(D)/arch/amd64/boot/stage2.bin \
 	$(D)/kernel.bin

@@ -212,7 +212,6 @@ static int pfatfs__is_rootdir(pfatfs_file *file) {
 }
 
 static int pfatfs__read(pfatfs *fs, void *buf, size_t size) {
-    (void)fs;
     ssize_t result = read(fs->device, buf, size);
     if (result < 0 || (size_t)result != size)
         return -EIO;
@@ -221,7 +220,6 @@ static int pfatfs__read(pfatfs *fs, void *buf, size_t size) {
 }
 
 static int pfatfs__write(pfatfs *fs, const void *buf, size_t size) {
-    (void)fs;
     ssize_t result = write(fs->device, buf, size);
     if (result < 0 || (size_t)result != size)
         return -EIO;
@@ -230,7 +228,6 @@ static int pfatfs__write(pfatfs *fs, const void *buf, size_t size) {
 }
 
 static int pfatfs__seek(pfatfs *fs, off_t off, int whence) {
-    (void)fs;
     ssize_t result = lseek(fs->device, off, whence);
     if (result != 0)
         return -EIO;

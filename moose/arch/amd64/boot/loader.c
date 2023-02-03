@@ -4,11 +4,12 @@
 // (usize sized types) and it makes no difference
 #include <../arch/amd64/ata.c>
 #include <../arch/amd64/tty_vga.c>
-#include <../errno.c>
-#include <../disk.c>
-#include <../kstdio.c>
 #include <../device.c>
+#include <../disk.c>
+#include <../errno.c>
+#include <../kmalloc.c>
 #include <../fs/fat.c>
+#include <../kstdio.c>
 
 #include <mbr.h>
 
@@ -19,7 +20,7 @@ int load_kernel(void) {
     if (result)
         return result;
 
-    struct pfatfs fs = {0};
+    struct pfatfs fs = {.device = disk_part_dev};
 
     result = pfatfs_mount(&fs);
     if (result != 0) {
