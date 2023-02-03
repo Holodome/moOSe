@@ -131,4 +131,6 @@ struct page_table {
 
 ssize_t alloc_virtual_page(struct pt_entry *entry);
 void free_virtual_page(struct pt_entry *entry);
+
 void map_virtual_page(u64 phys_addr, u64 virt_addr);
+void load_plm4_table(u64 table_addr);

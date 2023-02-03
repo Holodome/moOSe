@@ -104,7 +104,7 @@ void map_virtual_page(u64 phys_addr, u64 virt_addr) {
         plm4_entry->addr = (u64) pdptr_table;
     }
 
-    struct pdptr_table *pdptr_table = (struct pdptr_table *) plm4_entry->addr;
+    struct pdptr_table *pdptr_table = (struct pdptr_table *) (u64)plm4_entry->addr;
     struct pdpt_entry *pdpt_entry = pdpt_lookup(pdptr_table, virt_addr);
     if (!pdpt_entry->present) {
         struct page_directory *page_directory = alloc_page_directory();
@@ -117,7 +117,7 @@ void map_virtual_page(u64 phys_addr, u64 virt_addr) {
     }
 
     struct page_directory *page_directory =
-        (struct page_directory *) pdpt_entry->addr;
+        (struct page_directory *) (u64)pdpt_entry->addr;
     struct pd_entry *pd_entry = pd_lookup(page_directory, virt_addr);
     if (!pd_entry->present) {
         struct page_table *page_table = alloc_page_table();
@@ -129,9 +129,15 @@ void map_virtual_page(u64 phys_addr, u64 virt_addr) {
         pd_entry->addr = (u64) page_directory;
     }
 
-    struct page_table *page_table = (struct page_table *) pd_entry->addr;
+    struct page_table *page_table = (struct page_table *) (u64)pd_entry->addr;
     struct pt_entry *pt_entry = pt_lookup(page_table, virt_addr);
 
     pt_entry->present = 1;
     pt_entry->addr = phys_addr;
+}
+
+void load_plm4_table(u64 table_addr) {
+    __asm__("mov %0, %%cr3"
+            :
+            : "r" (table_addr));
 }
