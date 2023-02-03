@@ -28,8 +28,6 @@ __attribute__((noreturn)) void kmain(void) {
                 get_memmap_type_str(entry->type), (unsigned)entry->type);
     }
 
-    kprintf("%zu", sizeof(struct pt_entry));
-
     setup_idt();
     init_keyboard();
 
@@ -38,7 +36,7 @@ __attribute__((noreturn)) void kmain(void) {
     ssize_t len = tty_read(buffer, sizeof(buffer));
     kprintf("received %.*s (%d)\n", (int)len, buffer, len);
 
-    init_phys_manager();
+    init_phys_mem();
 
     ssize_t addr;
     if ((addr = alloc_pages(10240000)) < 0)

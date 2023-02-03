@@ -8,7 +8,7 @@
 #define MEMORY_BASE_ADDR (KERNEL_BASE_ADDR + KERNEL_SIZE)
 
 // uses <arch/amd64/memory_map.h>
-int init_phys_manager(void);
+int init_phys_mem(void);
 
 ssize_t alloc_page(void);
 ssize_t alloc_pages(size_t count);
