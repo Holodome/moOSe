@@ -42,8 +42,6 @@ static struct mem_block *best_fit(size_t size) {
         }
     }
 
-    kprintf("best fit result %zu %d\n", best_node->size, best_node->used);
-
     return best_node;
 }
 
@@ -54,9 +52,7 @@ void *kmalloc(size_t size) {
         return NULL;
 
     void *result = node + 1;
-    // split block
     if (node->size > size_to_alloc + sizeof(struct mem_block)) {
-        kprintf("here\n");
         struct mem_block *new_block = (void *)((char *)node + size_to_alloc);
         memset(new_block, 0, sizeof(*new_block));
         new_block->size = node->size - size_to_alloc - sizeof(struct mem_block);
@@ -96,12 +92,4 @@ void kfree(void *mem) {
         block->size += right->size + sizeof(struct mem_block);
         list_remove(&right->list);
     }
-
-#if 0
-    kprintf("memory block list\n");
-    list_for_each(iter, &mem_start) {
-        struct mem_block *node = list_entry(iter, struct mem_block, list);
-        kprintf("block %p %zub %du\n", (void *)node, node->size, node->used);
-    }
-#endif 
 }
