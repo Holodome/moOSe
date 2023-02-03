@@ -3,7 +3,11 @@
 // The only difference is in the size of pointer, but we can work around that
 // (usize sized types) and it makes no difference
 #include <../arch/amd64/ata.c>
+#include <../arch/amd64/tty_vga.c>
+#include <../errno.c>
 #include <../disk.c>
+#include <../kstdio.c>
+#include <../device.c>
 #include <../fs/fat.c>
 
 #include <mbr.h>

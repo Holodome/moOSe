@@ -440,7 +440,7 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
             opts.base = 16;
             opts.force_prefix = 1;
             print_unsigned(buffer, size, &counter,
-                           (unsigned long long int)va_arg(args, void *), &opts);
+                           (uintptr_t)va_arg(args, void *), &opts);
             break;
         default:
             if (counter < size)
