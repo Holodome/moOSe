@@ -19,6 +19,7 @@ static int read_partition_info(void) {
 
     struct mbr_partition partition;
     ssize_t read_result = read(disk_dev, &partition, sizeof(partition));
+    kprintf("read_result %d\n", (int)read_result);
     if (read_result < 0 || (size_t)read_result != sizeof(partition)) {
         return -1;
     }
@@ -43,6 +44,8 @@ int disk_init(void) {
         kprintf("Failed to initialize disk\n");
         return -1;
     }
+
+    kprintf("Initialized disk device\n");
 
     if (read_partition_info()) {
         kprintf("Failed to read parition info\n");

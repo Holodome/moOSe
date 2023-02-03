@@ -16,6 +16,7 @@
 extern void print(const char *s);
 
 int load_kernel(void) {
+    init_memory();
     int result = disk_init();
     if (result)
         return result;

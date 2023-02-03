@@ -76,6 +76,7 @@ static ssize_t buffered_read(struct device *dev, void *dst_, size_t size) {
     while (size) {
         u32 lba = buf->pos / buf->dev->block_size;
         u32 offset = buf->pos % buf->dev->block_size;
+
         if (buf->current_block != lba) {
             if (buf->dev->read_block(dev, lba, buf->buffer)) {
                 return -EIO;
@@ -93,7 +94,7 @@ static ssize_t buffered_read(struct device *dev, void *dst_, size_t size) {
         dst += to_copy;
     }
 
-    return dst - (char *)buf;
+    return dst - (char *)dst_;
 }
 
 static ssize_t buffered_write(struct device *dev, const void *src_,
@@ -120,7 +121,6 @@ static ssize_t buffered_write(struct device *dev, const void *src_,
         size -= to_copy;
         total_wrote += to_copy;
 
-
         if (buf->dev->write_block(dev, lba, buf->buffer)) {
             return -EIO;
         }
@@ -143,15 +143,18 @@ static struct file_operations blk_device_buffered_ops = {
 int init_blk_device(struct blk_device *blk, struct device *dev) {
     struct blk_device_buffered *block = kzalloc(sizeof(*block));
     if (block == NULL) {
+        kprintf("dev alloc fail\n");
         return -1;
     }
 
     block->buffer = kmalloc(blk->block_size);
     if (block->buffer == NULL) {
         kfree(block);
+        kprintf("buffer alloc fail\n");
         return -1;
     }
 
+    block->dev = blk;
     block->current_block = -1;
     dev->name = "block device";
     dev->private_data = block;
