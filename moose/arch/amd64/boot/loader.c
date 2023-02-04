@@ -59,7 +59,7 @@ int load_kernel(void) {
         return result;
     }
 
-    u32 addr = 0x100000;
+    u32 addr = 0x1000000;
     u32 iterations = (file.size + 511) / 512;
     for (; iterations--; addr += 512) {
         result = pfatfs_read(&fs, &file, (void *)addr, 512);

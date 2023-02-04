@@ -25,7 +25,7 @@ start32:
     test %eax, %eax
     jne read_fail
     
-    ljmp $0x8, $0x100000
+    ljmp $0x8, $0x1000000
 check_has_cpuid:
     pushf
     pop %eax
