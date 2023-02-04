@@ -2,19 +2,23 @@ D := moose/arch/amd64/boot
 
 STAGE1_OBJS := $(D)/boot.o
 STAGE2_OBJS := $(D)/entry.o $(D)/print.o $(D)/a20.o $(D)/protected.o \
-			   $(D)/memory.o $(D)/loader.o $(D)/arith64.o
+			   $(D)/memory.o $(D)/loader.o 
 STAGE1_LINK := $(D)/stage1.ld
 STAGE2_LINK := $(D)/stage2.ld
 
 $(D)/stage1.elf: $(STAGE1_OBJS) | $(STAGE1_LINK)
-	$(LD) -m elf_i386 -T $(STAGE1_LINK) -o $@ $^
+	@echo "LD $@"
+	$(Q)$(LD) $(LDFLAGS) -m elf_i386 -T $(STAGE1_LINK) -o $@ $^
 
 $(D)/stage2.elf: $(STAGE2_OBJS) | $(STAGE2_LINK)
-	$(LD) -m elf_i386 -T $(STAGE2_LINK) -o $@ $^
+	@echo "LD $@"
+	$(Q)$(LD) $(LDFLAGS) --gc-sections -m elf_i386 -T $(STAGE2_LINK) -o $@ $^
 
 $(D)/%.o: $(D)/%.S
-	$(CC) $(CFLAGS) -m32 -c -o $@ $<
+	@echo "AS $^"
+	$(Q)$(CC) $(CFLAGS) -m32 -c -o $@ $<
 
 $(D)/%.o: $(D)/%.c
-	$(CC) $(CFLAGS) $(DEPFLAGS) -D__i686__ -m32 -c -o $@ $<
+	@echo "CC $^"
+	$(Q)$(CC) $(CFLAGS) $(DEPFLAGS) -fdata-sections -ffunction-sections -Os -D__i686__ -m32 -c -o $@ $<
 
