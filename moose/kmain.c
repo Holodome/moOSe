@@ -5,6 +5,7 @@
 #include <arch/amd64/memory_map.h>
 #include <arch/amd64/physmem.h>
 #include <arch/amd64/rtc.h>
+#include <arch/amd64/vga.h>
 #include <kmem.h>
 
 #include <disk.h>
@@ -13,7 +14,6 @@
 #include <kstdio.h>
 #include <tty.h>
 #include <kmalloc.h>
-
 
 __attribute__((noreturn)) void kmain(void) {
     kputs("running moOSe kernel");

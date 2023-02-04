@@ -57,11 +57,11 @@ include moose/Makefile
 -include $(shell find . -name "*.d")
 
 %.o: %.c
-	@echo "CC $^"
+	@echo "CC $<"
 	$(Q)$(CC) $(CFLAGS) $(DEPFLAGS) -o $@ $<
 
 %.o: %.S
-	@echo "AS $^"
+	@echo "AS $<"
 	$(Q)$(CC) $(CFLAGS) -o $@ $<
 
 %.bin: %.elf

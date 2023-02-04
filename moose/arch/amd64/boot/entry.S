@@ -15,6 +15,10 @@ start32:
     shr $2, %ecx
     rep stosl
 
+    push $no_cpuid_msg
+    call print
+    
+
     call cls
     call enable_a20
     test %eax, %eax
