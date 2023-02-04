@@ -15,3 +15,6 @@ ssize_t alloc_pages(size_t count);
 
 void free_pages(u64 addr, size_t count);
 void free_page(u64 addr);
+
+ssize_t alloc_region(u64 addr, size_t count);
+void free_region(u64 addr, size_t count);
