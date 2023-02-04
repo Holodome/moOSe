@@ -12,7 +12,7 @@ $(D)/stage1.elf: $(STAGE1_OBJS) | $(STAGE1_LINK)
 
 $(D)/stage2.elf: $(STAGE2_OBJS) | $(STAGE2_LINK)
 	@echo "LD $@"
-	$(Q)$(LD) -m elf_i386 -T $(STAGE2_LINK) -o $@ $^
+	$(Q)$(LD) --gc-sections -m elf_i386 -T $(STAGE2_LINK) -o $@ $^
 
 $(D)/%.o: $(D)/%.S
 	@echo "AS $^"
@@ -20,5 +20,5 @@ $(D)/%.o: $(D)/%.S
 
 $(D)/%.o: $(D)/%.c
 	@echo "CC $^"
-	$(Q)$(CC) $(CFLAGS) $(DEPFLAGS) -Os -D__i686__ -m32 -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEPFLAGS) -fdata-sections -ffunction-sections -Os -D__i686__ -m32 -c -o $@ $<
 
