@@ -20,8 +20,7 @@ void init_memory(void) {
     list_add(&block->list, &mem_start);
 }
 
-static size_t calculate_size_to_alloc(size_t size) {
-    size += sizeof(struct mem_block);
+static size_t align_alloc_size(size_t size) {
     size += ALIGNMENT - 1;
     size &= ~(ALIGNMENT - 1);
     return size;
@@ -33,10 +32,7 @@ static struct mem_block *best_fit(size_t size) {
 
     list_for_each(iter, &mem_start) {
         struct mem_block *node = list_entry(iter, struct mem_block, list);
-        if (!node->used &&
-            (node->size == size ||
-             node->size > size + sizeof(struct mem_block)) &&
-            node->size < best_mem) {
+        if (!node->used && node->size >= size && node->size < best_mem) {
             best_node = node;
             best_mem = node->size;
         }
@@ -46,18 +42,18 @@ static struct mem_block *best_fit(size_t size) {
 }
 
 void *kmalloc(size_t size) {
-    size_t size_to_alloc = calculate_size_to_alloc(size);
-    struct mem_block *node = best_fit(size_to_alloc);
+    size = align_alloc_size(size);
+    struct mem_block *node = best_fit(size);
     if (node == NULL)
         return NULL;
 
     void *result = node + 1;
-    if (node->size > size_to_alloc + sizeof(struct mem_block)) {
-        struct mem_block *new_block = (void *)((char *)node + size_to_alloc);
+    if (node->size > size + sizeof(struct mem_block)) {
+        struct mem_block *new_block = (void *)((char *)result + size);
         memset(new_block, 0, sizeof(*new_block));
-        new_block->size = node->size - size_to_alloc - sizeof(struct mem_block);
+        new_block->size = node->size - size - sizeof(struct mem_block);
         list_add(&new_block->list, &node->list);
-        node->size = size_to_alloc;
+        node->size = size;
     }
 
     node->used = 1;
