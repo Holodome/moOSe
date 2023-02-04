@@ -50,7 +50,7 @@ static struct pdptr_table *alloc_pdptr_table(void) {
     return (struct pdptr_table *) addr;
 }
 
-static struct plm4_table *alloc_plm4_table(void) {
+__attribute__((unused)) static struct plm4_table *alloc_plm4_table(void) {
     ssize_t addr = alloc_page();
     if (addr < 0)
         return NULL;
