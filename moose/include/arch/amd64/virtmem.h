@@ -4,7 +4,7 @@
 
 #define ENTRIES_PER_TABLE 512
 
-#define PAGE_OFFSET(_x) ((_x) & 0xfff)
+#define PAGE_OFFSET(_x) ((_x)&0xfff)
 #define PAGE_TABLE_INDEX(_x) (((_x) >> 12) & 0x1ff)
 #define PAGE_DIRECTORY_INDEX(_x) (((_x) >> 21) & 0x1ff)
 #define PAGE_DIRECTORY_PTRT_INDEX(_x) (((_x) >> 30) & 0x1ff)

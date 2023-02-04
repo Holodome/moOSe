@@ -91,7 +91,7 @@ static inline struct plm4_entry *plm4_lookup(struct plm4_table *table,
 static struct plm4_table *root_table;
 
 void map_virtual_page(u64 phys_addr, u64 virt_addr) {
-    struct plm4_table *plm4_table = root_table;
+    struct plm4_table *plm4_table = get_plm4_table();
 
     struct plm4_entry *plm4_entry = plm4_lookup(plm4_table, virt_addr);
     if (!plm4_entry->present) {
@@ -134,6 +134,21 @@ void map_virtual_page(u64 phys_addr, u64 virt_addr) {
 
     pt_entry->present = 1;
     pt_entry->addr = phys_addr;
+}
+
+struct pt_entry *get_page_entry(u64 virt_addr) {
+    struct plm4_table *plm4_table = get_plm4_table();
+
+    struct plm4_entry *plm4_entry = plm4_lookup(plm4_table, virt_addr);
+    struct page_directory *page_directory =
+        (struct page_directory *) (u64)plm4_entry->addr;
+
+    struct pd_entry *pd_entry = pd_lookup(page_directory, virt_addr);
+    struct page_table *page_table = (struct page_table *) (u64)pd_entry->addr;
+
+    struct pt_entry *entry = pt_lookup(page_table, virt_addr);
+
+    return entry;
 }
 
 void set_plm4_table(struct plm4_table *table) {

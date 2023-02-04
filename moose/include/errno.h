@@ -10,7 +10,7 @@
 #define ENOSPC 4
 
 #define ENAMETOOLONG 5
- 
+
 #define EINVAL 6
 
 #define EISDIR 7
