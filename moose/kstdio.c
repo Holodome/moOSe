@@ -23,9 +23,6 @@ struct printf_opts {
         *(_counter) += 1;                                                      \
     } while (0)
 
-static int isdigit(char c) { return c >= '0' && c <= '9'; }
-static int toupper(int c) { return 'a' <= c && c <= 'z' ? c + 'A' - 'a' : c; };
-
 int snprintf(char *buffer, size_t size, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -511,4 +508,72 @@ void perror(const char *msg) {
     if (msg != NULL && *msg)
         kprintf("%s: ", msg);
     kprintf("%s\n", strerror(errno));
+}
+
+int isdigit(int c) { return c >= '0' && c <= '9'; }
+int toupper(int c) { return 'a' <= c && c <= 'z' ? c + 'A' - 'a' : c; };
+
+char *strpbrk(const char *string, const char *lookup) {
+    char *cursor = (char *)string;
+    char symb;
+
+    while ((symb = *cursor++))
+        for (const char *test = lookup; *test; ++test)
+            if (*test == symb)
+                return cursor - 1;
+
+    return NULL;
+}
+
+size_t strspn(const char *string, const char *lookup) {
+    const char *cursor = string;
+    char symb;
+    int is_valid = 1;
+
+    while ((symb = *cursor++) && is_valid) {
+        is_valid = 0;
+
+        for (const char *test = lookup; *test && !is_valid; ++test)
+            is_valid = *test == symb;
+
+        if (!is_valid)
+            --cursor;
+    }
+
+    return cursor - string - 1;
+}
+
+size_t strcspn(const char *string, const char *lookup) {
+    const char *cursor = string;
+    int is_valid = 1;
+    char symb;
+
+    while ((symb = *cursor++) && is_valid)
+        for (const char *test = lookup; *test && is_valid; ++test)
+            if (symb == *test) {
+                --cursor;
+                is_valid = 0;
+            }
+
+    return cursor - string - 1;
+}
+
+char *strchr(const char *string, int symb) {
+    do {
+        if (*string == symb)
+            return (char *)string;
+    } while (*string++);
+
+    return NULL;
+}
+
+char *strrchr(const char *string, int symb) {
+    const char *result = NULL;
+
+    do {
+        if (*string == symb)
+            result = string;
+    } while (*string++);
+
+    return (char *)result;
 }
