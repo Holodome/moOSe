@@ -94,7 +94,6 @@ static u64 phys_map_base;
 
 int map_virtual_page(u64 phys_addr, u64 virt_addr) {
     struct plm4_table *plm4_table = get_plm4_table();
-
     struct plm4_entry *plm4_entry = plm4_lookup(plm4_table, virt_addr);
 
     if (!plm4_entry->present) {
@@ -109,7 +108,6 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
 
     struct pdptr_table *pdptr_table =
         (struct pdptr_table *) ((u64) plm4_entry->addr << 12);
-
     struct pdpt_entry *pdpt_entry = pdpt_lookup(pdptr_table, virt_addr);
 
     if (!pdpt_entry->present) {
@@ -124,7 +122,6 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
 
     struct page_directory *page_directory =
         (struct page_directory *) ((u64) pdpt_entry->addr << 12);
-
     struct pd_entry *pd_entry = pd_lookup(page_directory, virt_addr);
 
     if (!pd_entry->present) {
@@ -139,7 +136,6 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
 
     struct page_table *page_table =
         (struct page_table *) ((u64)pd_entry->addr << 12);
-
     struct pt_entry *pt_entry = pt_lookup(page_table, virt_addr);
 
     pt_entry->present = 1;
@@ -148,21 +144,32 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
     return 0;
 }
 
+void unmap_virtual_page(u64 virt_addr) {
+    struct pt_entry *entry = get_page_entry(virt_addr);
+    if (entry)
+        entry->present = 0;
+}
+
 struct pt_entry *get_page_entry(u64 virt_addr) {
     struct plm4_table *plm4_table = get_plm4_table();
-
     struct plm4_entry *plm4_entry = plm4_lookup(plm4_table, virt_addr);
     if (plm4_entry == NULL)
         return NULL;
 
-    struct page_directory *page_directory =
-        (struct page_directory *) (u64)plm4_entry->addr;
+    struct pdptr_table *pdptr_table =
+        (struct pdptr_table *) ((u64) plm4_entry->addr << 12);
+    struct pdpt_entry *pdpt_entry = pdpt_lookup(pdptr_table, virt_addr);
+    if (pdpt_entry == NULL)
+        return NULL;
 
+    struct page_directory *page_directory =
+        (struct page_directory *) ((u64) pdpt_entry->addr << 12);
     struct pd_entry *pd_entry = pd_lookup(page_directory, virt_addr);
     if (pd_entry == NULL)
         return NULL;
 
-    struct page_table *page_table = (struct page_table *) (u64)pd_entry->addr;
+    struct page_table *page_table =
+        (struct page_table *) ((u64) pd_entry->addr << 12);
     struct pt_entry *entry = pt_lookup(page_table, virt_addr);
 
     return entry;
@@ -189,7 +196,7 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
         return 1;
 
     // preallocate currently used page tables
-    if (alloc_region(DEFAULT_PAGE_TABLES_BASE, 32) < 0)
+    if (alloc_region(0, 32) < 0)
         return 1;
 
     // phys memory identity map
@@ -215,6 +222,14 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
             }
         }
     }
+
+    for (u64 virt = KERNEL_TEXT_MAPPING_BASE, addr = KERNEL_BASE_ADDR;
+         addr < KERNEL_SIZE;
+         addr += PAGE_SIZE, virt += PAGE_SIZE)
+        if (map_virtual_page(addr, virt))
+            return 1;
+
+    phys_map_base = DIRECT_MEMORY_MAPPING_BASE;
 
     return 0;
 }

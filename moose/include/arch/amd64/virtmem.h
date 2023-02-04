@@ -11,6 +11,7 @@
 #define PAGE_PLM4_INDEX(_x) (((_x) >> 39) & 0x1ff)
 
 #define DIRECT_MEMORY_MAPPING_BASE 0xffff880000000000
+#define KERNEL_TEXT_MAPPING_BASE 0xffffffff80000000
 
 /*
  * Virtual paging entry bits
@@ -116,7 +117,10 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size);
 
 ssize_t alloc_virtual_page(struct pt_entry *entry);
 void free_virtual_page(struct pt_entry *entry);
+struct pt_entry *get_page_entry(u64 virt_addr);
 
 int map_virtual_page(u64 phys_addr, u64 virt_addr);
+void unmap_virtual_page(u64 virt_addr);
+
 void set_plm4_table(struct plm4_table *table);
 struct plm4_table *get_plm4_table(void);
