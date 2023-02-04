@@ -1,9 +1,11 @@
 .global start32
 
+.section ".text.entry"
 .code16
 start:
     call get_memory_map
     jmp switch_to_32bit
+
 .code32
 start32:
     mov $__bss_start, %edi
