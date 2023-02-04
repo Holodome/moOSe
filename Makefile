@@ -31,6 +31,7 @@ TARGET_IMG := moose.img
 all: $(TARGET_IMG)
 
 $(TARGET_IMG): moose/moose.img
+	@echo Wrote target to $@
 	$(Q)cp $< $@
 
 qemu: all
