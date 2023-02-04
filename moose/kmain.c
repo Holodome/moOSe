@@ -52,7 +52,7 @@ __attribute__((noreturn)) void kmain(void) {
     for (;;) {
         u32 new_secs = get_seconds();
         if (new_secs != secs) {
-            kprintf("time %u\n", new_secs);
+            /* kprintf("time %u\n", new_secs); */
             secs = new_secs;
         }
     }

@@ -1,3 +1,4 @@
+ENTRY(load_kernel)
 SECTIONS {
     . = 0x1000;
     .text : {

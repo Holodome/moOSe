@@ -143,14 +143,12 @@ static struct file_operations blk_device_buffered_ops = {
 int init_blk_device(struct blk_device *blk, struct device *dev) {
     struct blk_device_buffered *block = kzalloc(sizeof(*block));
     if (block == NULL) {
-        kprintf("dev alloc fail\n");
         return -1;
     }
 
     block->buffer = kmalloc(blk->block_size);
     if (block->buffer == NULL) {
         kfree(block);
-        kprintf("buffer alloc fail\n");
         return -1;
     }
 

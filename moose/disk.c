@@ -27,27 +27,23 @@ static int read_partition_info(void) {
     return 0;
 }
 
-static int partition_read_block(struct device *dev __attribute__((unused)), size_t idx,
-                      void *buf) {
+static int partition_read_block(struct device *dev __attribute__((unused)),
+                                size_t idx, void *buf) {
     return ata_pio_dev->read_block(dev, idx + partition_start, buf);
 }
 
-static int partition_write_block(struct device *dev __attribute__((unused)), size_t idx,
-                       const void *buf) {
+static int partition_write_block(struct device *dev __attribute__((unused)),
+                                 size_t idx, const void *buf) {
     return ata_pio_dev->write_block(dev, idx + partition_start, buf);
 }
 
 int disk_init(void) {
     struct blk_device *blk_dev = ata_pio_dev;
     if (init_blk_device(blk_dev, disk_dev)) {
-        kprintf("Failed to initialize disk\n");
         return -1;
     }
 
-    kprintf("Initialized disk device\n");
-
     if (read_partition_info()) {
-        kprintf("Failed to read parition info\n");
         return -1;
     }
 
@@ -58,7 +54,6 @@ int disk_init(void) {
     partition_blk.block_size = blk_dev->block_size;
 
     if (init_blk_device(&partition_blk, disk_part_dev)) {
-        kprintf("Failed to initialize partition device\n");
         return -1;
     }
 

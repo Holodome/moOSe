@@ -1,6 +1,5 @@
 #include <kmalloc.h>
 #include <kmem.h>
-#include <kstdio.h>
 
 #define TOTAL_MEM_SIZE 4096
 #define ALIGNMENT 16

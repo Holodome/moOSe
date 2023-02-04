@@ -9,7 +9,6 @@
 #include <../errno.c>
 #include <../kmalloc.c>
 #include <../fs/fat.c>
-#include <../kstdio.c>
 
 #include <mbr.h>
 
