@@ -16,7 +16,7 @@ $(OS_IMG): $(D)/arch/amd64/boot/stage1.bin $(D)/arch/amd64/boot/stage2.bin \
 
 $(D)/kernel1.elf: $(KERNEL_OBJS) | $(KERNEL_LINK)
 	@echo "LD $@"
-	$(Q)$(LD) -T $(KERNEL_LINK) -o $@ $^
+	$(Q)$(LD) $(LDFLAGS) -T $(KERNEL_LINK) -o $@ $^
 
 $(D)/kernel.bin: $(D)/kernel1.bin
 	$(Q)dd if=/dev/zero of=$@ bs=1K count=720 status=none

@@ -8,14 +8,14 @@ STAGE2_LINK := $(D)/stage2.ld
 
 $(D)/stage1.elf: $(STAGE1_OBJS) | $(STAGE1_LINK)
 	@echo "LD $@"
-	$(Q)$(LD) -m elf_i386 -T $(STAGE1_LINK) -o $@ $^
+	$(Q)$(LD) $(LDFLAGS) -m elf_i386 -T $(STAGE1_LINK) -o $@ $^
 
 $(D)/stage2.elf: $(STAGE2_OBJS) | $(STAGE2_LINK)
 	@echo "LD $@"
-	$(Q)$(LD) --gc-sections -m elf_i386 -T $(STAGE2_LINK) -o $@ $^
+	$(Q)$(LD) $(LDFLAGS) --gc-sections -m elf_i386 -T $(STAGE2_LINK) -o $@ $^
 
 $(D)/%.o: $(D)/%.S
-	@echo "AS $^"
+	@echo "AS $^=m"
 	$(Q)$(CC) $(CFLAGS) -m32 -c -o $@ $<
 
 $(D)/%.o: $(D)/%.c

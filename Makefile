@@ -14,8 +14,10 @@ OBJCOPY := $(CROSSCOMPILE)objcopy
 QEMU    := qemu-system-x86_64
 GDB     := x86_64-elf-gdb
 
-DEPFLAGS = -MT $@ -MMD -MP -MF $*.d
+DEPFLAGS = -MT $@ -MMD -MP -MF $(subst .o,.d,$@)
 ASFLAGS = -msyntax=att --warn --fatal-warnings
+LDFLAGS = -Map $(subst .elf,.map,$@)
+
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
 			-Imoose/include -O2 -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing 
 
@@ -42,7 +44,7 @@ format:
 	$(Q)find . -name "*.c" -o -name "*.h" -exec clang-format -i {} \;
 
 clean:
-	$(Q)rm $(shell find . -name "*.o" \
+	$(Q)rm -f $(shell find . -name "*.o" \
 		-o -name "*.d" \
 		-o -name "*.bin" \
 		-o -name "*.elf" \
