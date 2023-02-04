@@ -4,7 +4,7 @@
 
 #define ENTRIES_PER_TABLE 512
 
-#define PAGE_OFFSET (_x) ((_x) & 0xfff)
+#define PAGE_OFFSET(_x) ((_x) & 0xfff)
 #define PAGE_TABLE_INDEX(_x) (((_x) >> 12) & 0x1ff)
 #define PAGE_DIRECTORY_INDEX(_x) (((_x) >> 21) & 0x1ff)
 #define PAGE_DIRECTORY_PTRT_INDEX(_x) (((_x) >> 30) & 0x1ff)
@@ -133,4 +133,5 @@ ssize_t alloc_virtual_page(struct pt_entry *entry);
 void free_virtual_page(struct pt_entry *entry);
 
 void map_virtual_page(u64 phys_addr, u64 virt_addr);
-void load_plm4_table(u64 table_addr);
+void set_plm4_table(struct plm4_table *table);
+struct plm4_table *get_plm4_table(void);

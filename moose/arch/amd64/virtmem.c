@@ -136,8 +136,14 @@ void map_virtual_page(u64 phys_addr, u64 virt_addr) {
     pt_entry->addr = phys_addr;
 }
 
-void load_plm4_table(u64 table_addr) {
-    __asm__("mov %0, %%cr3"
-            :
-            : "r" (table_addr));
+void set_plm4_table(struct plm4_table *table) {
+    if (table == NULL)
+        return;
+
+    root_table = table;
+    __asm__("movq %%rax, %%cr3" : : "a"(root_table));
+}
+
+struct plm4_table *get_plm4_table(void) {
+    return root_table;
 }
