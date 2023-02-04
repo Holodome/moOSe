@@ -44,13 +44,8 @@ struct phys_mem {
 static struct phys_mem phys_mem;
 
 // TODO: memory zones list as argument
-int init_phys_mem(void) {
+int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size) {
     allocator.cursor = 0;
-
-    const struct memmap_entry *memmap;
-    u32 memmap_size;
-
-    get_memmap(&memmap, &memmap_size);
 
     u32 available_count = 0;
     for (u32 i = 0; i < memmap_size; ++i) {

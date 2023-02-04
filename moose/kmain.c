@@ -30,7 +30,11 @@ __attribute__((noreturn)) void kmain(void) {
 
     setup_idt();
     init_keyboard();
-    init_phys_mem();
+    if (init_phys_mem(memmap, memmap_size))
+        kprintf("physical memory init error");
+
+    if (init_virt_mem(memmap, memmap_size))
+        kprintf("virtual memory init error");
 
     for (;;)
         ;
