@@ -239,18 +239,21 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
             return 1;
     }
 
-    memmap = VIRT_ADDR(memmap);
+    asm goto (
+        "ljmp %l[label] + 0xFFFF87FFFF000000" :::: label
+    );
 
-    // phys memory identity unmap
-    for (size_t i = 0; i < memmap_size; i++) {
-        if (memmap[i].type == MULTIBOOT_MEMORY_AVAILABLE) {
-            for (u64 addr = memmap[i].base;
-                 addr < memmap[i].base + memmap[i].length;
-                 addr += PAGE_SIZE) {
-                unmap_virtual_page(addr);
-            }
-        }
-    }
+label:
+//    // phys memory identity unmap
+//    for (size_t i = 0; i < memmap_size; i++) {
+//        if (memmap[i].type == MULTIBOOT_MEMORY_AVAILABLE) {
+//            for (u64 addr = memmap[i].base;
+//                 addr < memmap[i].base + memmap[i].length;
+//                 addr += PAGE_SIZE) {
+//                unmap_virtual_page(addr);
+//            }
+//        }
+//    }
 
     return 0;
 }
