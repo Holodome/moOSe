@@ -13,7 +13,7 @@ export CC LD AS OBJCOPY
 DEPFLAGS = -MT $@ -MMD -MP -MF $*.d
 ASFLAGS = -msyntax=att --warn --fatal-warnings
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
-			-Imoose/include -O2 -fPIC -mno-sse -mno-sse2 -mno-sse3 $(DEPFLAGS) -fno-strict-aliasing
+			-Imoose/include -O2 -fno-pie -mno-sse -mno-sse2 -mno-sse3 $(DEPFLAGS) -fno-strict-aliasing
 
 ifneq ($(DEBUG),)
 	ASFLAGS += -g

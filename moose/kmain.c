@@ -36,8 +36,6 @@ __attribute__((noreturn)) void kmain(void) {
     if (init_virt_mem(memmap, memmap_size))
         kprintf("virtual memory init error");
 
-    kprintf("%#llx", DIRECT_MEMMAP_BASE - 0x1000000);
-
     for (;;)
         ;
 }

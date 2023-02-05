@@ -4,13 +4,6 @@
 .code32
 .global enable_long_mode
 
-// to map first 20mb of memory (16 mb for page tables, 4mb for kernel)
-// plm4, pdpt, pd and 10 page tables
-#define PAGE_SIZE 4096
-#define PAGE_TABLE_COUNT 10
-#define ROOT_PAGE_TABLE_SIZE (PAGE_SIZE * PAGE_TABLE_COUNT + PAGE_SIZE * 3)
-#define PAGE_ENTRY_COUNT (512 * PAGE_TABLE_COUNT)
-
 enable_long_mode:
     /* first set up paging */
 
@@ -18,33 +11,44 @@ enable_long_mode:
     mov $0x1000, %edi
     mov %edi, %cr3
     xor %eax, %eax
-    mov $ROOT_PAGE_TABLE_SIZE, %ecx
+    mov $8192, %ecx
     rep stosl
     mov %cr3, %edi
 
-    /* set up plm4, pdpt, pd */
+    /* set up page tables */
     movl $0x2003, (%edi)
     add $0x1000, %edi
     movl $0x3003, (%edi)
     add $0x1000, %edi
+    movl $0x4003, (%edi)
+    add $0x1000, %edi
 
-    /* set up page tables */
-    movl $0x4003, %ebx
-    mov $PAGE_TABLE_COUNT, %ecx
-set_table:
-    movl %ebx, (%edi)
-    add $8, %edi
-    add $0x1000, %ebx
-    loop set_table
-    /* set up page table entries with identity mapping */
+    /* set up low page table entries with identity mapping */
     mov $3, %ebx
-    mov $PAGE_ENTRY_COUNT, %ecx
-    mov $0x4000, %edi
-set_entry:
+    mov $512, %ecx
+set_low_entry:
     movl %ebx, (%edi)
     add $0x1000, %ebx
     add $8, %edi
-    loop set_entry
+    loop set_low_entry
+
+    /* (0xffff880000000000 >> 39) & 0x1ff) = 272 */
+    movl $(0x1000 + 272*8), %edi
+    movl $0x5003, (%edi)
+    movl $0x5000, %edi
+    movl $0x6003, (%edi)
+    add $0x1000, %edi
+    movl $0x7003, (%edi)
+    add $0x1000, %edi
+
+    /* set up high page table entries */
+    mov $3, %ebx
+    mov $512, %ecx
+set_high_entry:
+    movl %ebx, (%edi)
+    add $0x1000, %ebx
+    add $8, %edi
+    loop set_high_entry
 
     mov %cr4, %eax
     or $1<<5, %eax

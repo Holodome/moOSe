@@ -4,8 +4,8 @@
 #include <arch/amd64/memory_map.h>
 
 #define PAGE_SIZE 4096
-#define KERNEL_BASE_ADDR 0x1000000
-#define KERNEL_SIZE (4 * 1024 * 1024)
+#define KERNEL_BASE_ADDR 0x100000
+#define KERNEL_SIZE (1024 * 1024)
 #define DEFAULT_PAGE_TABLES_BASE 0x1000
 
 int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size);

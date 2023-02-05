@@ -201,7 +201,7 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
         return 1;
 
     // preallocate currently used page tables
-    if (alloc_region(0, 32) < 0)
+    if (alloc_region(0, 8) < 0)
         return 1;
 
     // phys memory identity map
@@ -228,17 +228,18 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
 
     phys_memory_base = DIRECT_MEMMAP_BASE;
 
+    // map kernel region
     for (u64 addr = 0; addr < KERNEL_SIZE; addr += PAGE_SIZE) {
         if (map_virtual_page(addr + KERNEL_BASE_ADDR,
                              addr + KERNEL_TEXT_MAPPING_BASE))
             return 1;
     }
 
-    asm volatile("push %rax\n"
-                 "movabs $0xFFFF87FFFF000000 + my_label, %rax\n"
-                 "jmp *%rax\n"
-                 "my_label:\n"
-                 "pop %rax\n");
+//    asm volatile("push %rax\n"
+//                 "movabs $0xFFFF87FFFF000000 + my_label, %rax\n"
+//                 "jmp *%rax\n"
+//                 "my_label:\n"
+//                 "pop %rax\n");
 
     //    // phys memory identity unmap
     //    for (size_t i = 0; i < memmap_size; i++) {
