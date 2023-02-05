@@ -44,13 +44,8 @@ struct phys_mem {
 static struct phys_mem phys_mem;
 
 // TODO: memory zones list as argument
-int init_phys_manager(void) {
+int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size) {
     allocator.cursor = 0;
-
-    const struct memmap_entry *memmap;
-    u32 memmap_size;
-
-    get_memmap(&memmap, &memmap_size);
 
     u32 available_count = 0;
     for (u32 i = 0; i < memmap_size; ++i) {
@@ -199,6 +194,9 @@ ssize_t alloc_pages(size_t count) {
 }
 
 void free_pages(u64 addr, size_t count) {
+    if (addr % PAGE_SIZE != 0)
+        return;
+
     u32 order = log2_32(count);
     if (count != 1u << order)
         order++;
@@ -226,4 +224,40 @@ ssize_t alloc_page(void) {
 
 void free_page(u64 addr) {
     free_pages(addr, 1);
+}
+
+ssize_t alloc_region(u64 addr, size_t count) {
+    // base addr must be aligned by page size
+    if (addr % PAGE_SIZE != 0)
+        return -1;
+
+    u32 order = log2_32(count);
+    if (count != 1u << order)
+        order++;
+
+    if (order >= BUDDY_MAX_ORDER)
+        order = BUDDY_MAX_ORDER - 1;
+
+    for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
+        struct mem_zone *zone = &phys_mem.zones[zone_idx];
+
+        if (addr >= zone->base_addr &&
+            addr < zone->base_addr + zone->mem_size &&
+            zone->base_addr + zone->mem_size > addr + count * PAGE_SIZE) {
+            u64 bit_idx = (addr - zone->base_addr) /
+                          ((1l << order) * PAGE_SIZE);
+            if (!test_buddies(zone->free_area, order, bit_idx, count)) {
+                set_buddies(zone->free_area, order, bit_idx, count);
+                zone->used_page_count += count;
+
+                return addr;
+            }
+        }
+    }
+
+    return -1;
+}
+
+void free_region(u64 addr, size_t count) {
+    free_pages(addr, count);
 }

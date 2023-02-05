@@ -5,6 +5,7 @@
 #include <arch/amd64/memory_map.h>
 #include <arch/amd64/physmem.h>
 #include <arch/amd64/rtc.h>
+#include <arch/amd64/virtmem.h>
 #include <kmem.h>
 
 #include <disk.h>
@@ -32,7 +33,12 @@ __attribute__((noreturn)) void kmain(void) {
 
     setup_idt();
     init_keyboard();
-    init_phys_manager();
+    if (init_phys_mem(memmap, memmap_size))
+        kprintf("physical memory init error");
+
+    if (init_virt_mem(memmap, memmap_size))
+        kprintf("virtual memory init error");
+
     init_memory();
     disk_init();
     init_rtc();

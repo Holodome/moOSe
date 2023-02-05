@@ -8,10 +8,10 @@ enable_long_mode:
     /* first set up paging */
 
     /* clear the page tables */
-    mov $0x1000, %edi   
+    mov $0x1000, %edi
     mov %edi, %cr3
     xor %eax, %eax
-    mov $4096, %ecx
+    mov $8192, %ecx
     rep stosl
     mov %cr3, %edi
 
@@ -23,13 +23,32 @@ enable_long_mode:
     movl $0x4003, (%edi)
     add $0x1000, %edi
 
+    /* set up low page table entries with identity mapping */
     mov $3, %ebx
     mov $512, %ecx
-set_entry:
+set_low_entry:
     movl %ebx, (%edi)
     add $0x1000, %ebx
     add $8, %edi
-    loop set_entry
+    loop set_low_entry
+
+    /* (0xffff880000000000 >> 39) & 0x1ff) = 272 */
+    movl $(0x1000 + 272*8), %edi
+    movl $0x5003, (%edi)
+    movl $0x5000, %edi
+    movl $0x6003, (%edi)
+    add $0x1000, %edi
+    movl $0x7003, (%edi)
+    add $0x1000, %edi
+
+    /* set up high page table entries */
+    mov $3, %ebx
+    mov $512, %ecx
+set_high_entry:
+    movl %ebx, (%edi)
+    add $0x1000, %ebx
+    add $8, %edi
+    loop set_high_entry
 
     mov %cr4, %eax
     or $1<<5, %eax

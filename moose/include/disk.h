@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <kstdio.h>
+#include <types.h>
 
 int disk_init(void);
 

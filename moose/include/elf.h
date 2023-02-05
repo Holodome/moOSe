@@ -53,5 +53,3 @@ struct elf64_shdr {
 } __attribute__((packed));
 
 static_assert(sizeof(struct elf64_shdr) == 0x40);
-
-
