@@ -10,7 +10,7 @@
 #define PAGE_DIRECTORY_PTRT_INDEX(_x) (((_x) >> 30) & 0x1ff)
 #define PAGE_PLM4_INDEX(_x) (((_x) >> 39) & 0x1ff)
 
-#define DIRECT_MEMORY_MAPPING_BASE 0xffff880000000000
+#define DIRECT_MEMMAP_BASE 0xffff880000000000
 #define KERNEL_TEXT_MAPPING_BASE 0xffffffff80000000
 
 /*

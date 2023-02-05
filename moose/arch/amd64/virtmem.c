@@ -92,6 +92,7 @@ static inline struct pml4_entry *pml4_lookup(struct pml4_table *table,
 static struct pml4_table *root_table;
 static u64 phys_memory_base;
 #define VIRT_ADDR(_x) (((void *)(_x) + phys_memory_base))
+#define PHYS_ADDR(_x) (((void *)(_x) - phys_memory_base))
 
 int map_virtual_page(u64 phys_addr, u64 virt_addr) {
     struct pml4_table *pml4_table = get_pml4_table();
@@ -147,7 +148,6 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
 
 void unmap_virtual_page(u64 virt_addr) {
     struct pt_entry *entry = get_page_entry(virt_addr);
-    kprintf("%p\n", entry);
     if (entry) {
         entry->addr = 0;
         entry->present = 0;
@@ -225,13 +225,13 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
             for (u64 addr = memmap[i].base;
                  addr < memmap[i].base + memmap[i].length;
                  addr += PAGE_SIZE) {
-                if (map_virtual_page(addr, DIRECT_MEMORY_MAPPING_BASE + addr))
+                if (map_virtual_page(addr, DIRECT_MEMMAP_BASE + addr))
                     return 1;
             }
         }
     }
 
-    phys_memory_base = DIRECT_MEMORY_MAPPING_BASE;
+    phys_memory_base = DIRECT_MEMMAP_BASE;
 
     for (u64 addr = 0; addr < KERNEL_SIZE; addr += PAGE_SIZE) {
         if (map_virtual_page(addr + KERNEL_BASE_ADDR,
@@ -239,17 +239,18 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
             return 1;
     }
 
-//    // phys memory identity unmap
-//    for (size_t i = 0; i < memmap_size; i++) {
-//        if (memmap[i].type == MULTIBOOT_MEMORY_AVAILABLE) {
-//            for (u64 addr = memmap[i].base;
-//                 addr < memmap[i].base + memmap[i].length;
-//                 addr += PAGE_SIZE) {
-//                kprintf("%#llx\n", addr);
-//                unmap_virtual_page(addr);
-//            }
-//        }
-//    }
+    memmap = VIRT_ADDR(memmap);
+
+    // phys memory identity unmap
+    for (size_t i = 0; i < memmap_size; i++) {
+        if (memmap[i].type == MULTIBOOT_MEMORY_AVAILABLE) {
+            for (u64 addr = memmap[i].base;
+                 addr < memmap[i].base + memmap[i].length;
+                 addr += PAGE_SIZE) {
+                unmap_virtual_page(addr);
+            }
+        }
+    }
 
     return 0;
 }
