@@ -51,14 +51,14 @@ static struct pdptr_table *alloc_pdptr_table(void) {
     return (struct pdptr_table *) addr;
 }
 
-__attribute__((unused)) static struct plm4_table *alloc_plm4_table(void) {
+__attribute__((unused)) static struct pml4_table *alloc_pml4_table(void) {
     ssize_t addr = alloc_page();
     if (addr < 0)
         return NULL;
 
     memset((void *) addr, 0, sizeof(struct pdptr_table));
 
-    return (struct plm4_table *) addr;
+    return (struct pml4_table *) addr;
 }
 
 static inline struct pt_entry *pt_lookup(struct page_table *table,
@@ -82,32 +82,33 @@ static inline struct pdpt_entry *pdpt_lookup(struct pdptr_table *table,
     return NULL;
 }
 
-static inline struct plm4_entry *plm4_lookup(struct plm4_table *table,
+static inline struct pml4_entry *pml4_lookup(struct pml4_table *table,
                                              u64 virt_addr) {
     if (table)
         return &table->entries[PAGE_PLM4_INDEX(virt_addr)];
     return NULL;
 }
 
-static struct plm4_table *root_table;
-static u64 phys_map_base;
+static struct pml4_table *root_table;
+static u64 phys_memory_base;
+#define VIRT_ADDR(_x) (((void *)(_x) + phys_memory_base))
 
 int map_virtual_page(u64 phys_addr, u64 virt_addr) {
-    struct plm4_table *plm4_table = get_plm4_table();
-    struct plm4_entry *plm4_entry = plm4_lookup(plm4_table, virt_addr);
+    struct pml4_table *pml4_table = get_pml4_table();
+    struct pml4_entry *pml4_entry = pml4_lookup(pml4_table, virt_addr);
 
-    if (!plm4_entry->present) {
+    if (!pml4_entry->present) {
         struct pdptr_table *pdptr_table = alloc_pdptr_table();
         if (pdptr_table == NULL)
             return 1;
 
-        plm4_entry->present = 1;
-        plm4_entry->rw = 1;
-        plm4_entry->addr = (u64) pdptr_table >> 12;
+        pml4_entry->present = 1;
+        pml4_entry->rw = 1;
+        pml4_entry->addr = (u64) pdptr_table >> 12;
     }
 
     struct pdptr_table *pdptr_table =
-        (struct pdptr_table *) ((u64) plm4_entry->addr << 12);
+        (struct pdptr_table *) ((u64) pml4_entry->addr << 12);
     struct pdpt_entry *pdpt_entry = pdpt_lookup(pdptr_table, virt_addr);
 
     if (!pdpt_entry->present) {
@@ -146,36 +147,43 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
 
 void unmap_virtual_page(u64 virt_addr) {
     struct pt_entry *entry = get_page_entry(virt_addr);
-    if (entry)
+    kprintf("%p\n", entry);
+    if (entry) {
+        entry->addr = 0;
         entry->present = 0;
+        flush_tlb_entry(virt_addr);
+    }
+}
+
+void flush_tlb_entry(u64 virt_addr) {
+    __asm__("cli; invlpg (%0); sti" : : "r"(virt_addr));
 }
 
 struct pt_entry *get_page_entry(u64 virt_addr) {
-    struct plm4_table *plm4_table = get_plm4_table();
-    struct plm4_entry *plm4_entry = plm4_lookup(plm4_table, virt_addr);
-    if (plm4_entry == NULL)
+    struct pml4_table *pml4_table = VIRT_ADDR(get_pml4_table());
+    struct pml4_entry *pml4_entry = pml4_lookup(pml4_table, virt_addr);
+    if (pml4_entry == NULL)
         return NULL;
 
     struct pdptr_table *pdptr_table =
-        (struct pdptr_table *) ((u64) plm4_entry->addr << 12);
+        VIRT_ADDR((u64) pml4_entry->addr << 12);
     struct pdpt_entry *pdpt_entry = pdpt_lookup(pdptr_table, virt_addr);
     if (pdpt_entry == NULL)
         return NULL;
 
     struct page_directory *page_directory =
-        (struct page_directory *) ((u64) pdpt_entry->addr << 12);
+        VIRT_ADDR((u64) pdpt_entry->addr << 12);
     struct pd_entry *pd_entry = pd_lookup(page_directory, virt_addr);
     if (pd_entry == NULL)
         return NULL;
 
-    struct page_table *page_table =
-        (struct page_table *) ((u64) pd_entry->addr << 12);
+    struct page_table *page_table = VIRT_ADDR((u64) pd_entry->addr << 12);
     struct pt_entry *entry = pt_lookup(page_table, virt_addr);
 
     return entry;
 }
 
-void set_plm4_table(struct plm4_table *table) {
+void set_pml4_table(struct pml4_table *table) {
     if (table == NULL)
         return;
 
@@ -183,13 +191,13 @@ void set_plm4_table(struct plm4_table *table) {
     __asm__("movq %%rax, %%cr3" : : "a"(root_table));
 }
 
-struct plm4_table *get_plm4_table(void) {
+struct pml4_table *get_pml4_table(void) {
     return root_table;
 }
 
 int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
-    root_table = (struct plm4_table *) DEFAULT_PAGE_TABLES_BASE;
-    phys_map_base = 0x0;
+    root_table = (struct pml4_table *) DEFAULT_PAGE_TABLES_BASE;
+    phys_memory_base = 0x0;
 
     // preallocate kernel physical space
     if (alloc_region(KERNEL_BASE_ADDR, KERNEL_SIZE / PAGE_SIZE) < 0)
@@ -223,13 +231,25 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
         }
     }
 
-    for (u64 virt = KERNEL_TEXT_MAPPING_BASE, addr = KERNEL_BASE_ADDR;
-         addr < KERNEL_SIZE;
-         addr += PAGE_SIZE, virt += PAGE_SIZE)
-        if (map_virtual_page(addr, virt))
-            return 1;
+    phys_memory_base = DIRECT_MEMORY_MAPPING_BASE;
 
-    phys_map_base = DIRECT_MEMORY_MAPPING_BASE;
+    for (u64 addr = 0; addr < KERNEL_SIZE; addr += PAGE_SIZE) {
+        if (map_virtual_page(addr + KERNEL_BASE_ADDR,
+                             addr + KERNEL_TEXT_MAPPING_BASE))
+            return 1;
+    }
+
+//    // phys memory identity unmap
+//    for (size_t i = 0; i < memmap_size; i++) {
+//        if (memmap[i].type == MULTIBOOT_MEMORY_AVAILABLE) {
+//            for (u64 addr = memmap[i].base;
+//                 addr < memmap[i].base + memmap[i].length;
+//                 addr += PAGE_SIZE) {
+//                kprintf("%#llx\n", addr);
+//                unmap_virtual_page(addr);
+//            }
+//        }
+//    }
 
     return 0;
 }

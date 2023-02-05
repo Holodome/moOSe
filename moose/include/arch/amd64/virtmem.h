@@ -27,7 +27,7 @@
  * xd - execute disable
  */
 
-struct plm4_entry {
+struct pml4_entry {
     u64 present : 1;
     u64 rw : 1;
     u64 us : 1;
@@ -42,7 +42,7 @@ struct plm4_entry {
     u64 avl3 : 11;
     u64 xd : 1;
 };
-static_assert(sizeof(struct plm4_entry) == 8);
+static_assert(sizeof(struct pml4_entry) == 8);
 
 struct pdpt_entry {
     u64 present : 1;
@@ -97,8 +97,8 @@ struct pt_entry {
 };
 static_assert(sizeof(struct pt_entry) == 8);
 
-struct plm4_table {
-    struct plm4_entry entries[ENTRIES_PER_TABLE];
+struct pml4_table {
+    struct pml4_entry entries[ENTRIES_PER_TABLE];
 };
 
 struct pdptr_table {
@@ -122,5 +122,6 @@ struct pt_entry *get_page_entry(u64 virt_addr);
 int map_virtual_page(u64 phys_addr, u64 virt_addr);
 void unmap_virtual_page(u64 virt_addr);
 
-void set_plm4_table(struct plm4_table *table);
-struct plm4_table *get_plm4_table(void);
+void set_pml4_table(struct pml4_table *table);
+struct pml4_table *get_pml4_table(void);
+void flush_tlb_entry(u64 virt_addr);

@@ -13,7 +13,7 @@ export CC LD AS OBJCOPY
 DEPFLAGS = -MT $@ -MMD -MP -MF $*.d
 ASFLAGS = -msyntax=att --warn --fatal-warnings
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
-			-Imoose/include -O2 -mno-sse -mno-sse2 -mno-sse3 $(DEPFLAGS) -fno-strict-aliasing
+			-Imoose/include -O2 -fPIC -mno-sse -mno-sse2 -mno-sse3 $(DEPFLAGS) -fno-strict-aliasing
 
 ifneq ($(DEBUG),)
 	ASFLAGS += -g
@@ -30,7 +30,7 @@ $(TARGET_IMG): moose/moose.img
 	cp $< $@
 
 qemu: all
-	$(QEMU) -d guest_errors -hda $(TARGET_IMG)
+	$(QEMU) -d guest_errors -monitor stdio -hda $(TARGET_IMG)
 
 qemu-debug: all
 	$(QEMU) -s -S -fda moose.img -d guest_errors & 
