@@ -20,5 +20,9 @@ $(D)/%.o: $(D)/%.S
 
 $(D)/%.o: $(D)/%.c
 	@echo "CC $^"
-	$(Q)$(CC) $(CFLAGS) $(DEPFLAGS) -fdata-sections -ffunction-sections -Os -D__i686__ -m32 -c -o $@ $<
+	$(Q)$(CC) $(filter-out -mcmodel=large, $(CFLAGS)) $(DEPFLAGS) -fdata-sections -ffunction-sections -Os -D__i686__ -m32 -c -o $@ $<
+
+$(D)/%.o: $(D)/%.S
+	@echo "CC $^"
+	$(Q)$(CC) $(DEPFLAGS) -Imoose/include -D__i686__ -m32 -c -o $@ $<
 

@@ -11,12 +11,20 @@
 #include <disk.h>
 #include <errno.h>
 #include <fs/fat.h>
+#include <kmalloc.h>
 #include <kstdio.h>
 #include <tty.h>
-#include <kmalloc.h>
 
+static void zero_bss(void) {
+    extern u64 *__bss_start;
+    extern u64 *__bss_end;
+    u64 *p = __bss_start;
+    while (p != __bss_end)
+        *p++ = 0;
+}
 
 __attribute__((noreturn)) void kmain(void) {
+    zero_bss();
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 

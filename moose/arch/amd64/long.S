@@ -118,4 +118,4 @@ amd64:
     mov %ax, %fs
     mov %ax, %gs
     mov %ax, %ss
-    jmp kstart64
+    jmp kboot64

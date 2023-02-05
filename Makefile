@@ -19,7 +19,8 @@ ASFLAGS = -msyntax=att --warn --fatal-warnings
 LDFLAGS = -Map $(subst .elf,.map,$@)
 
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
-			-Imoose/include -O2 -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing
+			-Imoose/include -O2 -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
+			-mcmodel=large
 
 ifneq ($(DEBUG),)
 	ASFLAGS += -g
@@ -50,6 +51,7 @@ clean:
 		-o -name "*.bin" \
 		-o -name "*.elf" \
 		-o -name "*.i" \
+		-o -name "*.map" \
 		-o -name "*.img")
 
 
@@ -62,7 +64,7 @@ include moose/Makefile
 
 %.o: %.S
 	@echo "AS $^"
-	$(Q)$(CC) $(CFLAGS) -o $@ $<
+	$(Q)$(CC) $(CFLAGS) -Wa,--64 -o $@ $<
 
 %.bin: %.elf
 	@echo "OBJCOPY $@"
