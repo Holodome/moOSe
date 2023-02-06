@@ -1,3 +1,5 @@
+#include <kernel.h>
+
 ENTRY(kmain)
 SECTIONS {
     /* kernel virtual base + kernel offset in physical + kboot.S */
