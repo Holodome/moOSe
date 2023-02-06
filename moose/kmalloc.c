@@ -2,7 +2,7 @@
 #include <kmem.h>
 #include <bitops.h>
 
-#define TOTAL_MEM_SIZE 4096
+#define TOTAL_MEM_SIZE (4096 * 8)
 #define ALIGNMENT 16
 
 struct mem_block {

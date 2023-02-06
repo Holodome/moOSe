@@ -79,6 +79,8 @@
 #define bit_scan_reverse(_val)                                                 \
     (((sizeof(_val) << 3) - count_leading_zeroes_safe(_val)))
 
+#define __log2(_val) ((CHAR_BIT * sizeof(_val)) - count_leading_zeroes(_val) - 1)
+
 #define DIV_ROUND_UP(_a, _b) (((_a) + (_b)-1) / (_b))
 #define BITS_TO_BITMAP(_bits) DIV_ROUND_UP(_bits, sizeof(long) * CHAR_BIT)
 
@@ -102,6 +104,6 @@ static inline size_t align_po2(size_t val, size_t align) {
 }
 
 static inline size_t bits_to_bitmap(size_t bits) {
-    align_po2(bits, CHAR_BIT * sizeof(u64));
-    return bits / CHAR_BIT;
+    bits = align_po2(bits, CHAR_BIT * sizeof(u64));
+    return bits / (CHAR_BIT * sizeof(u64));
 }

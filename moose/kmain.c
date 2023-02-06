@@ -67,10 +67,10 @@ __attribute__((noreturn)) void kmain(void) {
     }
 
     if (init_phys_mem(ranges, usable_region_count))
-        kprintf("physical memory init error");
+        kprintf("physical memory init error\n");
 
     if (init_virt_mem(memmap, memmap_size))
-        kprintf("virtual memory init error");
+        kprintf("virtual memory init error\n");
 
     disk_init();
     init_rtc();
