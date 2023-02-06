@@ -2,6 +2,7 @@
 #include <arch/amd64/virtmem.h>
 #include <kmem.h>
 #include <kstdio.h>
+#include <kernel.h>
 
 ssize_t alloc_virtual_page(struct pt_entry *entry) {
     ssize_t addr = alloc_page();
@@ -26,7 +27,7 @@ static struct page_table *alloc_page_table(void) {
     if (addr < 0)
         return NULL;
 
-    memset(VIRT_ADDR((void *)addr), 0, sizeof(struct page_table));
+    memset(FIXUP_PTR((void *)addr), 0, sizeof(struct page_table));
 
     return (struct page_table *)addr;
 }
@@ -36,7 +37,7 @@ static struct page_directory *alloc_page_directory(void) {
     if (addr < 0)
         return NULL;
 
-    memset(VIRT_ADDR((void *)addr), 0, sizeof(struct page_directory));
+    memset(FIXUP_PTR((void *)addr), 0, sizeof(struct page_directory));
 
     return (struct page_directory *)addr;
 }
@@ -46,19 +47,9 @@ static struct pdptr_table *alloc_pdptr_table(void) {
     if (addr < 0)
         return NULL;
 
-    memset(VIRT_ADDR((void *)addr), 0, sizeof(struct pdptr_table));
+    memset(FIXUP_PTR((void *)addr), 0, sizeof(struct pdptr_table));
 
     return (struct pdptr_table *)addr;
-}
-
-__attribute__((unused)) static struct pml4_table *alloc_pml4_table(void) {
-    ssize_t addr = alloc_page();
-    if (addr < 0)
-        return NULL;
-
-    memset(VIRT_ADDR((void *)addr), 0, sizeof(struct pdptr_table));
-
-    return (struct pml4_table *)addr;
 }
 
 static inline struct pt_entry *pt_lookup(struct page_table *table,
@@ -92,7 +83,7 @@ static inline struct pml4_entry *pml4_lookup(struct pml4_table *table,
 static struct pml4_table *root_table;
 
 int map_virtual_page(u64 phys_addr, u64 virt_addr) {
-    struct pml4_table *pml4_table = VIRT_ADDR(get_pml4_table());
+    struct pml4_table *pml4_table = FIXUP_PTR(get_pml4_table());
     struct pml4_entry *pml4_entry = pml4_lookup(pml4_table, virt_addr);
 
     if (!pml4_entry->present) {
@@ -105,7 +96,7 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
         pml4_entry->addr = (u64)pdptr_table >> 12;
     }
 
-    struct pdptr_table *pdptr_table = VIRT_ADDR((u64)pml4_entry->addr << 12);
+    struct pdptr_table *pdptr_table = FIXUP_PTR((u64)pml4_entry->addr << 12);
     struct pdpt_entry *pdpt_entry = pdpt_lookup(pdptr_table, virt_addr);
 
     if (!pdpt_entry->present) {
@@ -118,7 +109,7 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
         pdpt_entry->addr = (u64)page_directory >> 12;
     }
 
-    struct page_directory *page_directory = VIRT_ADDR((u64)pdpt_entry->addr << 12);
+    struct page_directory *page_directory = FIXUP_PTR((u64)pdpt_entry->addr << 12);
     struct pd_entry *pd_entry = pd_lookup(page_directory, virt_addr);
 
     if (!pd_entry->present) {
@@ -131,7 +122,7 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
         pd_entry->addr = (u64)page_table >> 12;
     }
 
-    struct page_table *page_table = VIRT_ADDR((u64)pd_entry->addr << 12);
+    struct page_table *page_table = FIXUP_PTR((u64)pd_entry->addr << 12);
     struct pt_entry *pt_entry = pt_lookup(page_table, virt_addr);
 
     pt_entry->present = 1;
@@ -154,40 +145,39 @@ void flush_tlb_entry(u64 virt_addr) {
 }
 
 struct pt_entry *get_page_entry(u64 virt_addr) {
-    struct pml4_table *pml4_table = VIRT_ADDR(get_pml4_table());
+    struct pml4_table *pml4_table = FIXUP_PTR(get_pml4_table());
     struct pml4_entry *pml4_entry = pml4_lookup(pml4_table, virt_addr);
     if (pml4_entry == NULL)
         return NULL;
 
-    struct pdptr_table *pdptr_table = VIRT_ADDR((u64)pml4_entry->addr << 12);
+    struct pdptr_table *pdptr_table = FIXUP_PTR((u64)pml4_entry->addr << 12);
     struct pdpt_entry *pdpt_entry = pdpt_lookup(pdptr_table, virt_addr);
     if (pdpt_entry == NULL)
         return NULL;
 
-    struct page_directory *page_directory =
-        VIRT_ADDR((u64)pdpt_entry->addr << 12);
+    struct page_directory *page_directory = FIXUP_PTR((u64)pdpt_entry->addr << 12);
     struct pd_entry *pd_entry = pd_lookup(page_directory, virt_addr);
     if (pd_entry == NULL)
         return NULL;
 
-    struct page_table *page_table = VIRT_ADDR((u64)pd_entry->addr << 12);
+    struct page_table *page_table = FIXUP_PTR((u64)pd_entry->addr << 12);
     struct pt_entry *entry = pt_lookup(page_table, virt_addr);
 
     return entry;
 }
 
 void set_pml4_table(struct pml4_table *table) {
-    root_table = VIRT_ADDR(table);
+    root_table = FIXUP_PTR(table);
     asm volatile ("movq %%rax, %%cr3" : : "a"(table));
 }
 
 struct pml4_table *get_pml4_table(void) { return root_table; }
 
 int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
-    root_table = (struct pml4_table *)DEFAULT_PAGE_TABLES_BASE;
+    root_table = (struct pml4_table *)PML4_BASE_ADDR;
 
     // preallocate kernel physical space
-    if (alloc_region(KERNEL_BASE_ADDR, KERNEL_SIZE / PAGE_SIZE) < 0)
+    if (alloc_region(KERNEL_PHYSICAL_BASE, KERNEL_SIZE / PAGE_SIZE) < 0)
         return 1;
 
     // preallocate currently used page tables
@@ -198,7 +188,7 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
     for (size_t i = 0; i < memmap_size; i++) {
         for (u64 addr = memmap[i].base;
              addr < memmap[i].base + memmap[i].length; addr += PAGE_SIZE) {
-            if (map_virtual_page(addr, DIRECT_MEMMAP_BASE + addr))
+            if (map_virtual_page(addr, PHYSMEM_VIRTUAL_BASE + addr))
                 return 1;
         }
     }
