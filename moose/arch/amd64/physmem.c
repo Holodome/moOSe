@@ -5,10 +5,11 @@
 #include <kstdio.h>
 
 // 4k-512k page blocks
-#define BUDDY_MAX_ORDER 8
+#define BUDDY_MAX_ORDER 7
+#define MAX_BLOCK_SIZE_LOG (PAGE_SIZE_LOG + BUDDY_MAX_ORDER)
 
 // largest page block for buddy allocator
-#define MAX_BLOCK_SIZE ((PAGE_SIZE << (BUDDY_MAX_ORDER - 1)))
+#define MAX_BLOCK_SIZE ((PAGE_SIZE << (BUDDY_MAX_ORDER)))
 
 struct free_area {
     u32 size;
@@ -20,7 +21,7 @@ struct mem_zone {
     u32 used_page_count;
     u32 max_page_count;
     u64 base_addr;
-    struct free_area free_area[BUDDY_MAX_ORDER];
+    struct free_area free_area[BUDDY_MAX_ORDER + 1];
 };
 
 struct phys_mem {
@@ -49,33 +50,26 @@ int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size) {
     for (u32 i = 0, zone_idx = 0; i < memmap_size; ++i) {
         const struct memmap_entry *entry = memmap + i;
         if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
-            struct mem_zone *zone = &phys_mem.zones[zone_idx];
+            struct mem_zone *zone = phys_mem.zones + zone_idx++;
             zone->base_addr = entry->base;
-
-            // align memory to the largest page block
-            zone->mem_size = entry->length / MAX_BLOCK_SIZE * MAX_BLOCK_SIZE;
+            zone->mem_size = align_po2(entry->length, MAX_BLOCK_SIZE);
             zone->max_page_count = zone->mem_size >> PAGE_SIZE_LOG;
-            zone->used_page_count = 0;
 
-            // count of the largest page blocks
-            u32 block_count = zone->mem_size / MAX_BLOCK_SIZE;
-
-            // alloc order bitmaps
-            for (int j = BUDDY_MAX_ORDER - 1; j >= 0; j--) {
-                u32 bitmap_size = (block_count << j) >> 6;
+            u32 block_count = zone->mem_size >> MAX_BLOCK_SIZE_LOG;
+            for (int j = BUDDY_MAX_ORDER; j >= 0; j--) {
+                u32 bitmap_size = bits_to_bitmap(block_count << j);
                 if ((block_count << j) & 0x3f)
                     bitmap_size++;
 
-                u32 index = BUDDY_MAX_ORDER - j - 1;
+                u32 index = BUDDY_MAX_ORDER - j;
 
                 void *bitmap = kmalloc(bitmap_size * sizeof(u64));
                 if (bitmap == NULL)
                     goto free_memzones;
+
                 zone->free_area[index].bitmap = bitmap;
                 zone->free_area[index].size = block_count * (1 << j);
             }
-
-            zone_idx++;
         }
     }
 
@@ -83,7 +77,7 @@ int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size) {
 free_memzones:
     for (size_t i = 0; i < phys_mem.zones_size; ++i) {
         struct mem_zone *zone = &phys_mem.zones[i];
-        for (int j = BUDDY_MAX_ORDER - 1; j >= 0; j--)
+        for (int j = BUDDY_MAX_ORDER; j >= 0; j--)
             kfree(zone->free_area[j].bitmap);
     }
     kfree(phys_mem.zones);
@@ -135,8 +129,8 @@ static void unset_buddies(struct free_area *free_area, u32 buddy, u64 index,
 
 ssize_t alloc_pages(size_t count) {
     u32 order = bit_scan_reverse(count);
-    if (order >= BUDDY_MAX_ORDER)
-        order = BUDDY_MAX_ORDER - 1;
+    if (order > BUDDY_MAX_ORDER)
+        order = BUDDY_MAX_ORDER;
 
     // finds first available memory zone
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
@@ -164,8 +158,8 @@ void free_pages(u64 addr, size_t count) {
         return;
 
     u32 order = bit_scan_reverse(count);
-    if (order >= BUDDY_MAX_ORDER)
-        order = BUDDY_MAX_ORDER - 1;
+    if (order > BUDDY_MAX_ORDER)
+        order = BUDDY_MAX_ORDER;
 
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];
@@ -190,8 +184,8 @@ ssize_t alloc_region(u64 addr, size_t count) {
         return -1;
 
     u32 order = bit_scan_reverse(count);
-    if (order >= BUDDY_MAX_ORDER)
-        order = BUDDY_MAX_ORDER - 1;
+    if (order > BUDDY_MAX_ORDER)
+        order = BUDDY_MAX_ORDER;
 
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];

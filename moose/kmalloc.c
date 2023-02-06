@@ -1,5 +1,6 @@
 #include <kmalloc.h>
 #include <kmem.h>
+#include <bitops.h>
 
 #define TOTAL_MEM_SIZE 4096
 #define ALIGNMENT 16
@@ -19,12 +20,6 @@ void init_memory(void) {
     list_add(&block->list, &mem_start);
 }
 
-static size_t align_alloc_size(size_t size) {
-    size += ALIGNMENT - 1;
-    size &= ~(ALIGNMENT - 1);
-    return size;
-}
-
 static struct mem_block *best_fit(size_t size) {
     struct mem_block *best_node = NULL;
     size_t best_mem = TOTAL_MEM_SIZE + 1;
@@ -41,7 +36,7 @@ static struct mem_block *best_fit(size_t size) {
 }
 
 void *kmalloc(size_t size) {
-    size = align_alloc_size(size);
+    size = align_po2(size, ALIGNMENT);
     struct mem_block *node = best_fit(size);
     if (node == NULL)
         return NULL;

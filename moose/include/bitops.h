@@ -79,6 +79,9 @@
 #define bit_scan_reverse(_val)                                                 \
     (((sizeof(_val) << 3) - count_leading_zeroes_safe(_val)))
 
+#define DIV_ROUND_UP(_a, _b) (((_a) + (_b)-1) / (_b))
+#define BITS_TO_BITMAP(_bits) DIV_ROUND_UP(_bits, sizeof(long) * CHAR_BIT)
+
 static inline u64 test_bit(const u64 *bitmap, u64 index) {
     return bitmap[index >> 6] & (1l << (index & 0x3f));
 }
@@ -91,3 +94,14 @@ static inline void clear_bit(u64 *bitmap, u64 index) {
     bitmap[index >> 6] &= ~(1l << (index & 0x3f));
 }
 
+// align up power of 2
+static inline size_t align_po2(size_t val, size_t align) {
+    val += align - 1;
+    val &= ~(align - 1);
+    return val;
+}
+
+static inline size_t bits_to_bitmap(size_t bits) {
+    align_po2(bits, CHAR_BIT * sizeof(u64));
+    return bits / CHAR_BIT;
+}
