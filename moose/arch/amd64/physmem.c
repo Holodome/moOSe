@@ -43,7 +43,6 @@ struct phys_mem {
 
 static struct phys_mem phys_mem;
 
-// TODO: memory zones list as argument
 int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size) {
     allocator.cursor = 0;
 

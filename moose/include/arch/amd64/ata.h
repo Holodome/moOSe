@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <device.h>
+#include <types.h>
 
 enum ata_dev_kind {
     ATA_DEV_PATA,

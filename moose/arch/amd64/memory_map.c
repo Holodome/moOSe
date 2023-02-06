@@ -1,7 +1,7 @@
 #include <arch/amd64/memory_map.h>
 #include <kernel.h>
 
-#define MEMMAP_ADDR FIXUP_POINTER((u8 *)0x500)
+#define MEMMAP_ADDR FIXUP_PTR((u8 *)0x500)
 
 void get_memmap(const struct memmap_entry **map, u32 *count) {
 #pragma GCC diagnostic push

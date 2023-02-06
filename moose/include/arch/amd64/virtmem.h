@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <arch/amd64/memory_map.h>
+#include <types.h>
 
 #define ENTRIES_PER_TABLE 512
 
@@ -10,8 +10,8 @@
 #define PAGE_DIRECTORY_PTRT_INDEX(_x) (((_x) >> 30) & 0x1ff)
 #define PAGE_PLM4_INDEX(_x) (((_x) >> 39) & 0x1ff)
 
-#define DIRECT_MEMMAP_BASE 0xffff880000000000
-#define KERNEL_TEXT_MAPPING_BASE 0xffffffff80000000
+#define IDENTITY_MAP_SIZE (2 * 1024 * 1024)
+#define PML4_BASE_ADDR 0x1000
 
 /*
  * Virtual paging entry bits

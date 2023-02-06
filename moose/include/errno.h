@@ -103,4 +103,3 @@ enum {
 };
 
 extern int errno;
-

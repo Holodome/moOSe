@@ -30,7 +30,7 @@ static void fixup_gdt(void) {
         u64 offset;
     } __attribute__((packed)) gdtr;
     asm volatile("sgdt %0" : "=m"(gdtr));
-    gdtr.offset = FIXUP_POINTER(gdtr.offset);
+    gdtr.offset = FIXUP_ADDR(gdtr.offset);
     asm volatile("lgdt %0" : : "m"(gdtr));
 }
 
