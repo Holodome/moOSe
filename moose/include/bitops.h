@@ -82,8 +82,8 @@
 #define DIV_ROUND_UP(_a, _b) (((_a) + (_b)-1) / (_b))
 #define BITS_TO_BITMAP(_bits) DIV_ROUND_UP(_bits, sizeof(long) * CHAR_BIT)
 
-static inline u64 test_bit(const u64 *bitmap, u64 index) {
-    return bitmap[index >> 6] & (1l << (index & 0x3f));
+static inline int test_bit(const u64 *bitmap, u64 index) {
+    return (bitmap[index >> 6] & (1l << (index & 0x3f))) != 0;
 }
 
 static inline void set_bit(u64 *bitmap, u64 index) {
