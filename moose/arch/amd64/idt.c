@@ -29,14 +29,10 @@ static void set_idt_entry(u8 n, u64 isr_addr) {
 }
 
 static void load_idt(void) {
-    static struct idt_reg idt_reg;
+    struct idt_reg idt_reg;
     idt_reg.offset = (u64)&idt[0];
     idt_reg.size = 256 * sizeof(struct idt_entry) - 1;
     asm volatile("lidt %0\n"
-                 /* "lea some_label(%%rip), %%rax\n" */
-                 /* "push %%rax\n" */
-                 /* "REX.W ljmp (%%rax)\n" */
-                 /* "some_label:\n" */
                  :
                  : "m"(idt_reg));
 }

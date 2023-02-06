@@ -5,15 +5,9 @@ SECTIONS {
         *(.text*)
         *(.data*)
         *(.rodata*)
+        . = ALIGN(4096);
     }
-
-    . = ALIGN(8);
-    .bss : {
-        __bss_start = . ;
-        *(.bss*)
-        . = ALIGN(8);
-        __bss_end = . ;
-    }
+    _end = .;
 
     /DISCARD/ : {
         *(.comment)

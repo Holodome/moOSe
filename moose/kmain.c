@@ -7,16 +7,36 @@
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
 #include <kmem.h>
+#include <kernel.h>
 
 #include <disk.h>
 #include <errno.h>
 #include <fs/fat.h>
+#include <kmalloc.h>
 #include <kstdio.h>
 #include <tty.h>
-#include <kmalloc.h>
 
+static void zero_bss(void) {
+    extern u64 *__bss_start;
+    extern u64 *__bss_end;
+    u64 *p = __bss_start;
+    while (p != __bss_end)
+        *p++ = 0;
+}
+
+static void fixup_gdt(void) {
+    struct {
+        u16 size;
+        u64 offset;
+    } __attribute__((packed)) gdtr;
+    asm volatile("sgdt %0" : "=m"(gdtr));
+    gdtr.offset = FIXUP_POINTER(gdtr.offset);
+    asm volatile("lgdt %0" : : "m"(gdtr));
+}
 
 __attribute__((noreturn)) void kmain(void) {
+    zero_bss();
+    fixup_gdt();
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 

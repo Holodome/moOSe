@@ -29,7 +29,7 @@ int load_kernel(void) {
     }
 
     struct pfatfs_file file;
-    result = pfatfs_open(&fs, "kernel1.bin", &file);
+    result = pfatfs_open(&fs, "kernel.bin", &file);
     if (result != 0) {
         print("failed to open");
         return result;
