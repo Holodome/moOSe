@@ -1,4 +1,4 @@
-#include <arch/amd64/physmem.h>
+#include <physmem.h>
 #include <arch/amd64/virtmem.h>
 #include <kmem.h>
 #include <kstdio.h>

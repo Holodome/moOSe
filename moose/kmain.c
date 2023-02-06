@@ -3,7 +3,6 @@
 
 #include <arch/amd64/keyboard.h>
 #include <arch/amd64/memory_map.h>
-#include <arch/amd64/physmem.h>
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
 #include <kernel.h>
@@ -14,6 +13,7 @@
 #include <fs/fat.h>
 #include <kmalloc.h>
 #include <kstdio.h>
+#include <physmem.h>
 #include <tty.h>
 
 static void zero_bss(void) {
@@ -45,16 +45,28 @@ __attribute__((noreturn)) void kmain(void) {
     u32 memmap_size;
     get_memmap(&memmap, &memmap_size);
     kprintf("Bios-provided physical RAM map:\n");
+    int usable_region_count = 0;
     for (u32 i = 0; i < memmap_size; ++i) {
         const struct memmap_entry *entry = memmap + i;
         kprintf("%#016llx-%#016llx: %s(%u)\n", (unsigned long long)entry->base,
                 (unsigned long long)(entry->base + entry->length),
                 get_memmap_type_str(entry->type), (unsigned)entry->type);
+        usable_region_count += entry->type == MULTIBOOT_MEMORY_AVAILABLE;
     }
 
     setup_idt();
     init_keyboard();
-    if (init_phys_mem(memmap, memmap_size))
+    struct mem_range *ranges = kmalloc(usable_region_count * sizeof(*ranges));
+    for (u32 i = 0, j = 0; i < memmap_size; ++i) {
+        const struct memmap_entry *entry = memmap + i;
+        if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
+            ranges[j].base = entry->base;
+            ranges[j].size = entry->length;
+            ++j;
+        }
+    }
+
+    if (init_phys_mem(ranges, usable_region_count))
         kprintf("physical memory init error");
 
     if (init_virt_mem(memmap, memmap_size))

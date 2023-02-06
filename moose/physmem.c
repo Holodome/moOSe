@@ -1,5 +1,4 @@
-#include <arch/amd64/memory_map.h>
-#include <arch/amd64/physmem.h>
+#include <physmem.h>
 #include <bitops.h>
 #include <kmalloc.h>
 #include <kmem.h>
@@ -32,43 +31,33 @@ struct phys_mem {
 
 static struct phys_mem phys_mem;
 
-int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size) {
-    u32 available_count = 0;
-    for (u32 i = 0; i < memmap_size; ++i) {
-        const struct memmap_entry *entry = memmap + i;
-        if (entry->type == MULTIBOOT_MEMORY_AVAILABLE)
-            available_count++;
-    }
-
-    if (!available_count)
-        return -1;
-
-    phys_mem.zones = kzalloc(available_count * sizeof(*phys_mem.zones));
+// TODO: memory zones list as argument
+int init_phys_mem(const struct mem_range *memmap, size_t memmap_size) {
+    // TODO: Assert memmap_size != 0
+    phys_mem.zones = kzalloc(memmap_size * sizeof(*phys_mem.zones));
     if (phys_mem.zones == NULL)
         return -1;
 
-    phys_mem.zones_size = available_count;
+    phys_mem.zones_size = memmap_size;
     for (u32 i = 0, zone_idx = 0; i < memmap_size; ++i) {
-        const struct memmap_entry *entry = memmap + i;
-        if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
-            struct mem_zone *zone = phys_mem.zones + zone_idx++;
-            zone->base_addr = entry->base;
-            zone->mem_size = align_po2(entry->length, MAX_BLOCK_SIZE);
-            zone->max_page_count = zone->mem_size >> PAGE_SIZE_LOG;
+        const struct mem_range *entry = memmap + i;
+        struct mem_zone *zone = phys_mem.zones + zone_idx++;
+        zone->base_addr = entry->base;
+        zone->mem_size = align_po2(entry->size, MAX_BLOCK_SIZE);
+        zone->max_page_count = zone->mem_size >> PAGE_SIZE_LOG;
 
-            u32 block_count = zone->mem_size >> MAX_BLOCK_SIZE_LOG;
-            for (int j = BUDDY_MAX_ORDER; j >= 0; j--) {
-                u32 bitmap_size = bits_to_bitmap(block_count << j);
-                u32 index = BUDDY_MAX_ORDER - j;
+        u32 block_count = zone->mem_size >> MAX_BLOCK_SIZE_LOG;
+        for (int j = BUDDY_MAX_ORDER; j >= 0; j--) {
+            u32 bitmap_size = bits_to_bitmap(block_count << j);
+            u32 index = BUDDY_MAX_ORDER - j;
 
-                void *bitmap = kmalloc(bitmap_size * sizeof(u64));
-                if (bitmap == NULL)
-                    goto free_memzones;
+            void *bitmap = kmalloc(bitmap_size * sizeof(u64));
+            if (bitmap == NULL)
+                goto free_memzones;
 
-                memset(bitmap, 0xff, bitmap_size * sizeof(u64));
-                zone->free_area[index].bitmap = bitmap;
-                zone->free_area[index].size = block_count * (1 << j);
-            }
+            memset(bitmap, 0xff, bitmap_size * sizeof(u64));
+            zone->free_area[index].bitmap = bitmap;
+            zone->free_area[index].size = block_count * (1 << j);
         }
     }
 
@@ -83,7 +72,7 @@ free_memzones:
     return -1;
 }
 
-static void mark_buddies(struct mem_zone *zone, u64 order, u64 buddy_idx) {
+static void set_buddies(struct mem_zone *zone, u64 order, u64 buddy_idx) {
     clear_bit(zone->free_area[order].bitmap, buddy_idx);
     for (int i = order - 1; i >= 0; --i)
         for (u64 idx = buddy_idx << (order - i);
@@ -115,7 +104,7 @@ ssize_t alloc_pages(size_t order) {
                 continue;
 
             u64 buddy_idx = bit_idx + found_bit;
-            mark_buddies(zone, order, buddy_idx);
+            set_buddies(zone, order, buddy_idx);
 
             zone->used_page_count += 1 << order;
             return zone->base_addr + (buddy_idx << (order + PAGE_SIZE_LOG));
@@ -151,7 +140,7 @@ ssize_t alloc_region(u64 addr, size_t order) {
             if (test_bit(zone->free_area[order].bitmap, bit_idx))
                 return -1;
 
-            mark_buddies(zone, order, bit_idx);
+            set_buddies(zone, order, bit_idx);
             zone->used_page_count += 1 << order;
 
             return addr;

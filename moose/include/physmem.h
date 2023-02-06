@@ -1,11 +1,15 @@
 #pragma once
 
-#include <arch/amd64/memory_map.h>
 #include <types.h>
 
 #define PAGE_SIZE 4096
 
-int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size);
+struct mem_range {
+    u64 base;
+    u64 size;
+};
+
+int init_phys_mem(const struct mem_range *memmap, size_t memmap_size);
 
 ssize_t alloc_page(void);
 ssize_t alloc_pages(size_t count);
