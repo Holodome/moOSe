@@ -92,19 +92,6 @@ free_memzones:
     return -1;
 }
 
-static const int tab32[32] = {0,  9,  1,  10, 13, 21, 2,  29, 11, 14, 16,
-                              18, 22, 25, 3,  30, 8,  12, 20, 28, 15, 17,
-                              24, 7,  19, 27, 23, 6,  26, 5,  4,  31};
-
-static u32 log2_32(u32 value) {
-    value |= value >> 1;
-    value |= value >> 2;
-    value |= value >> 4;
-    value |= value >> 8;
-    value |= value >> 16;
-    return tab32[(u32)(value * 0x07C4ACDD) >> 27];
-}
-
 static u64 test_buddies(struct free_area *free_area, u32 buddy, u64 index,
                         size_t count) {
     for (int i = buddy; i >= 0; i--) {
@@ -149,10 +136,7 @@ static void unset_buddies(struct free_area *free_area, u32 buddy, u64 index,
 }
 
 ssize_t alloc_pages(size_t count) {
-    u32 order = log2_32(count);
-    if (count != 1u << order)
-        order++;
-
+    u32 order = bit_scan_reverse(count);
     if (order >= BUDDY_MAX_ORDER)
         order = BUDDY_MAX_ORDER - 1;
 
@@ -181,10 +165,7 @@ void free_pages(u64 addr, size_t count) {
     if (addr % PAGE_SIZE != 0)
         return;
 
-    u32 order = log2_32(count);
-    if (count != 1u << order)
-        order++;
-
+    u32 order = bit_scan_reverse(count);
     if (order >= BUDDY_MAX_ORDER)
         order = BUDDY_MAX_ORDER - 1;
 
@@ -211,10 +192,7 @@ ssize_t alloc_region(u64 addr, size_t count) {
     if (addr % PAGE_SIZE != 0)
         return -1;
 
-    u32 order = log2_32(count);
-    if (count != 1u << order)
-        order++;
-
+    u32 order = bit_scan_reverse(count);
     if (order >= BUDDY_MAX_ORDER)
         order = BUDDY_MAX_ORDER - 1;
 

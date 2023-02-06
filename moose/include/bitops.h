@@ -57,7 +57,7 @@
     })
 
 #define count_leading_zeroes_safe(_val)                                        \
-    ((_val) == 0 : sizeof(_val) << 3 : count_leading_zeroes(_val))
+    ((_val) == 0 ? sizeof(_val) << 3 : count_leading_zeroes(_val))
 
 #define bit_scan_forward(_val)                                                 \
     ({                                                                         \
@@ -75,6 +75,9 @@
                  : __builtin_ffsll, unsigned long long                         \
                  : __builtin_ffsll)(_val);                                     \
     })
+
+#define bit_scan_reverse(_val)                                                 \
+    (((sizeof(_val) << 3) - count_leading_zeroes_safe(_val)))
 
 static inline u64 test_bit(const u64 *bitmap, u64 index) {
     return bitmap[index >> 6] & (1l << (index & 0x3f));
