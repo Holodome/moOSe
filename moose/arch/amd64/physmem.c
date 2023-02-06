@@ -43,9 +43,11 @@ int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size) {
     if (!available_count)
         return -1;
 
-    phys_mem.zones = kmalloc(available_count * sizeof(*phys_mem.zones));
-    phys_mem.zones_size = available_count;
+    phys_mem.zones = kzalloc(available_count * sizeof(*phys_mem.zones));
+    if (phys_mem.zones == NULL)
+        return -1;
 
+    phys_mem.zones_size = available_count;
     for (u32 i = 0, zone_idx = 0; i < memmap_size; ++i) {
         const struct memmap_entry *entry = memmap + i;
         if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
@@ -68,8 +70,10 @@ int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size) {
 
                 u32 index = BUDDY_MAX_ORDER - j - 1;
 
-                zone->free_area[index].bitmap =
-                    kmalloc(bitmap_size * sizeof(u64));
+                void *bitmap = kmalloc(bitmap_size * sizeof(u64));
+                if (bitmap == NULL)
+                    goto free_memzones;
+                zone->free_area[index].bitmap = bitmap;
                 zone->free_area[index].size = block_count * (1 << j);
             }
 
@@ -78,6 +82,14 @@ int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size) {
     }
 
     return 0;
+free_memzones:
+    for (size_t i = 0; i < phys_mem.zones_size; ++i) {
+        struct mem_zone *zone = &phys_mem.zones[i];
+        for (int j = BUDDY_MAX_ORDER - 1; j >= 0; j--)
+            kfree(zone->free_area[j].bitmap);
+    }
+    kfree(phys_mem.zones);
+    return -1;
 }
 
 static const int tab32[32] = {0,  9,  1,  10, 13, 21, 2,  29, 11, 14, 16,
