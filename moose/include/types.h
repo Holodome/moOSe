@@ -66,4 +66,3 @@ static inline void list_remove(struct list_head *it) {
         struct list_head *__next = (_ptr)->next;                               \
         __next != (_head) ? list_entry(__next, _type, _member) : NULL;         \
     })
-

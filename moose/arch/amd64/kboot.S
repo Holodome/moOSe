@@ -12,6 +12,11 @@ kboot64:
     mov $0xffff880000000000, %rbx
     add %rbx, %rax
 
+    mov %rsp, %rax
+    add %rbx, %rax
+    mov %rax, %rsp
+    mov %rsp, %rbp
+
     jmp *%rax
 halt:
     cli

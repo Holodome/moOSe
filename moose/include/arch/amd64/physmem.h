@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <arch/amd64/memory_map.h>
+#include <types.h>
 
 #define PAGE_SIZE 4096
 #define KERNEL_BASE_ADDR 0x100000
