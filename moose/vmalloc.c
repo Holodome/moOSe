@@ -7,6 +7,13 @@
 static void *pbrk = VMALLOC_BASE;
 static void *plimit = VMALLOC_BASE;
 
+int vbrk(void *addr) {
+    if (addr < VMALLOC_BASE || addr > VMALLOC_LIMIT)
+        return -1;
+
+    return vsbrk(addr - pbrk) == VSBRK_ERROR;
+}
+
 void *vsbrk(ssize_t increment) {
     void *prev_pbrk = pbrk;
     if (pbrk + increment < VMALLOC_BASE ||
@@ -35,8 +42,6 @@ void *vsbrk(ssize_t increment) {
         plimit -= PAGE_SIZE;
         free_virtual_page((u64)plimit);
     }
-
-    kprintf("limit = %p\n", plimit);
 
     return prev_pbrk;
 }
