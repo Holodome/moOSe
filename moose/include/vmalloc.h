@@ -5,8 +5,6 @@
 #define VMALLOC_BASE ((void *)0xffffc90000000000)
 #define VMALLOC_LIMIT ((void *)0xffffe8ffffffffff)
 
-#define VSBRK_ERROR ((void *)-1)
-
 int vbrk(void *addr);
 void *vsbrk(ssize_t increment);
 
