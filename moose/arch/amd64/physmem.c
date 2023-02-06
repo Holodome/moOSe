@@ -4,8 +4,6 @@
 #include <kmalloc.h>
 #include <kstdio.h>
 
-#define ARENA_SIZE (4 * 4096)
-
 // 4k-512k page blocks
 #define BUDDY_MAX_ORDER 8
 
@@ -56,7 +54,7 @@ int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size) {
 
             // align memory to the largest page block
             zone->mem_size = entry->length / MAX_BLOCK_SIZE * MAX_BLOCK_SIZE;
-            zone->max_page_count = zone->mem_size / PAGE_SIZE;
+            zone->max_page_count = zone->mem_size >> PAGE_SIZE_LOG;
             zone->used_page_count = 0;
 
             // count of the largest page blocks
@@ -64,8 +62,8 @@ int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size) {
 
             // alloc order bitmaps
             for (int j = BUDDY_MAX_ORDER - 1; j >= 0; j--) {
-                u32 bitmap_size = (block_count * (1 << j)) >> 6;
-                if ((block_count * (1 << j)) & 0x3f)
+                u32 bitmap_size = (block_count << j) >> 6;
+                if ((block_count << j) & 0x3f)
                     bitmap_size++;
 
                 u32 index = BUDDY_MAX_ORDER - j - 1;
@@ -96,12 +94,12 @@ static u64 test_buddies(struct free_area *free_area, u32 buddy, u64 index,
                         size_t count) {
     for (int i = buddy; i >= 0; i--) {
         u32 offset = buddy - i;
-        u32 bit_count = count / (1u << i);
-        if (count % (1u << i) != 0)
+        u32 bit_count = count >> i;
+        if (count & ((1u << i) - 1))
             bit_count++;
 
         for (u32 j = 0; j < bit_count; j++) {
-            if (test_bit(free_area[i].bitmap, index * (1l << offset) + j))
+            if (test_bit(free_area[i].bitmap, (index << offset) + j))
                 return 1;
         }
     }
@@ -113,12 +111,12 @@ static void set_buddies(struct free_area *free_area, u32 buddy, u64 index,
                         size_t count) {
     for (int i = buddy; i >= 0; i--) {
         u32 offset = buddy - i;
-        u32 bit_count = count / (1u << i);
-        if (count % (1u << i) != 0)
+        u32 bit_count = count >> i;
+        if (count & ((1u << i) - 1))
             bit_count++;
 
         for (u32 j = 0; j < bit_count; j++)
-            set_bit(free_area[i].bitmap, index * (1l << offset) + j);
+            set_bit(free_area[i].bitmap, (index << offset) + j);
     }
 }
 
@@ -126,12 +124,12 @@ static void unset_buddies(struct free_area *free_area, u32 buddy, u64 index,
                           size_t count) {
     for (int i = buddy; i >= 0; i--) {
         u32 offset = buddy - i;
-        u32 bit_count = count / (1u << i);
+        u32 bit_count = count >> i;
         if (count % (1u << i) != 0)
             bit_count++;
 
         for (u32 j = 0; j < bit_count; j++)
-            clear_bit(free_area[i].bitmap, index * (1l << offset) + j);
+            clear_bit(free_area[i].bitmap, (index << offset) + j);
     }
 }
 
@@ -153,7 +151,7 @@ ssize_t alloc_pages(size_t count) {
                 set_buddies(zone->free_area, order, bit_idx, count);
                 zone->used_page_count += count;
 
-                return zone->base_addr + bit_idx * (1l << order) * PAGE_SIZE;
+                return (zone->base_addr + (bit_idx << order)) << PAGE_SIZE_LOG;
             }
         }
     }
@@ -174,8 +172,7 @@ void free_pages(u64 addr, size_t count) {
         if (addr >= zone->base_addr &&
             addr < zone->base_addr + zone->mem_size) {
 
-            u64 bit_idx =
-                (addr - zone->base_addr) / ((1l << order) * PAGE_SIZE);
+            u64 bit_idx = (addr - zone->base_addr) >> (order + PAGE_SIZE_LOG);
 
             unset_buddies(zone->free_area, order, bit_idx, count);
             zone->used_page_count -= count;
@@ -201,9 +198,9 @@ ssize_t alloc_region(u64 addr, size_t count) {
 
         if (addr >= zone->base_addr &&
             addr < zone->base_addr + zone->mem_size &&
-            zone->base_addr + zone->mem_size > addr + count * PAGE_SIZE) {
-            u64 bit_idx =
-                (addr - zone->base_addr) / ((1l << order) * PAGE_SIZE);
+            zone->base_addr + zone->mem_size >
+                addr + (count << PAGE_SIZE_LOG)) {
+            u64 bit_idx = (addr - zone->base_addr) >> (order + PAGE_SIZE_LOG);
             if (!test_buddies(zone->free_area, order, bit_idx, count)) {
                 set_buddies(zone->free_area, order, bit_idx, count);
                 zone->used_page_count += count;
