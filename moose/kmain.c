@@ -59,32 +59,27 @@ __attribute__((noreturn)) void kmain(void) {
     if (init_virt_mem(memmap, memmap_size))
         kprintf("virtual memory init error");
 
-//    unmap_virtual_page(0x1000);
-//    char *p = (char *) 0x1000;
-//    *p = 0;
+    init_memory();
+    disk_init();
+    init_rtc();
 
-//    init_memory();
-//    disk_init();
-//    init_rtc();
-//
-//    struct pfatfs fs = {.device = disk_part_dev};
-//    int result = pfatfs_mount(&fs);
-//    if (result == 0) {
-//
-//        struct pfatfs_file file = {0};
-//        int result = pfatfs_open(&fs, "kernel1.bin", &file);
-//        if (result == 0) {
-//            kprintf("opened file %11s\n", file.name);
-//        }
-//    }
-//
-//    u32 secs = 0;
-//    for (;;) {
-//        u32 new_secs = get_seconds();
-//        if (new_secs != secs) {
-//            /* kprintf("time %u\n", new_secs); */
-//            secs = new_secs;
-//        }
-//    }
-    for (;;);
+    struct pfatfs fs = {.device = disk_part_dev};
+    int result = pfatfs_mount(&fs);
+    if (result == 0) {
+
+        struct pfatfs_file file = {0};
+        int result = pfatfs_open(&fs, "kernel1.bin", &file);
+        if (result == 0) {
+            kprintf("opened file %11s\n", file.name);
+        }
+    }
+
+    u32 secs = 0;
+    for (;;) {
+        u32 new_secs = get_seconds();
+        if (new_secs != secs) {
+            /* kprintf("time %u\n", new_secs); */
+            secs = new_secs;
+        }
+    }
 }

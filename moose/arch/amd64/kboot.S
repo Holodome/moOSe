@@ -17,11 +17,6 @@ kboot64:
     mov $_end, %rax
     add %rbx, %rax
 
-    mov %rsp, %rax
-    add %rbx, %rax
-    mov %rax, %rsp
-    mov %rsp, %rbp
-
     jmp *%rax
 halt:
     cli

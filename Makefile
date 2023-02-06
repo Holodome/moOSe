@@ -36,7 +36,7 @@ $(TARGET_IMG): moose/moose.img
 	$(Q)cp $< $@
 
 qemu: all
-	$(QEMU) -d guest_errors -monitor stdio -hda $(TARGET_IMG)
+	$(QEMU) -d guest_errors -hda $(TARGET_IMG)
 
 qemu-debug: all
 	$(QEMU) -s -S -fda moose.img -d guest_errors & 

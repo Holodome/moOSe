@@ -145,7 +145,7 @@ void unmap_virtual_page(u64 virt_addr) {
     if (entry) {
         entry->addr = 0;
         entry->present = 0;
-//        flush_tlb_entry(virt_addr);
+        flush_tlb_entry(virt_addr);
     }
 }
 
@@ -203,16 +203,9 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
         }
     }
 
-    // map kernel region
-    for (u64 addr = 0; addr < KERNEL_SIZE; addr += PAGE_SIZE) {
-        if (map_virtual_page(addr + KERNEL_BASE_ADDR,
-                             addr + KERNEL_TEXT_MAP_BASE))
-            return 1;
-    }
-
-//    // physical memory identity unmap
-//    for (u64 addr = 0; addr < IDENTITY_MAP_SIZE; addr += PAGE_SIZE)
-//        unmap_virtual_page(addr);
+    // physical memory identity unmap
+    for (u64 addr = 0; addr < IDENTITY_MAP_SIZE; addr += PAGE_SIZE)
+        unmap_virtual_page(addr);
 
     return 0;
 }

@@ -11,7 +11,6 @@
 #define PAGE_PLM4_INDEX(_x) (((_x) >> 39) & 0x1ff)
 
 #define DIRECT_MEMMAP_BASE 0xffff880000000000
-#define KERNEL_TEXT_MAP_BASE 0xffffffff80000000
 #define IDENTITY_MAP_SIZE 0x200000
 
 #define VIRT_ADDR(_x) (((void *)(_x) + DIRECT_MEMMAP_BASE))
