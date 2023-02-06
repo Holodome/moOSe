@@ -235,22 +235,16 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
             return 1;
     }
 
-//    asm volatile("push %rax\n"
-//                 "movabs $0xFFFF87FFFF000000 + my_label, %rax\n"
-//                 "jmp *%rax\n"
-//                 "my_label:\n"
-//                 "pop %rax\n");
-
-    //    // phys memory identity unmap
-    //    for (size_t i = 0; i < memmap_size; i++) {
-    //        if (memmap[i].type == MULTIBOOT_MEMORY_AVAILABLE) {
-    //            for (u64 addr = memmap[i].base;
-    //                 addr < memmap[i].base + memmap[i].length;
-    //                 addr += PAGE_SIZE) {
-    //                unmap_virtual_page(addr);
-    //            }
-    //        }
-    //    }
+    // phys memory identity unmap
+    for (size_t i = 0; i < memmap_size; i++) {
+        if (memmap[i].type == MULTIBOOT_MEMORY_AVAILABLE) {
+            for (u64 addr = memmap[i].base;
+                 addr < memmap[i].base + memmap[i].length; addr += PAGE_SIZE) {
+                unmap_virtual_page(addr);
+            }
+            break;
+        }
+    }
 
     return 0;
 }
