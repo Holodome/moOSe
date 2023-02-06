@@ -84,6 +84,7 @@ set_high_entry:
 #define FB_SZ32      (1 << 6)
 #define FB_LONG_MODE (1 << 5)
 
+.align 16
 gdt_start:
     .quad 0x0
 

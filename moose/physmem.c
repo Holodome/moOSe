@@ -5,11 +5,11 @@
 #include <physmem.h>
 
 // 4k-512k page blocks
-#define BUDDY_MAX_ORDER 7
+#define BUDDY_MAX_ORDER 8
 #define MAX_BLOCK_SIZE_LOG (PAGE_SIZE_LOG + BUDDY_MAX_ORDER)
 
 // largest page block for buddy allocator
-#define MAX_BLOCK_SIZE ((PAGE_SIZE << (BUDDY_MAX_ORDER)))
+#define MAX_BLOCK_SIZE (PAGE_SIZE << BUDDY_MAX_ORDER)
 
 struct free_area {
     u32 size;
@@ -31,6 +31,13 @@ struct phys_mem {
 
 static struct phys_mem phys_mem;
 
+static size_t get_buddy_order(size_t size) {
+    size_t order = __log2(size);
+    if (order > BUDDY_MAX_ORDER)
+        order = BUDDY_MAX_ORDER;
+    return order;
+}
+
 // TODO: memory zones list as argument
 int init_phys_mem(const struct mem_range *memmap, size_t memmap_size) {
     // TODO: Assert memmap_size != 0
@@ -43,21 +50,23 @@ int init_phys_mem(const struct mem_range *memmap, size_t memmap_size) {
         const struct mem_range *entry = memmap + i;
         struct mem_zone *zone = phys_mem.zones + i;
         zone->base_addr = entry->base;
-        zone->mem_size = entry->size & ~(MAX_BLOCK_SIZE - 1);
+        zone->mem_size = align_po2(entry->size, PAGE_SIZE);
         zone->max_page_count = zone->mem_size >> PAGE_SIZE_LOG;
 
-        u32 block_count = zone->mem_size >> MAX_BLOCK_SIZE_LOG;
-        for (int j = BUDDY_MAX_ORDER; j >= 0; j--) {
-            size_t bitmap_size = bits_to_bitmap(block_count << j);
-            u32 index = BUDDY_MAX_ORDER - j;
+        for (int j = 0; j <= BUDDY_MAX_ORDER; ++j) {
+            u32 block_count = zone->mem_size >> (PAGE_SIZE_LOG + j);
+            size_t bitmap_size = bits_to_bitmap(block_count);
+
+            if (!block_count)
+                continue;
 
             void *bitmap = kmalloc(bitmap_size * sizeof(u64));
             if (bitmap == NULL)
                 goto free_memzones;
 
             memset(bitmap, 0xff, bitmap_size * sizeof(u64));
-            zone->free_area[index].bitmap = bitmap;
-            zone->free_area[index].size = block_count * (1 << j);
+            zone->free_area[j].bitmap = bitmap;
+            zone->free_area[j].size = block_count;
         }
     }
 
@@ -136,18 +145,18 @@ static void free_pages_order(u64 addr, size_t order) {
 }
 
 void free_pages(u64 addr, size_t count) {
-    size_t order = __log2(count);
+    size_t order = get_buddy_order(count);
     while (count) {
         free_pages_order(addr, order);
         count -= 1 << order;
-        order = __log2(count);
+        order = get_buddy_order(count);
     }
 }
 
 static int alloc_region_order(u64 addr, size_t order) {
     // TODO: assert addr alignment
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
-        struct mem_zone *zone = &phys_mem.zones[zone_idx];
+        struct mem_zone *zone = phys_mem.zones + zone_idx;
 
         if (addr >= zone->base_addr &&
             addr < zone->base_addr + zone->mem_size &&
@@ -156,6 +165,7 @@ static int alloc_region_order(u64 addr, size_t order) {
             u64 bit_idx = (addr - zone->base_addr) >> (order + PAGE_SIZE_LOG);
             if (!test_bit(zone->free_area[order].bitmap, bit_idx))
                 return -1;
+
 
             set_buddies(zone, order, bit_idx);
             zone->used_page_count += 1 << order;
@@ -168,14 +178,15 @@ static int alloc_region_order(u64 addr, size_t order) {
 }
 
 int alloc_region(u64 addr, size_t count) {
-    size_t order = __log2(count);
+    size_t order = get_buddy_order(count);
     while (count) {
         ssize_t alloc_result = alloc_region_order(addr, order);
         if (alloc_result < 0)
             return alloc_result;
 
         count -= 1 << order;
-        order = __log2(count);
+        addr += 1 << (order + PAGE_SIZE_LOG);
+        order = get_buddy_order(count);
     }
 
     return 0;

@@ -1,8 +1,8 @@
+#include <bitops.h>
 #include <kmalloc.h>
 #include <kmem.h>
-#include <bitops.h>
 
-#define TOTAL_MEM_SIZE (4096 * 8)
+#define TOTAL_MEM_SIZE (4096 * 16)
 #define ALIGNMENT 16
 
 struct mem_block {
@@ -16,6 +16,7 @@ static LIST_HEAD(mem_start);
 
 void init_memory(void) {
     struct mem_block *block = (void *)(memory);
+    memset(block, 0, sizeof(*block));
     block->size = TOTAL_MEM_SIZE - sizeof(struct mem_block);
     list_add(&block->list, &mem_start);
 }
@@ -43,7 +44,7 @@ void *kmalloc(size_t size) {
 
     void *result = node + 1;
     if (node->size > size + sizeof(struct mem_block)) {
-        struct mem_block *new_block = (void *)((char *)result + size);
+        struct mem_block *new_block = result + size;
         memset(new_block, 0, sizeof(*new_block));
         new_block->size = node->size - size - sizeof(struct mem_block);
         list_add(&new_block->list, &node->list);

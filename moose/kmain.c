@@ -15,11 +15,12 @@
 #include <kstdio.h>
 #include <physmem.h>
 #include <tty.h>
+#include <bitops.h>
 
 static void zero_bss(void) {
-    extern u64 *__bss_start;
-    extern u64 *__bss_end;
-    u64 *p = __bss_start;
+    extern volatile u64 *__bss_start;
+    extern volatile u64 *__bss_end;
+    volatile u64 *p = __bss_start;
     while (p != __bss_end)
         *p++ = 0;
 }
@@ -56,7 +57,7 @@ __attribute__((noreturn)) void kmain(void) {
 
     setup_idt();
     init_keyboard();
-    struct mem_range *ranges = kmalloc(usable_region_count * sizeof(*ranges));
+    struct mem_range ranges[2];
     for (u32 i = 0, j = 0; i < memmap_size; ++i) {
         const struct memmap_entry *entry = memmap + i;
         if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
@@ -66,11 +67,15 @@ __attribute__((noreturn)) void kmain(void) {
         }
     }
 
-    if (init_phys_mem(ranges, usable_region_count))
+    if (init_phys_mem(ranges, usable_region_count)) {
         kprintf("physical memory init error\n");
+        goto halt;
+    }
 
-    if (init_virt_mem(memmap, memmap_size))
+    if (init_virt_mem(memmap, memmap_size)) {
         kprintf("virtual memory init error\n");
+        goto halt;
+    }
 
     disk_init();
     init_rtc();
@@ -94,4 +99,7 @@ __attribute__((noreturn)) void kmain(void) {
             secs = new_secs;
         }
     }
+
+halt:
+    for (;;);
 }
