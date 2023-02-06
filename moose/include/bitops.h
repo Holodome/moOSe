@@ -75,3 +75,16 @@
                  : __builtin_ffsll, unsigned long long                         \
                  : __builtin_ffsll)(_val);                                     \
     })
+
+static inline u64 test_bit(const u64 *bitmap, u64 index) {
+    return bitmap[index >> 6] & (1l << (index & 0x3f));
+}
+
+static inline void set_bit(u64 *bitmap, u64 index) {
+    bitmap[index >> 6] |= (1l << (index & 0x3f));
+}
+
+static inline void clear_bit(u64 *bitmap, u64 index) {
+    bitmap[index >> 6] &= ~(1l << (index & 0x3f));
+}
+

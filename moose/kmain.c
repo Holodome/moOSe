@@ -6,8 +6,8 @@
 #include <arch/amd64/physmem.h>
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
-#include <kmem.h>
 #include <kernel.h>
+#include <kmem.h>
 
 #include <disk.h>
 #include <errno.h>
@@ -37,6 +37,7 @@ static void fixup_gdt(void) {
 __attribute__((noreturn)) void kmain(void) {
     zero_bss();
     fixup_gdt();
+    init_memory();
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
@@ -59,7 +60,6 @@ __attribute__((noreturn)) void kmain(void) {
     if (init_virt_mem(memmap, memmap_size))
         kprintf("virtual memory init error");
 
-    init_memory();
     disk_init();
     init_rtc();
 
