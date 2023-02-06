@@ -1,5 +1,5 @@
 #include <vmalloc.h>
-#include <arch/amd64/physmem.h>
+#include <kernel.h>
 #include <arch/amd64/virtmem.h>
 #include <errno.h>
 #include <kstdio.h>
