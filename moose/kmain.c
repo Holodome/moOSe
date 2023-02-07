@@ -65,8 +65,6 @@ __attribute__((noreturn)) void kmain(void) {
         }
     }
 
-    assert(0);
-
     u32 secs = 0;
     for (;;) {
         u32 new_secs = get_seconds();
