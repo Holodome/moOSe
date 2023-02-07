@@ -1,5 +1,5 @@
 #include <arch/amd64/idt.h>
-#include <arch/amd64/io.h>
+#include <arch/amd64/asm.h>
 #include <kstdio.h>
 
 // Port address for master PIC
@@ -162,7 +162,8 @@ void isr_handler(const struct registers_state *regs) {
         kprintf("exception %s(%u): %u\n", get_exception_name(no), no,
                 (unsigned)regs->exception_code);
         print_registers(regs);
-        asm volatile("cli; hlt");
+        cli();
+        hlt();
     } else {
         isr_t *isr = isrs[no];
         if (isr != NULL)
@@ -239,6 +240,6 @@ void setup_idt(void) {
     set_idt_entry(47, (u64)isr15);
 
     load_idt();
-    asm volatile("sti");
+    sti();
 }
 

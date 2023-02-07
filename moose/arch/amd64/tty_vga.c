@@ -1,5 +1,5 @@
 #include <tty.h>
-#include <arch/amd64/io.h>
+#include <arch/amd64/asm.h>
 #include <kernel.h>
 
 #define WIDTH 80
