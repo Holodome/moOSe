@@ -1,6 +1,7 @@
 #include <arch/amd64/idt.h>
 #include <arch/amd64/asm.h>
 #include <arch/amd64/keyboard.h>
+#include <arch/amd64/vga.h>
 #include <kstdio.h>
 #include <tty.h>
 
@@ -33,7 +34,7 @@ static void keyboard_isr(const struct registers_state *regs
     if (codepoint == BACKSPACE) {
         if (dst > dst_start) {
             --dst;
-            tty_backspace();
+            vga_backspace();
         }
     } else if (codepoint == ENTER) {
         kputc('\n');
@@ -48,7 +49,7 @@ static void keyboard_isr(const struct registers_state *regs
 
 void init_keyboard(void) { register_isr(1, keyboard_isr); }
 
-ssize_t tty_read(void *buffer, size_t count) {
+ssize_t keyboard_read(void *buffer, size_t count) {
     is_listening = 1;
     dst = dst_start = buffer;
     dst_end = dst + count;
