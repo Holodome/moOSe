@@ -42,14 +42,15 @@ static void print_registers(const struct registers_state *r) {
             (unsigned)r->isr_number);
     kprintf("rdi: %#016llx rsi: %#016llx rbp: %#016llx\n", r->rdi, r->rsi,
             r->rbp);
-    kprintf("rsp: %#016llx rbx: %#016llx rcx: %#016llx\n", r->rsp, r->rbx,
-            r->rcx);
-    kprintf("rax: %#016llx r8:  %#016llx r9:  %#016llx\n", r->rax, r->r8,
-            r->r9);
-    kprintf("r10: %#016llx r11: %#016llx r12: %#016llx\n", r->r10, r->r11,
-            r->r12);
-    kprintf("r13: %#016llx r14: %#016llx r15: %#016llx\n", r->r13, r->r14,
-            r->r15);
+    kprintf("rsp: %#016llx rbx: %#016llx rdx: %#016llx\n", r->rsp, r->rbx,
+            r->rdx);
+    kprintf("rcx: %#016llx rax: %#016llx r8:  %#016llx\n", r->rcx, r->rax,
+            r->r8);
+    kprintf("r9:  %#016llx r10: %#016llx r11: %#016llx\n", r->r9, r->r10,
+            r->r11);
+    kprintf("r12: %#016llx r13: %#016llx r14: %#016llx\n", r->r12, r->r13,
+            r->r14);
+    kprintf("r15: %#016llx\n", r->r15);
     kprintf("rip: %#016llx cs:  %#016llx rflags: %#016llx\n", r->rip, r->cs,
             r->rflags);
     kprintf("ursp: %#016llx uss: %#016llx\n", r->ursp, r->uss);
