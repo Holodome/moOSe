@@ -16,7 +16,6 @@ void __panic(void) { __builtin_unreachable(); }
 int kprintf(const char *fmt __attribute__((unused)), ...) { return 0; }
 
 int load_kernel(void) {
-    print("hello");
     init_memory();
     int result = disk_init();
     if (result)
