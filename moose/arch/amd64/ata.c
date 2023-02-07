@@ -1,5 +1,5 @@
 #include <arch/amd64/ata.h>
-#include <arch/amd64/io.h>
+#include <arch/amd64/asm.h>
 
 #define PRIMARY_BUS 0x1f0
 #define SECONDARY_BUS 0x170

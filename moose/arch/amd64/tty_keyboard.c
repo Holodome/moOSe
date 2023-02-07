@@ -1,5 +1,5 @@
 #include <arch/amd64/idt.h>
-#include <arch/amd64/io.h>
+#include <arch/amd64/asm.h>
 #include <arch/amd64/keyboard.h>
 #include <kstdio.h>
 #include <tty.h>
