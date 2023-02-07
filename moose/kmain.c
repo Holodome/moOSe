@@ -5,9 +5,11 @@
 #include <arch/amd64/memory_map.h>
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
+#include <arch/processor.h>
 #include <kernel.h>
 #include <kmem.h>
 
+#include <bitops.h>
 #include <disk.h>
 #include <errno.h>
 #include <fs/fat.h>
@@ -15,7 +17,6 @@
 #include <kstdio.h>
 #include <physmem.h>
 #include <tty.h>
-#include <bitops.h>
 
 static void zero_bss(void) {
     extern volatile u64 *__bss_start;
@@ -57,7 +58,7 @@ __attribute__((noreturn)) void kmain(void) {
 
     setup_idt();
     init_keyboard();
-    struct mem_range ranges[2];
+    struct mem_range *ranges = kmalloc(usable_region_count * sizeof(*ranges));
     for (u32 i = 0, j = 0; i < memmap_size; ++i) {
         const struct memmap_entry *entry = memmap + i;
         if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
@@ -76,6 +77,8 @@ __attribute__((noreturn)) void kmain(void) {
         kprintf("virtual memory init error\n");
         goto halt;
     }
+
+    kprintf("init fin\n");
 
     disk_init();
     init_rtc();
@@ -101,5 +104,7 @@ __attribute__((noreturn)) void kmain(void) {
     }
 
 halt:
-    for (;;);
+    halt();
+    for (;;)
+        ;
 }

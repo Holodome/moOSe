@@ -3,14 +3,7 @@
 #include <types.h>
 
 #define PAGE_SIZE 4096
-<<<<<<< HEAD
-=======
 #define PAGE_SIZE_LOG 12
-
-#define KERNEL_BASE_ADDR 0x100000
-#define KERNEL_SIZE (1024 * 1024)
-#define DEFAULT_PAGE_TABLES_BASE 0x1000
->>>>>>> 69fbf70 (kernel: physical allocator is working)
 
 struct mem_range {
     u64 base;
