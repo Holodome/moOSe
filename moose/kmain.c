@@ -16,7 +16,7 @@
 #include <kmalloc.h>
 #include <kstdio.h>
 #include <tty.h>
-#include <panic.h>
+#include <assert.h>
 
 static void zero_bss(void) {
     extern u64 *__bss_start;
@@ -64,6 +64,8 @@ __attribute__((noreturn)) void kmain(void) {
             kprintf("opened file %11s\n", file.name);
         }
     }
+
+    assert(0);
 
     u32 secs = 0;
     for (;;) {

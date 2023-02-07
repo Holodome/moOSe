@@ -22,11 +22,6 @@ CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfile
 			-Imoose/include -O2 -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
 			-mcmodel=large 
 
-ifneq ($(DEBUG),)
-	ASFLAGS += -g
-	CFLAGS += -ggdb -O0
-endif
-
 TARGET_IMG := moose.img
 
 all: $(TARGET_IMG)
