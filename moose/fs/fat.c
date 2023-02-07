@@ -4,9 +4,7 @@
 #include <fs/fat.h>
 #include <kmem.h>
 #include <kstdio.h>
-
-// TODO: Assert
-#define PFATFS_ASSERT(...) (void)(__VA_ARGS__)
+#include <assert.h>
 
 #define PFATFS_ROOTDIR ((u32)1)
 #define PFATFS_DIRENT_SIZE 32
@@ -206,7 +204,7 @@ static int pfatfs__83_eq_reg(const char *n83, const char *reg,
 }
 
 static int pfatfs__is_rootdir(pfatfs_file *file) {
-    PFATFS_ASSERT(file->dirent_loc != PFATFS_ROOTDIR ||
+    assert(file->dirent_loc != PFATFS_ROOTDIR ||
                   file->type == PFATFS_FILE_DIR);
     return file->dirent_loc == PFATFS_ROOTDIR;
 }
@@ -236,7 +234,7 @@ static int pfatfs__seek(pfatfs *fs, off_t off, int whence) {
 }
 
 static u32 pfatfs__cluster_to_bytes(pfatfs *fs, u32 cluster, u16 offset) {
-    PFATFS_ASSERT(cluster >= 2 && offset < fs->bytes_per_cluster);
+    assert(cluster >= 2 && offset < fs->bytes_per_cluster);
     return (cluster - 2) * fs->bytes_per_cluster + offset + fs->data_offset;
 }
 
@@ -559,7 +557,7 @@ static pfatfs_file pfatfs__get_rootdir(pfatfs *fs) {
 static ssize_t pfatfs__find_dirent(pfatfs *fs, u32 start, u32 end,
                                    pfatfs__dirent *dirent) {
     u32 offset = start;
-    PFATFS_ASSERT(offset % PFATFS_DIRENT_SIZE == 0);
+    assert(offset % PFATFS_DIRENT_SIZE == 0);
     for (; offset < end; offset += PFATFS_DIRENT_SIZE) {
         pfatfs__dirent temp;
         PFATFS_TRY(pfatfs__read_dirent_(fs, &temp));
@@ -590,7 +588,7 @@ static int pfatfs__iter_dir_next(pfatfs *fs, pfatfs_file *dir,
             return new_offset;
 
         offset = (u32)new_offset;
-        PFATFS_ASSERT(offset <= rootdir_size);
+        assert(offset <= rootdir_size);
         if (offset == rootdir_size)
             return -ENOENT;
 
@@ -599,7 +597,7 @@ static int pfatfs__iter_dir_next(pfatfs *fs, pfatfs_file *dir,
     } else {
         u32 cluster = dir->cluster;
         u16 cluster_offset = dir->cluster_offset;
-        PFATFS_ASSERT(cluster_offset % PFATFS_DIRENT_SIZE == 0);
+        assert(cluster_offset % PFATFS_DIRENT_SIZE == 0);
     retry:
         PFATFS_TRY(pfatfs__seek(
             fs, pfatfs__cluster_to_bytes(fs, cluster, cluster_offset),
@@ -633,7 +631,7 @@ static int pfatfs__iter_dir_next(pfatfs *fs, pfatfs_file *dir,
 
 static ssize_t pfatfs__find_empty_dirent_(pfatfs *fs, u32 start, u32 end) {
     u32 offset = start;
-    PFATFS_ASSERT(offset % PFATFS_DIRENT_SIZE == 0);
+    assert(offset % PFATFS_DIRENT_SIZE == 0);
     for (; offset < end; offset += PFATFS_DIRENT_SIZE) {
         pfatfs__dirent temp;
         PFATFS_TRY(pfatfs__read_dirent_(fs, &temp));
@@ -657,7 +655,7 @@ static ssize_t pfatfs__find_empty_dirent(pfatfs *fs, pfatfs_file *dir) {
             return new_offset;
 
         offset = (u32)new_offset;
-        PFATFS_ASSERT(offset <= rootdir_size);
+        assert(offset <= rootdir_size);
         if (offset == rootdir_size)
             return -ENOENT;
 
@@ -666,7 +664,7 @@ static ssize_t pfatfs__find_empty_dirent(pfatfs *fs, pfatfs_file *dir) {
     } else {
         u32 cluster = dir->cluster;
         u16 cluster_offset = dir->cluster_offset;
-        PFATFS_ASSERT(cluster_offset % PFATFS_DIRENT_SIZE == 0);
+        assert(cluster_offset % PFATFS_DIRENT_SIZE == 0);
     retry:
         PFATFS_TRY(pfatfs__seek(
             fs, pfatfs__cluster_to_bytes(fs, cluster, cluster_offset),
@@ -708,7 +706,7 @@ static ssize_t pfatfs__add_dirent(pfatfs *fs, pfatfs_file *dir,
 
 static void pfatfs__init_child(pfatfs__dirent *dirent, pfatfs_file *child,
                                u32 dirent_loc) {
-    PFATFS_ASSERT(dirent_loc % PFATFS_DIRENT_SIZE == 0);
+    assert(dirent_loc % PFATFS_DIRENT_SIZE == 0);
     memset(child, 0, sizeof(*child));
     memcpy(child->name, dirent->name, sizeof(dirent->name));
     child->type = (dirent->attr & PFATFS_DIRENT_ATTR_DIR) != 0
@@ -720,7 +718,7 @@ static void pfatfs__init_child(pfatfs__dirent *dirent, pfatfs_file *child,
 }
 
 static ssize_t pfatfs__dir_empty(pfatfs *fs, pfatfs_file *dir) {
-    PFATFS_ASSERT(dir->type == PFATFS_FILE_DIR);
+    assert(dir->type == PFATFS_FILE_DIR);
 
     for (;;) {
         pfatfs__dirent dirent;
@@ -742,7 +740,7 @@ static ssize_t pfatfs__dir_empty(pfatfs *fs, pfatfs_file *dir) {
 static int pfatfs__find_child(pfatfs *fs, pfatfs_file *parent,
                               pfatfs_file *child, const char *name,
                               size_t name_len) {
-    PFATFS_ASSERT(parent->type == PFATFS_FILE_DIR);
+    assert(parent->type == PFATFS_FILE_DIR);
 
     for (;;) {
         pfatfs__dirent dirent;
@@ -814,7 +812,7 @@ ssize_t pfatfs_read(pfatfs *fs, pfatfs_file *file, void *buffer, size_t count) {
             goto end;
 
         file->cluster_offset += to_read;
-        PFATFS_ASSERT(file->cluster_offset <= fs->bytes_per_cluster);
+        assert(file->cluster_offset <= fs->bytes_per_cluster);
     }
 
 end:
@@ -862,7 +860,7 @@ ssize_t pfatfs_write(pfatfs *fs, pfatfs_file *file, const void *buffer,
 
         file->offset += to_write;
         file->cluster_offset += to_write;
-        PFATFS_ASSERT(file->cluster_offset <= fs->bytes_per_cluster);
+        assert(file->cluster_offset <= fs->bytes_per_cluster);
     }
 
     return cursor - (const char *)buffer;
@@ -933,7 +931,7 @@ int pfatfs_seek(pfatfs *fs, pfatfs_file *file, off_t offset, int whence) {
         file->cluster = file->start_cluster;
     }
 
-    PFATFS_ASSERT(new_offset >= file->offset);
+    assert(new_offset >= file->offset);
     while (file->offset != new_offset) {
         if (file->cluster_offset >= fs->bytes_per_cluster) {
             ssize_t new_cluster = pfatfs__get_fat(fs, file->cluster);
@@ -1029,7 +1027,7 @@ int pfatfs_createv(pfatfs *fs, const char *filename, size_t filename_len,
     size_t basename_idx = pfatfs__extract_basename(filename, filename_len);
     pfatfs_file dir;
     PFATFS_TRY(pfatfs_openv(fs, filename, basename_idx, &dir));
-    PFATFS_ASSERT(dir.type == PFATFS_FILE_DIR);
+    assert(dir.type == PFATFS_FILE_DIR);
 
     ssize_t first_cluster = pfatfs__allocate_cluster(fs);
     if (first_cluster < 0)
@@ -1052,7 +1050,7 @@ int pfatfs_renamev(pfatfs *fs, const char *oldpath, size_t oldpath_len,
     size_t new_basename_idx = pfatfs__extract_basename(newpath, newpath_length);
     pfatfs_file new_dir;
     PFATFS_TRY(pfatfs_openv(fs, newpath, new_basename_idx, &new_dir));
-    PFATFS_ASSERT(new_dir.type == PFATFS_FILE_DIR);
+    assert(new_dir.type == PFATFS_FILE_DIR);
 
     pfatfs_file old;
     PFATFS_TRY(pfatfs_openv(fs, oldpath, oldpath_len, &old));

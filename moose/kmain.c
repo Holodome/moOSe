@@ -16,6 +16,7 @@
 #include <kmalloc.h>
 #include <kstdio.h>
 #include <tty.h>
+#include <assert.h>
 
 static void zero_bss(void) {
     extern u64 *__bss_start;
