@@ -1,6 +1,7 @@
 #pragma once
 
 #define PAGE_SIZE 4096
+#define PAGE_SIZE_LOG 12
 
 #define PHYSMEM_VIRTUAL_BASE 0xffff880000000000
 #define KERNEL_PHYSICAL_BASE 0x100000
