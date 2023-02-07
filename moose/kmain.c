@@ -24,19 +24,8 @@ static void zero_bss(void) {
         *p++ = 0;
 }
 
-static void fixup_gdt(void) {
-    struct {
-        u16 size;
-        u64 offset;
-    } __attribute__((packed)) gdtr;
-    asm volatile("sgdt %0" : "=m"(gdtr));
-    gdtr.offset = FIXUP_ADDR(gdtr.offset);
-    asm volatile("lgdt %0" : : "m"(gdtr));
-}
-
 __attribute__((noreturn)) void kmain(void) {
     zero_bss();
-    fixup_gdt();
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
