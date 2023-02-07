@@ -3,8 +3,6 @@
 #include <arch/amd64/memory_map.h>
 #include <types.h>
 
-#define PAGE_SIZE 4096
-
 int init_phys_mem(const struct memmap_entry *memmap, size_t memmap_size);
 
 ssize_t alloc_page(void);

@@ -115,8 +115,8 @@ struct page_table {
 
 int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size);
 
-ssize_t alloc_virtual_page(struct pt_entry *entry);
-void free_virtual_page(struct pt_entry *entry);
+int alloc_virtual_page(u64 virt_addr);
+void free_virtual_page(u64 virt_addr);
 struct pt_entry *get_page_entry(u64 virt_addr);
 
 int map_virtual_page(u64 phys_addr, u64 virt_addr);

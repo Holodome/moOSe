@@ -9,7 +9,8 @@ KERNEL_OBJS := $(D)/arch/amd64/kstart.o $(D)/kstdio.o $(D)/kmem.o $(D)/arch/amd6
 	$(D)/arch/amd64/idt.o $(D)/arch/amd64/ata.o $(D)/fs/fat.o \
 	$(D)/arch/amd64/tty_keyboard.o $(D)/disk.o $(D)/arch/amd64/physmem.o \
 	$(D)/disk.o $(D)/arch/amd64/rtc.o \
-	$(D)/kmalloc.o $(D)/device.o $(D)/errno.o $(D)/arch/amd64/virtmem.o
+	$(D)/kmalloc.o $(D)/device.o $(D)/errno.o $(D)/arch/amd64/virtmem.o \
+	$(D)/vmalloc.o
 
 KERNEL_BOOT_OBJS := $(D)/arch/amd64/kboot.o $(D)/arch/amd64/long.o
 KERNEL_BOOT_LINK := $(D)/arch/amd64/kernel-boot.ld

@@ -1,6 +1,7 @@
 #include <arch/amd64/physmem.h>
 #include <arch/amd64/memory_map.h>
 #include <kstdio.h>
+#include <kernel.h>
 
 #define ARENA_SIZE (4 * 4096)
 

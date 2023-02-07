@@ -6,6 +6,7 @@
 #include <arch/amd64/physmem.h>
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
+#include <vmalloc.h>
 #include <kmem.h>
 #include <kernel.h>
 
