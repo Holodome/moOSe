@@ -50,7 +50,7 @@ int init_phys_mem(const struct mem_range *ranges, size_t ranges_size) {
         // buddy max order decreases
         if (entry->size < MAX_BLOCK_SIZE) {
             max_order = __log2(entry->size >> PAGE_SIZE_BITS);
-            block_count = 1 << max_order;
+            block_count = 1;
             zone->mem_size = block_count << PAGE_SIZE_BITS;
         }
 

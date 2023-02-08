@@ -73,25 +73,10 @@ __attribute__((noreturn)) void kmain(void) {
         goto halt;
     }
 
-    u64 addr = alloc_pages(0);
-    kprintf("%#llx\n", addr);
-    addr = alloc_pages(1);
-    kprintf("%#llx\n", addr);
-    addr = alloc_pages(1);
-    kprintf("%#llx\n", addr);
-
-    free_page(0x0);
-    addr = alloc_pages(1);
-    kprintf("%#llx\n", addr);
-
-    addr = alloc_pages(7);
-    kprintf("%#llx\n", addr);
-
-
-//    if (init_virt_mem(memmap, memmap_size)) {
-//        kprintf("virtual memory init error\n");
-//        goto halt;
-//    }
+    if (init_virt_mem(memmap, memmap_size)) {
+        kprintf("virtual memory init error\n");
+        goto halt;
+    }
 
     disk_init();
     init_rtc();
