@@ -17,10 +17,10 @@ struct mem_range {
 int init_phys_mem(const struct mem_range *memmap, size_t memmap_size);
 
 ssize_t alloc_page(void);
-ssize_t alloc_pages(size_t order);
+ssize_t alloc_pages(u32 order);
 
-void free_pages(u64 addr, size_t order);
+void free_pages(u64 addr, u32 order);
 void free_page(u64 addr);
 
-int alloc_region(u64 addr, size_t order);
-void free_region(u64 addr, size_t order);
+int alloc_region(u64 addr, u64 count);
+void free_region(u64 addr, u64 count);

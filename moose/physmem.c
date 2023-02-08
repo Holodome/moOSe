@@ -102,7 +102,7 @@ static void clear_buddies(struct free_area *free_area, u32 order, u64 index) {
     }
 }
 
-ssize_t alloc_pages(size_t order) {
+ssize_t alloc_pages(u32 order) {
     // TODO: assert order <= BUDDY_MAX_ORDER
     // finds first available memory zone
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
@@ -122,7 +122,7 @@ ssize_t alloc_pages(size_t order) {
     return -1;
 }
 
-void free_pages(u64 addr, size_t order) {
+void free_pages(u64 addr, u32 order) {
     // TODO: assert align addr to page size
     // TODO: assert order <= BUDDY_MAX_SIZE
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
@@ -139,27 +139,31 @@ ssize_t alloc_page(void) { return alloc_pages(0); }
 
 void free_page(u64 addr) { free_pages(addr, 0); }
 
-int alloc_region(u64 addr, size_t order) {
-    // TODO: assert order <= BUDDY_MAX_ORDER
+int alloc_region(u64 addr, u64 count) {
     // TODO: assert addr alignment
-
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];
         if (addr < zone->base_addr ||
             addr >= zone->base_addr + zone->mem_size)
             continue;
 
-        struct free_area *area = &zone->free_area[order];
-        if (area->bitmap != NULL) {
-            u64 bit_idx = (addr - zone->base_addr) >> (order + PAGE_SIZE_BITS);
-            if (!test_buddies(zone->free_area, order, bit_idx)) {
-                set_buddies(zone->free_area, order, bit_idx);
-                return 0;
-            }
-        }
+        struct free_area *area = &zone->free_area[0];
+        u64 bit_idx = (addr - zone->base_addr) >> PAGE_SIZE_BITS;
+        if (bit_idx + count > area->size)
+            return -1;
+
+        for (u64 idx = bit_idx; idx < bit_idx + count; idx++)
+            if (test_bit(bit_idx, area->bitmap))
+                return -1;
+
+        for (u64 idx = bit_idx; idx < bit_idx + count; idx++)
+            set_bit(bit_idx, area->bitmap);
     }
 
-    return -1;
+    return 0;
 }
 
-void free_region(u64 addr, size_t order) { free_pages(addr, order); }
+void free_region(u64 addr, u64 count) {
+    for (u64 i = 0; i < count; i++)
+        free_page(addr);
+}

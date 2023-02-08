@@ -178,24 +178,18 @@ struct pml4_table *get_pml4_table(void) { return root_table; }
 int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
     root_table = (struct pml4_table *)PML4_BASE_ADDR;
 
-    /* kprintf("here\n"); */
     // preallocate kernel physical space
     if (alloc_region(KERNEL_PHYSICAL_BASE, KERNEL_SIZE / PAGE_SIZE) < 0)
         return 1;
 
-    /* kprintf("here\n"); */
-
     // preallocate currently used page tables
     if (alloc_region(0, 8) < 0)
         return 1;
-    /* kprintf("here\n"); */
-
 
     // all physical memory map to 0xffff880000000000
     for (size_t i = 0; i < memmap_size; i++) {
         for (u64 addr = memmap[i].base;
              addr < memmap[i].base + memmap[i].length; addr += PAGE_SIZE) {
-            /* kprintf("mapping addr %llx\n", addr); */
             if (map_virtual_page(addr, PHYSMEM_VIRTUAL_BASE + addr))
                 return 1;
         }
