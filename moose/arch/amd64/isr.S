@@ -73,187 +73,187 @@ isr_common_stub:
 .global exception30
 .global exception31
 
-// 0: Divide By Zero Exception
+/* 0: Divide By Zero Exception */
 exception0:
     pushq $0x00
     pushq $0x00
     jmp isr_common_stub
 
-// 1: Debug Exception
+/* 1: Debug Exception */
 exception1:
     pushq $0x00
     pushq $0x01
     jmp isr_common_stub
 
-// 2: Non Maskable Interrupt Exception
+/* 2: Non Maskable Interrupt Exception */
 exception2:
     pushq $0x00
     pushq $0x02
     jmp isr_common_stub
 
-// 3: Int 3 Exception
+/* 3: Int 3 Exception */
 exception3:
     pushq $0x00
     pushq $0x03
     jmp isr_common_stub
 
-// 4: INTO Exception
+/* 4: INTO Exception */
 exception4:
     pushq $0x00
     pushq $0x04
     jmp isr_common_stub
 
-// 5: Out of Bounds Exception
+/* 5: Out of Bounds Exception */
 exception5:
     pushq $0x00
     pushq $0x05
     jmp isr_common_stub
 
-// 6: Invalid Opcode Exception
+/* 6: Invalid Opcode Exception */
 exception6:
     pushq $0x00
     pushq $0x06
     jmp isr_common_stub
 
-// 7: Coprocessor Not Available Exception
+/* 7: Coprocessor Not Available Exception */
 exception7:
     pushq $0x00
     pushq $0x07
     jmp isr_common_stub
 
-// 8: Double Fault Exception (With Error Code!)
+/* 8: Double Fault Exception (With Error Code!) */
 exception8:
     pushq $0x08
     jmp isr_common_stub
 
-// 9: Coprocessor Segment Overrun Exception
+/* 9: Coprocessor Segment Overrun Exception */
 exception9:
     pushq $0x00
     pushq $0x09
     jmp isr_common_stub
 
-// 10: Bad TSS Exception (With Error Code!)
+/* 10: Bad TSS Exception (With Error Code!) */
 exception10:
     pushq $0x0a
     jmp isr_common_stub
 
-// 11: Segment Not Present Exception (With Error Code!)
+/* 11: Segment Not Present Exception (With Error Code!) */
 exception11:
     pushq $0x0b
     jmp isr_common_stub
 
-// 12: Stack Fault Exception (With Error Code!)
+/* 12: Stack Fault Exception (With Error Code!) */
 exception12:
     pushq $0x0c
     jmp isr_common_stub
 
-// 13: General Protection Fault Exception (With Error Code!)
+/* 13: General Protection Fault Exception (With Error Code!) */
 exception13:
     pushq $0x0d
     jmp isr_common_stub
 
-// 14: Page Fault Exception (With Error Code!)
+/* 14: Page Fault Exception (With Error Code!) */
 exception14:
     pushq $0x0e
     jmp isr_common_stub
 
-// 15: Reserved Exception
+/* 15: Reserved Exception */
 exception15:
     pushq $0x00
     pushq $0x0f
     jmp isr_common_stub
 
-// 16: Floating Point Exception
+/* 16: Floating Point Exception */
 exception16:
     pushq $0x00
     pushq $0x10
     jmp isr_common_stub
 
-// 17: Alignment Check Exception
+/* 17: Alignment Check Exception */
 exception17:
     pushq $0x00
     pushq $0x11
     jmp isr_common_stub
 
-// 18: Machine Check Exception
+/* 18: Machine Check Exception */
 exception18:
     pushq $0x00
     pushq $0x12
     jmp isr_common_stub
 
-// 19: Reserved
+/* 19: Reserved */
 exception19:
     pushq $0x00
     pushq $0x13
     jmp isr_common_stub
 
-// 20: Reserved
+/* 20: Reserved */
 exception20:
     pushq $0x00
     pushq $0x14
     jmp isr_common_stub
 
-// 21: Reserved
+/* 21: Reserved */
 exception21:
     pushq $0x00
     pushq $0x15
     jmp isr_common_stub
 
-// 22: Reserved
+/* 22: Reserved */
 exception22:
     pushq $0x00
     pushq $0x16
     jmp isr_common_stub
 
-// 23: Reserved
+/* 23: Reserved */
 exception23:
     pushq $0x00
     pushq $0x17
     jmp isr_common_stub
 
-// 24: Reserved
+/* 24: Reserved */
 exception24:
     pushq $0x00
     pushq $0x18
     jmp isr_common_stub
 
-// 25: Reserved
+/* 25: Reserved */
 exception25:
     pushq $0x00
     pushq $0x19
     jmp isr_common_stub
 
-// 26: Reserved
+/* 26: Reserved */
 exception26:
     pushq $0x00
     pushq $0x1a
     jmp isr_common_stub
 
-// 27: Reserved
+/* 27: Reserved */
 exception27:
     pushq $0x00
     pushq $0x1b
     jmp isr_common_stub
 
-// 28: Reserved
+/* 28: Reserved */
 exception28:
     pushq $0x00
     pushq $0x1c
     jmp isr_common_stub
 
-// 29: Reserved
+/* 29: Reserved */
 exception29:
     pushq $0x00
     pushq $0x1d
     jmp isr_common_stub
 
-// 30: Reserved
+/* 30: Reserved */
 exception30:
     pushq $0x00
     pushq $0x1e
     jmp isr_common_stub
 
-// 31: Reserved
+/* 31: Reserved */
 exception31:
     pushq $0x00
     pushq $0x1f
@@ -276,7 +276,7 @@ exception31:
 .global isr14
 .global isr15
 
-// isr handlers
+/* isr handlers */
 isr0:
 	pushq $0x00
 	pushq $0x20

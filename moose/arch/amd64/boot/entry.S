@@ -15,14 +15,10 @@ start32:
     shr $2, %ecx
     rep stosl
 
-    push $no_cpuid_msg
-    call print
-    
-
     call cls
+
     call enable_a20
-    test %eax, %eax
-    jne no_a20
+    jc no_a20
 
     call check_has_cpuid
     call check_long_mode_supported
@@ -73,19 +69,16 @@ check_long_mode_supported:
 no_long_mode:
     push $no_long_mode_msg
     call print
-    add $4, %esp
     jmp die
 
 no_a20:
     push $no_a20_msg
     call print
-    add $4, %esp
     jmp die
 
 read_fail:
     push $failed_to_read
     call print
-    add $4, %esp
     jmp die
 
 die: 
