@@ -22,34 +22,14 @@ void free_virtual_page(struct pt_entry *entry) {
     entry->present = 0;
 }
 
-static struct page_table *alloc_page_table(void) {
+static void *alloc_page_table(void) {
     ssize_t addr = alloc_page();
     if (addr < 0)
         return NULL;
 
-    memset(FIXUP_PTR((void *)addr), 0, sizeof(struct page_table));
+    memset(FIXUP_PTR((void *)addr), 0, PAGE_SIZE);
 
-    return (struct page_table *)addr;
-}
-
-static struct page_directory *alloc_page_directory(void) {
-    ssize_t addr = alloc_page();
-    if (addr < 0)
-        return NULL;
-
-    memset(FIXUP_PTR((void *)addr), 0, sizeof(struct page_directory));
-
-    return (struct page_directory *)addr;
-}
-
-static struct pdptr_table *alloc_pdptr_table(void) {
-    ssize_t addr = alloc_page();
-    if (addr < 0)
-        return NULL;
-
-    memset(FIXUP_PTR((void *)addr), 0, sizeof(struct pdptr_table));
-
-    return (struct pdptr_table *)addr;
+    return (void *)addr;
 }
 
 static inline struct pt_entry *pt_lookup(struct page_table *table,
@@ -87,7 +67,7 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
     struct pml4_entry *pml4_entry = pml4_lookup(pml4_table, virt_addr);
 
     if (!pml4_entry->present) {
-        struct pdptr_table *pdptr_table = alloc_pdptr_table();
+        struct pdptr_table *pdptr_table = alloc_page_table();
         if (pdptr_table == NULL)
             return -1;
 
@@ -100,7 +80,7 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
     struct pdpt_entry *pdpt_entry = pdpt_lookup(pdptr_table, virt_addr);
 
     if (!pdpt_entry->present) {
-        struct page_directory *page_directory = alloc_page_directory();
+        struct page_directory *page_directory = alloc_page_table();
         if (page_directory == NULL)
             return -1;
 
@@ -178,24 +158,18 @@ struct pml4_table *get_pml4_table(void) { return root_table; }
 int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
     root_table = (struct pml4_table *)PML4_BASE_ADDR;
 
-    /* kprintf("here\n"); */
     // preallocate kernel physical space
     if (alloc_region(KERNEL_PHYSICAL_BASE, KERNEL_SIZE / PAGE_SIZE) < 0)
         return -1;
 
-    /* kprintf("here\n"); */
-
     // preallocate currently used page tables
     if (alloc_region(0, 8) < 0)
         return -1;
-    /* kprintf("here\n"); */
-
 
     // all physical memory map to 0xffff880000000000
     for (size_t i = 0; i < memmap_size; i++) {
         for (u64 addr = memmap[i].base;
              addr < memmap[i].base + memmap[i].length; addr += PAGE_SIZE) {
-            /* kprintf("mapping addr %llx\n", addr); */
             if (map_virtual_page(addr, PHYSMEM_VIRTUAL_BASE + addr))
                 return -1;
         }

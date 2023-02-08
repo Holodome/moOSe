@@ -78,8 +78,6 @@ __attribute__((noreturn)) void kmain(void) {
         goto halt;
     }
 
-    kprintf("init fin\n");
-
     disk_init();
     init_rtc();
 
