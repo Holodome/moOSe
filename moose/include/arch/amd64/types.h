@@ -49,7 +49,7 @@ typedef unsigned long long int uintmax_t;
 #define CHAR_MAX ((char)0x7f)
 #define CHAR_MIN ((char)0x80)
 #define SHRT_MAX ((short)0x7fff)
-#define SHRT_MIN ((short)s0x8000)
+#define SHRT_MIN ((short)0x8000)
 #define INT_MAX ((int)0x7fffffff)
 #define INT_MIN ((int)0x80000000)
 #define LONG_MAX ((long)0x7fffffffffffffff)
