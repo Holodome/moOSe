@@ -34,30 +34,22 @@ static void *alloc_page_table(void) {
 
 static inline struct pt_entry *pt_lookup(struct page_table *table,
                                          u64 virt_addr) {
-    if (table)
-        return &table->entries[PAGE_TABLE_INDEX(virt_addr)];
-    return NULL;
+    return &table->entries[PAGE_TABLE_INDEX(virt_addr)];
 }
 
 static inline struct pd_entry *pd_lookup(struct page_directory *directory,
                                          u64 virt_addr) {
-    if (directory)
-        return &directory->entries[PAGE_DIRECTORY_INDEX(virt_addr)];
-    return NULL;
+    return &directory->entries[PAGE_DIRECTORY_INDEX(virt_addr)];
 }
 
 static inline struct pdpt_entry *pdpt_lookup(struct pdptr_table *table,
                                              u64 virt_addr) {
-    if (table)
-        return &table->entries[PAGE_DIRECTORY_PTRT_INDEX(virt_addr)];
-    return NULL;
+    return &table->entries[PAGE_DIRECTORY_PTRT_INDEX(virt_addr)];
 }
 
 static inline struct pml4_entry *pml4_lookup(struct pml4_table *table,
                                              u64 virt_addr) {
-    if (table)
-        return &table->entries[PAGE_PLM4_INDEX(virt_addr)];
-    return NULL;
+    return &table->entries[PAGE_PLM4_INDEX(virt_addr)];
 }
 
 static struct pml4_table *root_table;
@@ -128,18 +120,18 @@ void flush_tlb_entry(u64 virt_addr) {
 struct pt_entry *get_page_entry(u64 virt_addr) {
     struct pml4_table *pml4_table = FIXUP_PTR(get_pml4_table());
     struct pml4_entry *pml4_entry = pml4_lookup(pml4_table, virt_addr);
-    if (pml4_entry == NULL)
+    if (!pml4_entry->present)
         return NULL;
 
     struct pdptr_table *pdptr_table = FIXUP_PTR((u64)pml4_entry->addr << 12);
     struct pdpt_entry *pdpt_entry = pdpt_lookup(pdptr_table, virt_addr);
-    if (pdpt_entry == NULL)
+    if (!pdpt_entry->present)
         return NULL;
 
     struct page_directory *page_directory =
         FIXUP_PTR((u64)pdpt_entry->addr << 12);
     struct pd_entry *pd_entry = pd_lookup(page_directory, virt_addr);
-    if (pd_entry == NULL)
+    if (!pd_entry->present)
         return NULL;
 
     struct page_table *page_table = FIXUP_PTR((u64)pd_entry->addr << 12);
