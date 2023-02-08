@@ -8,10 +8,6 @@ boot:
     mov %ax, %ss
     mov %ax, %ds
 
-    mov $0x500, %si
-    movb $0x10, (%si)
-    movb $0, 1(%si)
-    
     /* size of stage 2 bootloader is located at 0x01b0 */
     movw $0x7c00 + 0x01b0, %di
     movw (%di), %ax
