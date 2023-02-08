@@ -153,11 +153,11 @@ int alloc_region(u64 addr, u64 count) {
             return -1;
 
         for (u64 idx = bit_idx; idx < bit_idx + count; idx++)
-            if (test_bit(bit_idx, area->bitmap))
+            if (test_bit(idx, area->bitmap))
                 return -1;
 
         for (u64 idx = bit_idx; idx < bit_idx + count; idx++)
-            set_bit(bit_idx, area->bitmap);
+            set_bit(idx, area->bitmap);
     }
 
     return 0;
