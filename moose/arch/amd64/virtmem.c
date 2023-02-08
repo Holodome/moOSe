@@ -89,7 +89,7 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
     if (!pml4_entry->present) {
         struct pdptr_table *pdptr_table = alloc_pdptr_table();
         if (pdptr_table == NULL)
-            return 1;
+            return -1;
 
         pml4_entry->present = 1;
         pml4_entry->rw = 1;
@@ -102,7 +102,7 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
     if (!pdpt_entry->present) {
         struct page_directory *page_directory = alloc_page_directory();
         if (page_directory == NULL)
-            return 1;
+            return -1;
 
         pdpt_entry->present = 1;
         pdpt_entry->rw = 1;
@@ -116,7 +116,7 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
     if (!pd_entry->present) {
         struct page_table *page_table = alloc_page_table();
         if (page_table == NULL)
-            return 1;
+            return -1;
 
         pd_entry->present = 1;
         pd_entry->rw = 1;
@@ -181,13 +181,13 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
     /* kprintf("here\n"); */
     // preallocate kernel physical space
     if (alloc_region(KERNEL_PHYSICAL_BASE, KERNEL_SIZE / PAGE_SIZE) < 0)
-        return 1;
+        return -1;
 
     /* kprintf("here\n"); */
 
     // preallocate currently used page tables
     if (alloc_region(0, 8) < 0)
-        return 1;
+        return -1;
     /* kprintf("here\n"); */
 
 
@@ -197,7 +197,7 @@ int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size) {
              addr < memmap[i].base + memmap[i].length; addr += PAGE_SIZE) {
             /* kprintf("mapping addr %llx\n", addr); */
             if (map_virtual_page(addr, PHYSMEM_VIRTUAL_BASE + addr))
-                return 1;
+                return -1;
         }
     }
 
