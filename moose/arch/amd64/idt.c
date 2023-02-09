@@ -14,6 +14,8 @@
 #define PIC_EOI 0x20 /* End-of-interrupt command code */
 #define IRQ_BASE 32
 
+#define EXCEPTION_PAGE_FAULT 0xe
+
 static struct idt_entry idt[256] __attribute__((aligned(16)));
 static isr_t *isrs[48];
 
@@ -162,6 +164,9 @@ void isr_handler(const struct registers_state *regs) {
     if (no < 32) {
         kprintf("exception %s(%u): %u\n", get_exception_name(no), no,
                 (unsigned)regs->exception_code);
+        if (no == EXCEPTION_PAGE_FAULT) {
+            kprintf("address: %#018llx\n", read_cr2());
+        }
         print_registers(regs);
         cli();
         hlt();
