@@ -1,10 +1,11 @@
 #include <tty.h>
 #include <arch/amd64/asm.h>
+#include <kernel.h>
 
 #define WIDTH 80
 #define HEIGHT 25
 
-#define TEXTBUF ((volatile u8 *)0xb8000)
+#define TEXTBUF FIXUP_PTR((volatile u8 *)0xb8000)
 #define WHITE_ON_BLACK 0x0f
 
 #define PORT_CTL 0x3d4

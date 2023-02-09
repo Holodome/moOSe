@@ -115,7 +115,7 @@ void unmap_virtual_page(u64 virt_addr) {
 }
 
 void flush_tlb_entry(u64 virt_addr) {
-    __asm__("cli; invlpg (%0); sti" : : "r"(virt_addr));
+    asm volatile("cli; invlpg (%0); sti" : : "r"(virt_addr) : "memory");
 }
 
 struct pt_entry *get_page_entry(u64 virt_addr) {
