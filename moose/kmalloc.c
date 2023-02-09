@@ -29,6 +29,7 @@ static void init_subheap(struct subheap *heap) {
     init_list_head(&heap->list);
 
     struct mem_block *block = heap->memory;
+    memset(block, 0, sizeof(*block));
     block->size = heap->size - sizeof(struct mem_block);
     list_add(&block->list, &heap->blocks);
 }
