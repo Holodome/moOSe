@@ -4,6 +4,7 @@ An unix-like operating system with aim at simplicity.
 
 ## Features 
 
+* amd64 kernel
 * Custom bootloader
 * MBR HDD image
 * FAT12, FAT16, FAT32 support
@@ -18,12 +19,14 @@ An unix-like operating system with aim at simplicity.
 
 ## Compiling & running
 
-*x86_64-elf-gcc* crosscompilation toolchain and python3 are required for local build.
+*x86_64-elf-gcc* crosscompilation toolchain and *python3* are required for local build.
 *qemu-system-x86_64* emulator is required for running.
 Currently running only in qemu is supported.
 
 To produce OS image either run `make` or use `docker buildx build 
--f Dockerfile  --output . .`. OS image *moose.img* is a virtual hard disk formatted with MBR.
+-f Dockerfile  --output . .`
+
+OS image *moose.img* is a virtual hard disk formatted with MBR.
 
 to run pass it to qemu:
 ```
