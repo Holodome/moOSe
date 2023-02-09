@@ -7,7 +7,7 @@ RUN apt-get install -y mtools python3
 COPY ./ /root/
 
 WORKDIR /root/
-RUN make moose.img
+RUN make moose.img -j$(nproc)
 
 FROM scratch AS export
 COPY --from=builder /root/moose.img .

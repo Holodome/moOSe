@@ -11,23 +11,27 @@ typedef unsigned long long int u64;
 
 #ifndef __i686__
 
-typedef unsigned long long int size_t;
+typedef unsigned long int size_t;
 typedef unsigned long long int uintptr_t;
 typedef signed long long int ssize_t;
 typedef signed long long int ptrdiff_t;
 typedef signed long long int intmax_t;
 typedef unsigned long long int uintmax_t;
+typedef signed long long int intptr_t;
 
 #define SIZE_MAX ((size_t)ULONG_MAX)
 #define UINTPTR_MAX ((uintptr_t)ULONG_MAX)
 #define SSIZE_MAX ((ssize_t)LONG_MAX)
 #define PTRDIFF_MIN ((ptrdiff_t)LONG_MIN)
 #define PTRDIFF_MAX ((ptrdiff_t)LONG_MAX)
+#define INTMAX_MAX ((intmax_t)LONG_MAX)
+#define INTMAX_MIN ((intmax_t)LONG_MIN)
 
 #else
 
 typedef unsigned int size_t;
 typedef unsigned int uintptr_t;
+typedef signed int intptr_t;
 typedef signed int ssize_t;
 typedef signed int ptrdiff_t;
 typedef signed long long int intmax_t;
@@ -38,6 +42,8 @@ typedef unsigned long long int uintmax_t;
 #define SSIZE_MAX ((ssize_t)INT_MAX)
 #define PTRDIFF_MIN ((ptrdiff_t)INT_MIN)
 #define PTRDIFF_MAX ((ptrdiff_t)INT_MAX)
+#define INTMAX_MAX ((intmax_t)INT_MAX)
+#define INTMAX_MIN ((intmax_t)INT_MIN)
 
 #endif
 

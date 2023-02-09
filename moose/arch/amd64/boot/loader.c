@@ -3,16 +3,18 @@
 // The only difference is in the size of pointer, but we can work around that
 // (usize sized types) and it makes no difference
 #include <../arch/amd64/ata.c>
-#include <../arch/amd64/tty_vga.c>
 #include <../device.c>
 #include <../disk.c>
 #include <../errno.c>
-#include <../kmalloc.c>
 #include <../fs/fat.c>
+#include <../kmalloc.c>
 
 #include <mbr.h>
 
 extern void print(const char *s);
+void __panic(void) { __builtin_unreachable(); }
+int kprintf(const char *fmt __attribute__((unused)), ...) { return 0; }
+void *vsbrk(intptr_t inc __attribute__((unused))) { return NULL; }
 
 int load_kernel(void) {
     init_memory();

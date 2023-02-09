@@ -19,7 +19,7 @@ ASFLAGS = -msyntax=att --warn --fatal-warnings
 LDFLAGS = -Map $(subst .elf,.map,$@)
 
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
-			-Imoose/include -O2 -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
+			-Imoose/include -O0 -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
 			-mcmodel=large  
 
 ifneq ($(DEBUG),)
@@ -59,11 +59,11 @@ include moose/Makefile
 -include $(shell find . -name "*.d")
 
 %.o: %.c
-	@echo "CC $^"
+	@echo "CC $<"
 	$(Q)$(CC) $(CFLAGS) $(DEPFLAGS) -o $@ $<
 
 %.o: %.S
-	@echo "AS $^"
+	@echo "AS $<"
 	$(Q)$(CC) $(CFLAGS) -Wa,--64 -o $@ $<
 
 %.bin: %.elf

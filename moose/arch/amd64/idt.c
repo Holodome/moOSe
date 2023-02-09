@@ -1,5 +1,5 @@
 #include <arch/amd64/idt.h>
-#include <arch/amd64/io.h>
+#include <arch/amd64/asm.h>
 #include <kstdio.h>
 
 // Port address for master PIC
@@ -40,19 +40,20 @@ static void load_idt(void) {
 static void print_registers(const struct registers_state *r) {
     kprintf("exception_code: %u, isr: %u\n", (unsigned)r->exception_code,
             (unsigned)r->isr_number);
-    kprintf("rdi: %#016llx rsi: %#016llx rbp: %#016llx\n", r->rdi, r->rsi,
+    kprintf("rdi: %#018llx rsi: %#018llx rbp: %#018llx\n", r->rdi, r->rsi,
             r->rbp);
-    kprintf("rsp: %#016llx rbx: %#016llx rcx: %#016llx\n", r->rsp, r->rbx,
-            r->rcx);
-    kprintf("rax: %#016llx r8:  %#016llx r9:  %#016llx\n", r->rax, r->r8,
-            r->r9);
-    kprintf("r10: %#016llx r11: %#016llx r12: %#016llx\n", r->r10, r->r11,
-            r->r12);
-    kprintf("r13: %#016llx r14: %#016llx r15: %#016llx\n", r->r13, r->r14,
-            r->r15);
-    kprintf("rip: %#016llx cs:  %#016llx rflags: %#016llx\n", r->rip, r->cs,
+    kprintf("rsp: %#018llx rbx: %#018llx rdx: %#018llx\n", r->rsp, r->rbx,
+            r->rdx);
+    kprintf("rcx: %#018llx rax: %#018llx r8:  %#018llx\n", r->rcx, r->rax,
+            r->r8);
+    kprintf("r9:  %#018llx r10: %#018llx r11: %#018llx\n", r->r9, r->r10,
+            r->r11);
+    kprintf("r12: %#018llx r13: %#018llx r14: %#018llx\n", r->r12, r->r13,
+            r->r14);
+    kprintf("r15: %#018llx\n", r->r15);
+    kprintf("rip: %#018llx cs:  %#018llx rflags: %#018llx\n", r->rip, r->cs,
             r->rflags);
-    kprintf("ursp: %#016llx uss: %#016llx\n", r->ursp, r->uss);
+    kprintf("ursp: %#018llx uss: %#018llx\n", r->ursp, r->uss);
 }
 
 static const char *get_exception_name(unsigned exception) {
@@ -162,7 +163,8 @@ void isr_handler(const struct registers_state *regs) {
         kprintf("exception %s(%u): %u\n", get_exception_name(no), no,
                 (unsigned)regs->exception_code);
         print_registers(regs);
-        asm volatile("cli; hlt");
+        cli();
+        hlt();
     } else {
         isr_t *isr = isrs[no];
         if (isr != NULL)
@@ -239,6 +241,6 @@ void setup_idt(void) {
     set_idt_entry(47, (u64)isr15);
 
     load_idt();
-    asm volatile("sti");
+    sti();
 }
 

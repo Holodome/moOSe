@@ -6,6 +6,13 @@
 .global cls
 .code32
 
+#define VMEM 0xb8000
+#define MAX_ROWS 25
+#define MAX_COLS 80
+#define P_SCRCTL 0x3d4
+#define P_SCRDAT 0x3d5
+#define WHITE_ON_BLACK 0x0f
+
 cls:
     mov $' ', %al
     mov $WHITE_ON_BLACK, %ah
@@ -37,7 +44,7 @@ print:
     push %ebx
     mov %esp, %ebp
 
-    // get cursor to ecx
+    /* get cursor to ecx */
     xor %ecx, %ecx
     mov $14, %al
     mov $P_SCRCTL, %dx
@@ -79,7 +86,7 @@ print_end:
     mul %ebx
     mov %eax, %ecx
 
-    // update cursor
+    /* update cursor */
     mov $14, %al
     mov $P_SCRCTL, %dx
     out %al, %dx
@@ -98,9 +105,3 @@ print_end:
     pop %ebp
     ret
 
-.equ MAX_ROWS, 25
-.equ MAX_COLS, 80
-.equ P_SCRCTL, 0x3d4
-.equ P_SCRDAT, 0x3d5
-.equ VMEM, 0xb8000
-.equ WHITE_ON_BLACK, 0x0f

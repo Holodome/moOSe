@@ -1,6 +1,4 @@
 #pragma once
 
-__attribute__((noreturn)) void halt(void);
-void disable_interrupts(void);
-void enable_interrupts(void);
-void pause(void);
+void dump_registers(void);
+__attribute__((noreturn)) void halt_processor(void);

@@ -1,3 +1,6 @@
+/* Get memory map using bios E820 int 0x15 
+   Store it at constant address to that OS can look it up 
+*/
 .global get_memory_map
 .code16
 

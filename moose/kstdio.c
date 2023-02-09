@@ -1,3 +1,4 @@
+#include <device.h>
 #include <errno.h>
 #include <kmem.h>
 #include <kstdio.h>
@@ -471,15 +472,15 @@ int kprintf(const char *fmt, ...) {
 int kvprintf(const char *fmt, va_list args) {
     char buffer[256];
     int count = vsnprintf(buffer, 256, fmt, args);
-    int write_result = tty_write(buffer, strlen(buffer));
+    int write_result = write(tty_device, buffer, strlen(buffer));
     return write_result < 0 ? write_result : count;
 }
 
-int kputc(int c) { return tty_write((char *)&c, 1); }
+int kputc(int c) { return write(tty_device, (char *)&c, 1); }
 
 int kputs(const char *str) {
     size_t len = strlen(str);
-    int result = tty_write(str, len);
+    int result = write(tty_device, str, len);
     if (result < 0)
         return result;
 

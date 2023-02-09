@@ -6,6 +6,8 @@
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
 #include <arch/processor.h>
+#include <vmalloc.h>
+#include <kmem.h>
 #include <kernel.h>
 #include <kmem.h>
 
@@ -17,6 +19,7 @@
 #include <kstdio.h>
 #include <physmem.h>
 #include <tty.h>
+#include <assert.h>
 
 static void zero_bss(void) {
     extern volatile u64 *__bss_start;
@@ -26,19 +29,8 @@ static void zero_bss(void) {
         *p++ = 0;
 }
 
-static void fixup_gdt(void) {
-    struct {
-        u16 size;
-        u64 offset;
-    } __attribute__((packed)) gdtr;
-    asm volatile("sgdt %0" : "=m"(gdtr));
-    gdtr.offset = FIXUP_ADDR(gdtr.offset);
-    asm volatile("lgdt %0" : : "m"(gdtr));
-}
-
 __attribute__((noreturn)) void kmain(void) {
     zero_bss();
-    fixup_gdt();
     init_memory();
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
@@ -64,7 +56,7 @@ __attribute__((noreturn)) void kmain(void) {
         if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
             ranges[j].base = entry->base;
             ranges[j].size = entry->length;
-            ++j;
+            j++;
         }
     }
 
@@ -102,7 +94,7 @@ __attribute__((noreturn)) void kmain(void) {
     }
 
 halt:
-    halt();
+    halt_processor();
     for (;;)
         ;
 }

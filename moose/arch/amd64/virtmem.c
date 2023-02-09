@@ -3,23 +3,24 @@
 #include <kmem.h>
 #include <kstdio.h>
 #include <physmem.h>
+#include <arch/amd64/asm.h>
 
-ssize_t alloc_virtual_page(struct pt_entry *entry) {
+int alloc_virtual_page(u64 virt_addr) {
     ssize_t addr = alloc_page();
     if (addr < 0)
-        return -1;
+        return 1;
 
-    entry->addr = addr;
-    entry->present = 1;
+    map_virtual_page(addr, virt_addr);
 
     return 0;
 }
 
-void free_virtual_page(struct pt_entry *entry) {
-    if (entry->present)
-        free_page(entry->addr);
-
-    entry->present = 0;
+void free_virtual_page(u64 virt_addr) {
+    struct pt_entry *pt_entry = get_page_entry(virt_addr);
+    if (pt_entry != NULL && pt_entry->present) {
+        free_page(pt_entry->addr);
+        unmap_virtual_page(virt_addr);
+    }
 }
 
 static void *alloc_page_table(void) {
@@ -142,7 +143,7 @@ struct pt_entry *get_page_entry(u64 virt_addr) {
 
 void set_pml4_table(struct pml4_table *table) {
     root_table = FIXUP_PTR(table);
-    asm volatile("movq %%rax, %%cr3" : : "a"(table));
+    write_cr3((u64)table);
 }
 
 struct pml4_table *get_pml4_table(void) { return root_table; }
