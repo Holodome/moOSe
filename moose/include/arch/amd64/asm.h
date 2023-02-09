@@ -19,13 +19,13 @@ static inline u64 read_cr0(void) {
 
 static inline u64 read_cr2(void) {
     u64 result;
-    asm("mov %%cr1, %%rax" : "=a"(result));
+    asm("mov %%cr2, %%rax" : "=a"(result));
     return result;
 }
 
 static inline u64 read_cr3(void) {
     u64 result;
-    asm("mov %%cr1, %%rax" : "=a"(result));
+    asm("mov %%cr3, %%rax" : "=a"(result));
     return result;
 }
 
