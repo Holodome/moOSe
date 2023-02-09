@@ -2,6 +2,11 @@
 
 #include <types.h>
 
+struct mem_range {
+    u64 base;
+    u64 size;
+};
+
 static inline void *memcpy(void *dst_, const void *src_, size_t c) {
     u8 *dst = dst_;
     const u8 *src = src_;

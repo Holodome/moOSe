@@ -1,6 +1,7 @@
 #pragma once
 
 #include <arch/amd64/memory_map.h>
+#include <kmem.h>
 #include <types.h>
 
 #define ENTRIES_PER_TABLE 512
@@ -113,7 +114,7 @@ struct page_table {
     struct pt_entry entries[ENTRIES_PER_TABLE];
 };
 
-int init_virt_mem(const struct memmap_entry *memmap, size_t memmap_size);
+int init_virt_mem(const struct mem_range *ranges, size_t ranges_size);
 
 int alloc_virtual_page(u64 virt_addr);
 void free_virtual_page(u64 virt_addr);

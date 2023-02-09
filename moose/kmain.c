@@ -65,7 +65,7 @@ __attribute__((noreturn)) void kmain(void) {
         goto halt;
     }
 
-    if (init_virt_mem(memmap, memmap_size)) {
+    if (init_virt_mem(ranges, usable_region_count)) {
         kprintf("virtual memory init error\n");
         goto halt;
     }
