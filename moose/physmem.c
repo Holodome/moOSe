@@ -3,6 +3,7 @@
 #include <physmem.h>
 #include <kernel.h>
 #include <bitops.h>
+#include <assert.h>
 #include <arch/amd64/types.h>
 
 struct free_area {
@@ -103,7 +104,7 @@ static void clear_buddies(struct free_area *free_area, u32 order, u64 index) {
 }
 
 ssize_t alloc_pages(u32 order) {
-    // TODO: assert order <= BUDDY_MAX_ORDER
+    assert(order <= MAX_ORDER);
     // finds first available memory zone
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];
@@ -123,8 +124,8 @@ ssize_t alloc_pages(u32 order) {
 }
 
 void free_pages(u64 addr, u32 order) {
-    // TODO: assert align addr to page size
-    // TODO: assert order <= BUDDY_MAX_SIZE
+    assert((addr & 0xfff) == 0);
+    assert(order <= MAX_ORDER);
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];
         if (addr >= zone->base_addr &&
@@ -140,7 +141,7 @@ ssize_t alloc_page(void) { return alloc_pages(0); }
 void free_page(u64 addr) { free_pages(addr, 0); }
 
 int alloc_region(u64 addr, u64 count) {
-    // TODO: assert addr alignment
+    assert((addr & 0xfff) == 0);
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];
         if (addr < zone->base_addr ||

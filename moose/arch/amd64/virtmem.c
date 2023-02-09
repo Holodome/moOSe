@@ -3,6 +3,7 @@
 #include <kmem.h>
 #include <kstdio.h>
 #include <physmem.h>
+#include <assert.h>
 #include <arch/amd64/asm.h>
 
 int alloc_virtual_page(u64 virt_addr) {
@@ -66,10 +67,11 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
 
         pml4_entry->present = 1;
         pml4_entry->rw = 1;
-        pml4_entry->addr = (u64)pdptr_table >> 12;
+        pml4_entry->addr = (u64)pdptr_table >> PAGE_SIZE_BITS;
     }
 
-    struct pdptr_table *pdptr_table = FIXUP_PTR((u64)pml4_entry->addr << 12);
+    struct pdptr_table *pdptr_table =
+        FIXUP_PTR((u64)pml4_entry->addr << PAGE_SIZE_BITS);
     struct pdpt_entry *pdpt_entry = pdpt_lookup(pdptr_table, virt_addr);
 
     if (!pdpt_entry->present) {
@@ -79,11 +81,11 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
 
         pdpt_entry->present = 1;
         pdpt_entry->rw = 1;
-        pdpt_entry->addr = (u64)page_directory >> 12;
+        pdpt_entry->addr = (u64)page_directory >> PAGE_SIZE_BITS;
     }
 
     struct page_directory *page_directory =
-        FIXUP_PTR((u64)pdpt_entry->addr << 12);
+        FIXUP_PTR((u64)pdpt_entry->addr << PAGE_SIZE_BITS);
     struct pd_entry *pd_entry = pd_lookup(page_directory, virt_addr);
 
     if (!pd_entry->present) {
@@ -93,14 +95,23 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
 
         pd_entry->present = 1;
         pd_entry->rw = 1;
-        pd_entry->addr = (u64)page_table >> 12;
+        pd_entry->addr = (u64)page_table >> PAGE_SIZE_BITS;
     }
 
-    struct page_table *page_table = FIXUP_PTR((u64)pd_entry->addr << 12);
+    struct page_table *page_table =
+        FIXUP_PTR((u64)pd_entry->addr << PAGE_SIZE_BITS);
     struct pt_entry *pt_entry = pt_lookup(page_table, virt_addr);
 
     pt_entry->present = 1;
-    pt_entry->addr = phys_addr >> 12;
+    pt_entry->addr = phys_addr >> PAGE_SIZE_BITS;
+
+    return 0;
+}
+
+int map_virtual_region(u64 phys_base, u64 virt_base, size_t count) {
+    for (u64 addr = 0; addr < count * PAGE_SIZE; addr += PAGE_SIZE)
+        if (map_virtual_page(phys_base + addr, virt_base + addr))
+            return -1;
 
     return 0;
 }
@@ -114,6 +125,11 @@ void unmap_virtual_page(u64 virt_addr) {
     }
 }
 
+void unmap_virtual_region(u64 virt_addr, size_t count) {
+    for (u64 addr = 0; addr < count * PAGE_SIZE; addr += PAGE_SIZE)
+        unmap_virtual_page(virt_addr + addr);
+}
+
 void flush_tlb_entry(u64 virt_addr) {
     asm volatile("cli; invlpg (%0); sti" : : "r"(virt_addr) : "memory");
 }
@@ -124,18 +140,20 @@ struct pt_entry *get_page_entry(u64 virt_addr) {
     if (!pml4_entry->present)
         return NULL;
 
-    struct pdptr_table *pdptr_table = FIXUP_PTR((u64)pml4_entry->addr << 12);
+    struct pdptr_table *pdptr_table =
+        FIXUP_PTR((u64)pml4_entry->addr << PAGE_SIZE_BITS);
     struct pdpt_entry *pdpt_entry = pdpt_lookup(pdptr_table, virt_addr);
     if (!pdpt_entry->present)
         return NULL;
 
     struct page_directory *page_directory =
-        FIXUP_PTR((u64)pdpt_entry->addr << 12);
+        FIXUP_PTR((u64)pdpt_entry->addr << PAGE_SIZE_BITS);
     struct pd_entry *pd_entry = pd_lookup(page_directory, virt_addr);
     if (!pd_entry->present)
         return NULL;
 
-    struct page_table *page_table = FIXUP_PTR((u64)pd_entry->addr << 12);
+    struct page_table *page_table =
+        FIXUP_PTR((u64)pd_entry->addr << PAGE_SIZE_BITS);
     struct pt_entry *entry = pt_lookup(page_table, virt_addr);
 
     return entry;
@@ -152,25 +170,22 @@ int init_virt_mem(const struct mem_range *ranges, size_t ranges_size) {
     root_table = (struct pml4_table *)PML4_BASE_ADDR;
 
     // preallocate kernel physical space
-    if (alloc_region(KERNEL_PHYSICAL_BASE, KERNEL_SIZE / PAGE_SIZE) < 0)
+    if (alloc_region(KERNEL_PHYSICAL_BASE, KERNEL_SIZE >> PAGE_SIZE_BITS))
         return -1;
 
     // preallocate currently used page tables
-    if (alloc_region(0, 8) < 0)
+    if (alloc_region(0, 8))
         return -1;
 
-    // all physical memory map to 0xffff880000000000
+    // all physical memory map to PHYSMEM_VIRTUAL_BASE
     for (size_t i = 0; i < ranges_size; i++) {
-        for (u64 addr = ranges[i].base;
-             addr < ranges[i].base + ranges[i].size; addr += PAGE_SIZE) {
-            if (map_virtual_page(addr, PHYSMEM_VIRTUAL_BASE + addr))
-                return -1;
-        }
+        if (map_virtual_region(ranges[i].base, PHYSMEM_VIRTUAL_BASE + ranges[i].base,
+                           ranges[i].size >> PAGE_SIZE_BITS))
+            return -1;
     }
 
     // physical memory identity unmap
-    for (u64 addr = 0; addr < IDENTITY_MAP_SIZE; addr += PAGE_SIZE)
-        unmap_virtual_page(addr);
+    unmap_virtual_region(0x0, IDENTITY_MAP_SIZE >> PAGE_SIZE_BITS);
 
     return 0;
 }

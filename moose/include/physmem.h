@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <kmem.h>
+#include <types.h>
 
 // 1 - 2^BUDDY_MAX_ORDER pages in block
 #define MAX_ORDER 12

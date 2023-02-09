@@ -29,7 +29,7 @@ void *vsbrk(intptr_t increment) {
     if (pbrk + increment > plimit) {
         size_t alloc_size = pbrk + increment - plimit;
         size_t alloc_page_count =
-            align_po2(alloc_size, PAGE_SIZE) >> PAGE_SIZE_LOG;
+            align_po2(alloc_size, PAGE_SIZE) >> PAGE_SIZE_BITS;
 
         // TODO: Library call for mapping virt region
         while (alloc_page_count--) {
@@ -42,7 +42,7 @@ void *vsbrk(intptr_t increment) {
 
     pbrk += increment;
 
-    size_t free_page_count = (plimit - pbrk) >> PAGE_SIZE_LOG;
+    size_t free_page_count = (plimit - pbrk) >> PAGE_SIZE_BITS;
     while (free_page_count--) {
         plimit -= PAGE_SIZE;
         free_virtual_page((u64)plimit);
