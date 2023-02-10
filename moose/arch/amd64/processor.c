@@ -94,3 +94,18 @@ void halt_processor(void) {
     cli();
     hlt();
 }
+
+void set_stack(u64 sp, u64 old_stack_base) {
+    asm volatile("movq %0, %%rdi\n"
+                 "movq %1, %%rcx\n"
+                 "movq %%rsp, %%rsi\n"
+                 "subq %%rsi, %%rcx\n"
+                 "subq %%rcx, %%rdi\n"
+                 "movq %%rdi, %%rbx\n"
+                 "rep movsb\n"
+                 "movq %%rbx, %%rsp\n"
+                 "movq %%rsp, %%rbp\n"
+                 :
+                 : "r"(sp), "r"(old_stack_base)
+                 : "memory");
+}

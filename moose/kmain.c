@@ -10,6 +10,7 @@
 #include <kmem.h>
 #include <kernel.h>
 #include <kmem.h>
+#include <kthread.h>
 
 #include <bitops.h>
 #include <disk.h>
@@ -70,6 +71,8 @@ __attribute__((noreturn)) void kmain(void) {
         goto halt;
     }
 
+    init_kinit_thread();
+
     disk_init();
     init_rtc();
 
@@ -78,7 +81,7 @@ __attribute__((noreturn)) void kmain(void) {
     if (result == 0) {
 
         struct pfatfs_file file = {0};
-        int result = pfatfs_open(&fs, "kernel1.bin", &file);
+        int result = pfatfs_open(&fs, "kernel.bin", &file);
         if (result == 0) {
             kprintf("opened file %11s\n", file.name);
         }
