@@ -76,15 +76,6 @@ int pfatfs_seek(pfatfs *fs, pfatfs_file *file, off_t offset, int whence);
 int pfatfs_truncate(pfatfs *fs, pfatfs_file *file, size_t length);
 int pfatfs_readdir(pfatfs *fs, pfatfs_file *file, pfatfs_file *child);
 
-int pfatfs_openv(pfatfs *fs, const char *filename, size_t filename_len,
-                 pfatfs_file *file);
-int pfatfs_createv(pfatfs *fs, const char *filename, size_t filename_len,
-                   const pfatfs_file_create_info *info, pfatfs_file *file);
-int pfatfs_renamev(pfatfs *fs, const char *oldpath, size_t oldpath_len,
-                   const char *newpath, size_t newpath_length);
-int pfatfs_mkdirv(pfatfs *fs, const char *filepath, size_t filepath_len);
-int pfatfs_removev(pfatfs *fs, const char *filepath, size_t filepath_len);
-
 int pfatfs_open(pfatfs *fs, const char *filename, pfatfs_file *file);
 int pfatfs_create(pfatfs *fs, const char *filename,
                   const pfatfs_file_create_info *info, pfatfs_file *file);

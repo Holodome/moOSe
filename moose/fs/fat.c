@@ -1,10 +1,10 @@
+#include <assert.h>
 #include <device.h>
 #include <endian.h>
 #include <errno.h>
 #include <fs/fat.h>
 #include <kmem.h>
 #include <kstdio.h>
-#include <assert.h>
 
 #define PFATFS_ROOTDIR ((u32)1)
 #define PFATFS_DIRENT_SIZE 32
@@ -204,8 +204,7 @@ static int pfatfs__83_eq_reg(const char *n83, const char *reg,
 }
 
 static int pfatfs__is_rootdir(pfatfs_file *file) {
-    assert(file->dirent_loc != PFATFS_ROOTDIR ||
-                  file->type == PFATFS_FILE_DIR);
+    assert(file->dirent_loc != PFATFS_ROOTDIR || file->type == PFATFS_FILE_DIR);
     return file->dirent_loc == PFATFS_ROOTDIR;
 }
 
@@ -957,8 +956,8 @@ int pfatfs_seek(pfatfs *fs, pfatfs_file *file, off_t offset, int whence) {
     return 0;
 }
 
-int pfatfs_openv(pfatfs *fs, const char *filename, size_t filename_len,
-                 pfatfs_file *file) {
+static int pfatfs_openv(pfatfs *fs, const char *filename, size_t filename_len,
+                        pfatfs_file *file) {
     pfatfs_file search = pfatfs__get_rootdir(fs);
     for (pfatfs__fpath_iter iter = pfatfs__iter_fpath(filename, filename_len);
          !iter.is_finished; pfatfs__iter_fpath_next(&iter)) {
@@ -1022,8 +1021,9 @@ static int pfatfs__dirent_create(const char *filename, size_t filename_len,
     return result;
 }
 
-int pfatfs_createv(pfatfs *fs, const char *filename, size_t filename_len,
-                   const pfatfs_file_create_info *info, pfatfs_file *file) {
+static int pfatfs_createv(pfatfs *fs, const char *filename, size_t filename_len,
+                          const pfatfs_file_create_info *info,
+                          pfatfs_file *file) {
     size_t basename_idx = pfatfs__extract_basename(filename, filename_len);
     pfatfs_file dir;
     PFATFS_TRY(pfatfs_openv(fs, filename, basename_idx, &dir));
@@ -1045,8 +1045,8 @@ int pfatfs_createv(pfatfs *fs, const char *filename, size_t filename_len,
     return 0;
 }
 
-int pfatfs_renamev(pfatfs *fs, const char *oldpath, size_t oldpath_len,
-                   const char *newpath, size_t newpath_length) {
+static int pfatfs_renamev(pfatfs *fs, const char *oldpath, size_t oldpath_len,
+                          const char *newpath, size_t newpath_length) {
     size_t new_basename_idx = pfatfs__extract_basename(newpath, newpath_length);
     pfatfs_file new_dir;
     PFATFS_TRY(pfatfs_openv(fs, newpath, new_basename_idx, &new_dir));
@@ -1066,14 +1066,16 @@ int pfatfs_renamev(pfatfs *fs, const char *oldpath, size_t oldpath_len,
     return pfatfs__write_dirent(fs, old.dirent_loc, &dirent);
 }
 
-int pfatfs_mkdirv(pfatfs *fs, const char *filename, size_t filename_len) {
+static int pfatfs_mkdirv(pfatfs *fs, const char *filename,
+                         size_t filename_len) {
     pfatfs_file_create_info info = {0};
     info.type = PFATFS_FILE_DIR;
     pfatfs_file file;
     return pfatfs_createv(fs, filename, filename_len, &info, &file);
 }
 
-int pfatfs_removev(pfatfs *fs, const char *filename, size_t filename_len) {
+static int pfatfs_removev(pfatfs *fs, const char *filename,
+                          size_t filename_len) {
     pfatfs_file search;
     PFATFS_TRY(pfatfs_openv(fs, filename, filename_len, &search));
     if (search.type == PFATFS_FILE_DIR) {
