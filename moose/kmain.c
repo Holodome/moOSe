@@ -21,6 +21,7 @@
 #include <physmem.h>
 #include <tty.h>
 #include <assert.h>
+#include <shell.h>
 
 static void zero_bss(void) {
     extern volatile u64 *__bss_start;
@@ -75,25 +76,16 @@ __attribute__((noreturn)) void kmain(void) {
 
     disk_init();
     init_rtc();
+    init_shell();
+    shell_execute_command("HELP");
 
-    struct pfatfs fs = {.device = disk_part_dev};
-    int result = pfatfs_mount(&fs);
-    if (result == 0) {
-
-        struct pfatfs_file file = {0};
-        int result = pfatfs_open(&fs, "kernel.bin", &file);
-        if (result == 0) {
-            kprintf("opened file %11s\n", file.name);
-        }
-    }
-
-    u32 secs = 0;
     for (;;) {
-        u32 new_secs = get_seconds();
-        if (new_secs != secs) {
-            /* kprintf("time %u\n", new_secs); */
-            secs = new_secs;
-        }
+        kprintf("moOSe>");
+
+        char buffer[128];
+        ssize_t length = read(tty_device, buffer, sizeof(buffer));
+        buffer[length] = 0;
+        shell_execute_command(buffer);
     }
 
 halt:

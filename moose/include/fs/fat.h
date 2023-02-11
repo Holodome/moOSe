@@ -61,7 +61,6 @@ typedef struct pfatfs_time {
 } pfatfs_time;
 
 typedef struct pfatfs_file_create_info {
-    pfatfs_file_type type;
     u8 attrs;
     pfatfs_date date;
     pfatfs_time time;

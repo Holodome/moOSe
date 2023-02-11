@@ -97,6 +97,7 @@
     E(EKEYREJECTED, "Key was rejected by service")
 
 enum {
+    __ERRNOOK = 0,
 #define E(_name, _str) _name,
     ERRLIST
 #undef E

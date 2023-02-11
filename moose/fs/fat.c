@@ -94,7 +94,6 @@ static size_t pfatfs__extract_basename(const char *filename,
     size_t last_slash = filename_len - 1;
     for (; last_slash != 0; --last_slash) {
         if (filename[last_slash] == '/') {
-            --last_slash;
             break;
         }
     }
@@ -724,7 +723,7 @@ static ssize_t pfatfs__dir_empty(pfatfs *fs, pfatfs_file *dir) {
         ssize_t result = pfatfs__iter_dir_next(fs, dir, &dirent);
         if (result == -ENOENT)
             break;
-        else if (result < 0)
+        if (result < 0)
             return result;
 
         const char *name = dirent.name;
@@ -744,9 +743,7 @@ static int pfatfs__find_child(pfatfs *fs, pfatfs_file *parent,
     for (;;) {
         pfatfs__dirent dirent;
         ssize_t dirent_loc = pfatfs__iter_dir_next(fs, parent, &dirent);
-        if (dirent_loc == -ENOENT)
-            break;
-        else if (dirent_loc < 0)
+        if (dirent_loc < 0)
             return dirent_loc;
 
         if (pfatfs__83_eq_reg(dirent.name, name, name_len)) {
@@ -763,9 +760,14 @@ int pfatfs_readdir(pfatfs *fs, pfatfs_file *dir, pfatfs_file *child) {
         return -ENOTDIR;
 
     pfatfs__dirent dirent;
-    ssize_t dirent_loc = pfatfs__iter_dir_next(fs, dir, &dirent);
-    if (dirent_loc < 0)
-        return dirent_loc;
+    ssize_t dirent_loc;
+    for (;;) {
+        dirent_loc = pfatfs__iter_dir_next(fs, dir, &dirent);
+        if (dirent_loc < 0)
+            return dirent_loc;
+        if (dirent.name[0] != 0x00 && (u8)dirent.name[0] != 0xe5)
+            break;
+    }
 
     pfatfs__init_child(&dirent, child, dirent_loc);
     return 0;
@@ -860,6 +862,13 @@ ssize_t pfatfs_write(pfatfs *fs, pfatfs_file *file, const void *buffer,
         file->offset += to_write;
         file->cluster_offset += to_write;
         assert(file->cluster_offset <= fs->bytes_per_cluster);
+    }
+
+    pfatfs__dirent dirent;
+    PFATFS_TRY(pfatfs__read_dirent(fs, file->dirent_loc, &dirent));
+    if (dirent.file_size < file->offset) {
+        dirent.file_size = file->offset;
+        PFATFS_TRY(pfatfs__write_dirent(fs, file->dirent_loc, &dirent));
     }
 
     return cursor - (const char *)buffer;
@@ -1033,6 +1042,9 @@ static int pfatfs_createv(pfatfs *fs, const char *filename, size_t filename_len,
     if (first_cluster < 0)
         return first_cluster;
 
+    if (basename_idx != 0)
+        ++basename_idx;
+
     pfatfs__dirent dirent = {0};
     PFATFS_TRY(pfatfs__dirent_create(
         filename + basename_idx, filename_len - basename_idx, info, &dirent));
@@ -1052,8 +1064,12 @@ static int pfatfs_renamev(pfatfs *fs, const char *oldpath, size_t oldpath_len,
     PFATFS_TRY(pfatfs_openv(fs, newpath, new_basename_idx, &new_dir));
     assert(new_dir.type == PFATFS_FILE_DIR);
 
+    if (new_basename_idx != 0)
+        ++new_basename_idx;
+
     pfatfs_file old;
     PFATFS_TRY(pfatfs_openv(fs, oldpath, oldpath_len, &old));
+
     pfatfs__dirent dirent;
     PFATFS_TRY(pfatfs__read_dirent(fs, old.dirent_loc, &dirent));
 
@@ -1069,7 +1085,7 @@ static int pfatfs_renamev(pfatfs *fs, const char *oldpath, size_t oldpath_len,
 static int pfatfs_mkdirv(pfatfs *fs, const char *filename,
                          size_t filename_len) {
     pfatfs_file_create_info info = {0};
-    info.type = PFATFS_FILE_DIR;
+    info.attrs = PFATFS_DIRENT_ATTR_DIR;
     pfatfs_file file;
     return pfatfs_createv(fs, filename, filename_len, &info, &file);
 }
