@@ -1,5 +1,5 @@
-#include <arch/amd64/idt.h>
 #include <arch/amd64/asm.h>
+#include <arch/amd64/idt.h>
 #include <arch/amd64/keyboard.h>
 #include <arch/amd64/vga.h>
 #include <kstdio.h>
@@ -59,4 +59,3 @@ ssize_t keyboard_read(void *buffer, size_t count) {
 
     return dst - dst_start;
 }
-

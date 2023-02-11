@@ -16,4 +16,3 @@ static ssize_t tty_write(struct device *device __attribute__((unused)),
 static struct device tty_device_ = {
     .name = "tty", .ops = {.read = tty_read, .write = tty_write}};
 struct device *tty_device = &tty_device_;
-

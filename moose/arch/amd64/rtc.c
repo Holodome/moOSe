@@ -1,5 +1,5 @@
-#include <arch/amd64/idt.h>
 #include <arch/amd64/asm.h>
+#include <arch/amd64/idt.h>
 #include <arch/amd64/rtc.h>
 
 #define RATE 8

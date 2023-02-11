@@ -1,6 +1,6 @@
-#include <tty.h>
 #include <arch/amd64/asm.h>
 #include <kernel.h>
+#include <tty.h>
 
 #define WIDTH 80
 #define HEIGHT 25
@@ -43,7 +43,7 @@ void console_set_cursor(u32 x, u32 y) {
     u16 cursor = y * WIDTH + x;
     set_cursor(cursor);
 }
-#endif 
+#endif
 
 static void set_char(u16 offset, int symb) {
     volatile u8 *slot = TEXTBUF + offset * 2;

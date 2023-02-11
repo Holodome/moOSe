@@ -238,7 +238,7 @@ static void do_tree(const char *path) {
                 kputc(' ');
             kprintf("%11s\n", file[1].name);
 
-            if (file[1].type == PFATFS_FILE_DIR) 
+            if (file[1].type == PFATFS_FILE_DIR)
                 ++stack_size;
         }
     }

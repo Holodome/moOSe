@@ -1,5 +1,5 @@
-#include <arch/amd64/idt.h>
 #include <arch/amd64/asm.h>
+#include <arch/amd64/idt.h>
 #include <kstdio.h>
 
 // Port address for master PIC
@@ -34,9 +34,7 @@ static void load_idt(void) {
     struct idt_reg idt_reg;
     idt_reg.offset = (u64)&idt[0];
     idt_reg.size = 256 * sizeof(struct idt_entry) - 1;
-    asm volatile("lidt %0\n"
-                 :
-                 : "m"(idt_reg));
+    asm volatile("lidt %0\n" : : "m"(idt_reg));
 }
 
 static void print_registers(const struct registers_state *r) {
@@ -248,4 +246,3 @@ void setup_idt(void) {
     load_idt();
     sti();
 }
-

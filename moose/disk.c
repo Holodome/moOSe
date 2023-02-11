@@ -37,10 +37,10 @@ static int partition_write_block(struct device *dev __attribute__((unused)),
 
 int disk_init(void) {
     struct blk_device *blk_dev = ata_pio_dev;
-    if (init_blk_device(blk_dev, disk_dev)) 
+    if (init_blk_device(blk_dev, disk_dev))
         return -1;
 
-    if (read_partition_info()) 
+    if (read_partition_info())
         return -1;
 
     static struct blk_device partition_blk = {
@@ -49,9 +49,8 @@ int disk_init(void) {
     partition_blk.block_size_log = blk_dev->block_size_log;
     partition_blk.block_size = blk_dev->block_size;
 
-    if (init_blk_device(&partition_blk, disk_part_dev)) 
+    if (init_blk_device(&partition_blk, disk_part_dev))
         return -1;
 
     return 0;
 }
-

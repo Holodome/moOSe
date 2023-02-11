@@ -1,11 +1,11 @@
 #include <arch/amd64/virtmem.h>
+#include <bitops.h>
 #include <errno.h>
 #include <kernel.h>
 #include <kmem.h>
 #include <kstdio.h>
 #include <types.h>
 #include <vmalloc.h>
-#include <bitops.h>
 
 #define VMALLOC_BASE ((uintptr_t)0xffffc90000000000llu)
 #define VMALLOC_LIMIT ((uintptr_t)0xffffe8ffffffffffllu)
@@ -50,4 +50,3 @@ void *vsbrk(intptr_t increment) {
 
     return (void *)prev_pbrk;
 }
-

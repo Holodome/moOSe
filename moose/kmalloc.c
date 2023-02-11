@@ -1,5 +1,5 @@
-#include <bitops.h>
 #include <assert.h>
+#include <bitops.h>
 #include <kernel.h>
 #include <kmalloc.h>
 #include <kmem.h>

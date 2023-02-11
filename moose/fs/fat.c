@@ -1127,4 +1127,3 @@ int pfatfs_create(pfatfs *fs, const char *filename,
                   const pfatfs_file_create_info *info, pfatfs_file *file) {
     return pfatfs_createv(fs, filename, strlen(filename), info, file);
 }
-
