@@ -16,7 +16,8 @@ static inline void *memcpy(void *dst_, const void *src_, size_t c) {
     return dst_;
 }
 
-static inline void *memset(void *dst_, int ch, size_t c) {
+__attribute__((always_inline)) static inline void *memset(void *dst_, int ch,
+                                                          size_t c) {
     u8 *dst = dst_;
     while (c--)
         *dst++ = ch;

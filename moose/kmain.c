@@ -6,12 +6,12 @@
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
 #include <arch/processor.h>
-#include <vmalloc.h>
-#include <kmem.h>
 #include <kernel.h>
 #include <kmem.h>
 #include <kthread.h>
+#include <vmalloc.h>
 
+#include <assert.h>
 #include <bitops.h>
 #include <disk.h>
 #include <errno.h>
@@ -19,9 +19,8 @@
 #include <kmalloc.h>
 #include <kstdio.h>
 #include <physmem.h>
-#include <tty.h>
-#include <assert.h>
 #include <shell.h>
+#include <tty.h>
 
 static void zero_bss(void) {
     extern volatile u64 *__bss_start;
@@ -31,6 +30,7 @@ static void zero_bss(void) {
         *p++ = 0;
 }
 
+__attribute__((noreturn)) void kmain_(void);
 __attribute__((noreturn)) void kmain(void) {
     zero_bss();
     init_memory();
@@ -64,16 +64,19 @@ __attribute__((noreturn)) void kmain(void) {
 
     if (init_phys_mem(ranges, usable_region_count)) {
         kprintf("physical memory init error\n");
-        goto halt;
+        halt_processor();
     }
 
     if (init_virt_mem(ranges, usable_region_count)) {
         kprintf("virtual memory init error\n");
-        goto halt;
+        halt_processor();
     }
 
     init_kinit_thread();
+    kmain_();
+}
 
+void kmain_(void) {
     disk_init();
     init_rtc();
     init_shell();
@@ -87,9 +90,4 @@ __attribute__((noreturn)) void kmain(void) {
         buffer[length] = 0;
         shell_execute_command(buffer);
     }
-
-halt:
-    halt_processor();
-    for (;;)
-        ;
 }
