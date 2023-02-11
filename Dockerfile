@@ -2,12 +2,12 @@ FROM randomdude/gcc-cross-x86_64-elf AS builder
 
 RUN apt-get update
 RUN apt-get upgrade -y
-RUN apt-get install -y grub-common
+RUN apt-get install -y mtools python3
 
 COPY ./ /root/
 
 WORKDIR /root/
-RUN make moose.img
+RUN make moose.img -j$(nproc)
 
 FROM scratch AS export
 COPY --from=builder /root/moose.img .
