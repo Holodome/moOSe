@@ -14,10 +14,7 @@ struct slab_cache {
     u32 order;
     char name[CACHE_NAME_SIZE];
     struct list_head next;
-
-    void (*ctor)(void *, struct slab_cache *, unsigned long);
-    void (*dtor)(void *, struct slab_cache *, unsigned long);
-
+    // TODO: add constructor and destructor
     u32 active_count;
     u32 allocated_count;
 };
@@ -28,3 +25,7 @@ struct slab {
     u32 *free_queue;
     u32 used_count;
 };
+
+int init_slab_cache(void);
+
+struct slab_cache *create_cache(const char *name, size_t size);
