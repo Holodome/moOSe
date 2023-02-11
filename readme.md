@@ -2,6 +2,8 @@
 
 An unix-like operating system with aim at simplicity.
 
+![screenshot](screenshots/v0.1.png)
+
 ## Features 
 
 * amd64 kernel
