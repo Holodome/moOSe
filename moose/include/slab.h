@@ -30,3 +30,6 @@ struct slab {
 int init_slab_cache(void);
 
 struct slab_cache *create_cache(const char *name, size_t size);
+
+void *smalloc(size_t size);
+void sfree(void *ptr);

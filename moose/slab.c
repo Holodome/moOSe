@@ -5,7 +5,7 @@
 #include <mm/physmem.h>
 
 #define FREE_QUEUE_END UINT_MAX
-#define SLAB_QUEUE_PTR(_slab) \
+#define FREE_QUEUE_PTR(_slab) \
     ((u32 *)(((struct slab*)_slab)+1))
 
 #define ALIGNMENT 16
@@ -35,11 +35,13 @@ struct general_cache {
     struct slab_cache *cache;
 };
 
-#define GENERAL_CACHE_COUNT 12
-#define GENERAL_CACHE_MIN_SIZE 32
+#define GENERAL_CACHE_COUNT 13
+#define GENERAL_CACHE_MIN_SIZE 16
+#define GENERAL_CACHE_MIN_SIZE_BITS 4
 #define GENERAL_CACHE_MAX_SIZE 65536
 
 static struct general_cache general_caches[] = {
+    { "general-16",  16,    NULL},
     { "general-32",  32,    NULL},
     { "general-64",  64,    NULL},
     { "general-128", 128,   NULL},
@@ -60,21 +62,23 @@ static int add_slab(struct slab_cache *cache, int off_slab) {
         return -1;
 
     struct slab *slab;
-    // slab descriptor in the same page
     if (off_slab) {
-
+        slab = smalloc(sizeof(struct slab) + cache->obj_count * sizeof(u32));
+        if (slab == NULL)
+            return -1;
+        slab->memory = (void *)addr;
     } else {
         slab = FIXUP_PTR((void *)addr);
-        slab->used_count = 0;
         slab->memory = (void *)slab + sizeof(struct slab) +
                        cache->obj_count * sizeof(u32);
-
-        slab->free = 0;
-        u32 *free_queue = (u32 *)(slab + 1);
-        for (u32 i = 0; i < cache->obj_count; i++)
-            free_queue[i] = i + 1;
-        free_queue[cache->obj_count - 1] = FREE_QUEUE_END;
     }
+
+    slab->used_count = 0;
+    u32 *free_queue = FREE_QUEUE_PTR(slab);
+    for (u32 i = 0; i < cache->obj_count; i++)
+        free_queue[i] = i + 1;
+    free_queue[cache->obj_count - 1] = FREE_QUEUE_END;
+    slab->free = 0;
 
     list_add(&slab->list, &cache->slabs_free);
     cache->allocated_count += cache->obj_count;
@@ -102,7 +106,7 @@ void *cache_alloc(struct slab_cache *cache) {
     }
 
     void *obj = slab->memory + slab->free * cache->obj_size;
-    slab->free = SLAB_QUEUE_PTR(slab)[slab->free];
+    slab->free = FREE_QUEUE_PTR(slab)[slab->free];
     slab->used_count++;
     if (slab->used_count == cache->obj_count) {
         list_remove(&slab->list);
@@ -166,6 +170,20 @@ struct slab_cache *create_cache(const char *name, size_t size) {
     return cache;
 }
 
+void *smalloc(size_t size) {
+    size = align_po2(size, GENERAL_CACHE_MIN_SIZE);
+    if (size > GENERAL_CACHE_MAX_SIZE)
+        return NULL;
+
+    size_t aligned = 1 << __log2(size);
+    if (aligned != size)
+        aligned <<= 1;
+
+    u32 index = __log2(aligned >> GENERAL_CACHE_MIN_SIZE_BITS);
+
+    return cache_alloc(general_caches[index].cache);
+}
+
 int init_slab_cache(void) {
     // start initialization of cache_cache
     // it is the first available cache in chain
@@ -176,8 +194,9 @@ int init_slab_cache(void) {
 
     list_add(&cache_cache.list, &caches);
 
-    // TODO: init general caches
-    for (u32 i = 0; i < GENERAL_CACHE_COUNT; i++) {
+    for (size_t size = GENERAL_CACHE_MIN_SIZE, i = 0;
+         size <= GENERAL_CACHE_MAX_SIZE;
+         size *= 2, i++) {
         struct slab_cache *cache = create_cache(
             general_caches[i].name, general_caches[i].obj_size);
         if (cache == NULL)
