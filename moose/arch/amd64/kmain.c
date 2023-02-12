@@ -20,6 +20,11 @@ static void zero_bss(void) {
         *p++ = 0;
 }
 
+struct s {
+    struct list_head list;
+    int a;
+};
+
 __attribute__((noreturn)) void kmain(void) {
     zero_bss();
     init_kmalloc();
@@ -60,7 +65,6 @@ __attribute__((noreturn)) void kmain(void) {
         kprintf("failed to initialize virtual memory\n");
         halt_cpu();
     }
-
     init_rtc();
 
     if (launch_first_task(idle_task)) {

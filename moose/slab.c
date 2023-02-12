@@ -1,9 +1,23 @@
 #include <slab.h>
+#include <mm/kmem.h>
+#include <bitops.h>
 #include <param.h>
 #include <mm/physmem.h>
 
 #define FREE_QUEUE_END UINT_MAX
+#define SLAB_QUEUE_PTR(_slab) \
+    ((u32 *)(((struct slab*)_slab)+1))
 
+#define ALIGNMENT 16
+
+// 1/8 of page size, if object size is larger than
+// SLAB_THRESHOLD, slab descriptor will be put off slab
+#define SLAB_THRESHOLD 512
+
+// slab consists of at least MIN_SLAB_OBJ_COUNT objects
+#define MIN_SLAB_OBJ_COUNT 8
+
+// cache chain
 static LIST_HEAD(caches);
 
 static struct slab_cache cache_cache = {
@@ -11,6 +25,7 @@ static struct slab_cache cache_cache = {
     .slabs_partial = LIST_HEAD_INIT(cache_cache.slabs_partial),
     .slabs_free = LIST_HEAD_INIT(cache_cache.slabs_free),
     .obj_size = sizeof(struct slab_cache),
+    .order = 0,
     .name = "slab_cache"
 };
 
@@ -23,10 +38,6 @@ struct general_cache {
 #define GENERAL_CACHE_COUNT 12
 #define GENERAL_CACHE_MIN_SIZE 32
 #define GENERAL_CACHE_MAX_SIZE 65536
-
-// 1/8 of page size, if object size is larger than
-// SLAB_THRESHOLD, slab descriptor will be put off slab
-#define SLAB_THRESHOLD 512
 
 static struct general_cache general_caches[] = {
     { "general-32",  32,    NULL},
@@ -43,41 +54,127 @@ static struct general_cache general_caches[] = {
     { "general-64k", 65536, NULL},
 };
 
-struct slab_cache *create_cache(const char *name, size_t size) {
-    return NULL;
-}
-
-static int create_slab(struct slab_cache *cache) {
+static int add_slab(struct slab_cache *cache, int off_slab) {
     ssize_t addr = alloc_pages(cache->order);
     if (addr < 0)
         return -1;
 
     struct slab *slab;
-    if (cache->obj_size < SLAB_THRESHOLD) {
+    // slab descriptor in the same page
+    if (off_slab) {
+
+    } else {
         slab = FIXUP_PTR((void *)addr);
         slab->used_count = 0;
-        slab->free_queue = (u32 *)(slab + sizeof(struct slab));
-        slab->memory = slab + sizeof(struct slab) +
+        slab->memory = (void *)slab + sizeof(struct slab) +
                        cache->obj_count * sizeof(u32);
 
+        slab->free = 0;
+        u32 *free_queue = (u32 *)(slab + 1);
         for (u32 i = 0; i < cache->obj_count; i++)
-            slab->free_queue[i] = i + 1;
-        slab->free_queue[cache->obj_count - 1] = FREE_QUEUE_END;
-    } else {
-        // TODO: off slab descriptor allocation
+            free_queue[i] = i + 1;
+        free_queue[cache->obj_count - 1] = FREE_QUEUE_END;
     }
 
     list_add(&slab->list, &cache->slabs_free);
+    cache->allocated_count += cache->obj_count;
 
     return 0;
 }
 
+void *cache_alloc(struct slab_cache *cache) {
+    struct list_head *partial = &cache->slabs_partial;
+    struct list_head *free = &cache->slabs_free;
+
+    struct slab *slab = list_next_or_null(partial, partial, struct slab, list);
+    if (slab == NULL) {
+        slab = list_next_or_null(free, free, struct slab, list);
+        if (slab == NULL) {
+            if (add_slab(cache, cache->obj_size >= SLAB_THRESHOLD))
+                return NULL;
+            slab = list_next_or_null(free, free, struct slab, list);
+        }
+    }
+
+    if (slab->used_count == 0) {
+        list_remove(&slab->list);
+        list_add(&slab->list, partial);
+    }
+
+    void *obj = slab->memory + slab->free * cache->obj_size;
+    slab->free = SLAB_QUEUE_PTR(slab)[slab->free];
+    slab->used_count++;
+    if (slab->used_count == cache->obj_count) {
+        list_remove(&slab->list);
+        list_add(&slab->list, &cache->slabs_full);
+    }
+
+    return obj;
+}
+
+static void estimate_cache(struct slab_cache *cache, int off_slab) {
+    if (off_slab) {
+        for (u8 order = 0; order < MAX_ORDER; order++) {
+            size_t mem_size = PAGE_SIZE << order;
+            if (MIN_SLAB_OBJ_COUNT * cache->obj_size <= mem_size) {
+                cache->order = order;
+                cache->obj_count = mem_size / cache->obj_size;
+                cache->slab_header_size =
+                    sizeof(struct slab) + cache->obj_count * sizeof(u32);
+                return;
+            }
+        }
+    }
+
+    for (u8 order = 0; order < MAX_ORDER; order++) {
+        size_t mem_size = PAGE_SIZE << order;
+        cache->obj_count = (mem_size - sizeof(struct slab)) /
+                           (sizeof(u32) + cache->obj_size);
+        if (cache->obj_count >= MIN_SLAB_OBJ_COUNT) {
+            cache->order = order;
+            cache->slab_header_size = align_po2(sizeof(struct slab) +
+                                      cache->obj_count * sizeof(u32), ALIGNMENT);
+            if (cache->slab_header_size +
+                    cache->obj_count * cache->obj_size >= mem_size)
+                cache->obj_count--;
+        }
+    }
+}
+
+struct slab_cache *create_cache(const char *name, size_t size) {
+    // alloc cache from cache_cache
+    struct slab_cache *cache = cache_alloc(&cache_cache);
+    if (cache == NULL)
+        return NULL;
+
+    init_list_head(&cache->slabs_free);
+    init_list_head(&cache->slabs_partial);
+    init_list_head(&cache->slabs_full);
+
+    strncpy(cache->name, name, CACHE_NAME_SIZE);
+    cache->obj_size = align_po2(size, ALIGNMENT);
+
+    int off_slab = cache->obj_size >= SLAB_THRESHOLD;
+    estimate_cache(cache, off_slab);
+
+    cache->active_count = 0;
+    if (add_slab(cache, off_slab))
+        return NULL;
+
+    list_add(&cache->list, &caches);
+
+    return cache;
+}
+
 int init_slab_cache(void) {
-    // TODO: cache_cache initialization
-    if (create_slab(&cache_cache))
+    // start initialization of cache_cache
+    // it is the first available cache in chain
+    cache_cache.obj_size = align_po2(cache_cache.obj_size, ALIGNMENT);
+    estimate_cache(&cache_cache, 0);
+    if (add_slab(&cache_cache, 0))
         return -1;
 
-    list_add(&cache_cache.next, &caches);
+    list_add(&cache_cache.list, &caches);
 
     // TODO: init general caches
     for (u32 i = 0; i < GENERAL_CACHE_COUNT; i++) {
@@ -87,7 +184,7 @@ int init_slab_cache(void) {
             return -1;
 
         general_caches[i].cache = cache;
-        list_add(&cache->next, &caches);
+        list_add(&cache->list, &caches);
     }
 
     return 0;

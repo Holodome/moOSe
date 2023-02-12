@@ -60,3 +60,11 @@ static inline size_t strlen(const char *str) {
         ;
     return cur - str;
 }
+
+static inline char *strncpy(char *dst, const char *src, size_t c) {
+    char *ptr = dst;
+    while (*src && c--)
+        *dst++ = *src++;
+    *dst = '\0';
+    return ptr;
+}

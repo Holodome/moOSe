@@ -13,17 +13,18 @@ struct slab_cache {
     u32 obj_count;
     u32 order;
     char name[CACHE_NAME_SIZE];
-    struct list_head next;
+    struct list_head list;
     // TODO: add constructor and destructor
     u32 active_count;
     u32 allocated_count;
+    u32 slab_header_size;
 };
 
 struct slab {
     struct list_head list;
     void *memory;
-    u32 *free_queue;
     u32 used_count;
+    u32 free;
 };
 
 int init_slab_cache(void);
