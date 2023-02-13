@@ -116,6 +116,45 @@ void *cache_alloc(struct slab_cache *cache) {
     return obj;
 }
 
+void cache_free(struct slab_cache *cache, void *obj) {
+    struct list_head *partial = &cache->slabs_partial;
+    struct list_head *full = &cache->slabs_full;
+
+    // check if obj is in partial slabs
+    list_for_each(iter, partial) {
+        struct slab *slab = list_entry(iter, struct slab, list);
+        if (obj < slab->memory)
+            continue;
+
+        u32 index = (obj - slab->memory) / cache->obj_size;
+        if (index < cache->obj_count) {
+            FREE_QUEUE_PTR(slab)[index] = slab->free;
+            slab->free = index;
+            slab->used_count--;
+            if (slab->used_count == 0) {
+                list_remove(&slab->list);
+                list_add(&slab->list, &cache->slabs_free);
+            }
+            return;
+        }
+    }
+
+    // if partial doesn't contain obj, check slabs_full
+    list_for_each(iter, full) {
+        struct slab *slab = list_entry(iter, struct slab, list);
+        if (obj < slab->memory)
+            continue;
+
+        u32 index = (obj - slab->memory) / cache->obj_size;
+        if (index < cache->obj_count) {
+            FREE_QUEUE_PTR(slab)[index] = slab->free;
+            slab->free = index;
+            slab->used_count--;
+            return;
+        }
+    }
+}
+
 static void estimate_cache(struct slab_cache *cache, int off_slab) {
     if (off_slab) {
         for (u8 order = 0; order < MAX_ORDER; order++) {
