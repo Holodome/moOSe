@@ -43,7 +43,62 @@ static struct general_cache general_caches[] = {
     { "general-2k",  2048,  NULL},
 };
 
-static int add_slab(struct slab_cache *cache) {
+static void estimate_cache(struct slab_cache *cache) {
+    size_t mem_size = PAGE_SIZE;
+    cache->obj_count = (mem_size - sizeof(struct slab)) /
+                       (sizeof(u32) + cache->obj_size);
+
+    cache->slab_header_size = align_po2(sizeof(struct slab) +
+                                            cache->obj_count * sizeof(u32), ALIGNMENT);
+    if (cache->slab_header_size +
+            cache->obj_count * cache->obj_size > mem_size)
+        cache->obj_count--;
+}
+
+struct slab_cache *create_cache(const char *name, size_t size) {
+    // alloc cache from cache_cache
+    struct slab_cache *cache = cache_alloc(&cache_cache);
+    if (cache == NULL)
+        return NULL;
+
+    init_list_head(&cache->slabs_free);
+    init_list_head(&cache->slabs_partial);
+    init_list_head(&cache->slabs_full);
+
+    strncpy(cache->name, name, CACHE_NAME_SIZE);
+    cache->obj_size = align_po2(size, ALIGNMENT);
+
+    estimate_cache(cache);
+
+    cache->active_count = 0;
+    if (grow_cache(cache))
+        return NULL;
+
+    list_add(&cache->list, &caches);
+
+    return cache;
+}
+
+void free_cache(struct slab_cache *cache) {
+    list_for_each(iter, &cache->slabs_full) {
+        struct slab *slab = list_entry(iter, struct slab, list);
+        free_page((u64)PTR_TO_PHYS(slab));
+    }
+
+    list_for_each(iter, &cache->slabs_partial) {
+        struct slab *slab = list_entry(iter, struct slab, list);
+        free_page((u64)PTR_TO_PHYS(slab));
+    }
+
+    list_for_each(iter, &cache->slabs_free) {
+        struct slab *slab = list_entry(iter, struct slab, list);
+        free_page((u64)PTR_TO_PHYS(slab));
+    }
+
+    cache_free(&cache_cache, cache);
+}
+
+int grow_cache(struct slab_cache *cache) {
     ssize_t addr = alloc_page();
     if (addr < 0)
         return -1;
@@ -67,6 +122,13 @@ static int add_slab(struct slab_cache *cache) {
     return 0;
 }
 
+void shrink_cache(struct slab_cache *cache) {
+    list_for_each(iter, &cache->slabs_free) {
+        struct slab *slab = list_entry(iter, struct slab, list);
+        free_page((u64)PTR_TO_PHYS(slab));
+    }
+}
+
 void *cache_alloc(struct slab_cache *cache) {
     struct list_head *partial = &cache->slabs_partial;
     struct list_head *free = &cache->slabs_free;
@@ -75,7 +137,7 @@ void *cache_alloc(struct slab_cache *cache) {
     if (slab == NULL) {
         slab = list_next_or_null(free, free, struct slab, list);
         if (slab == NULL) {
-            if (add_slab(cache))
+            if (grow_cache(cache))
                 return NULL;
             slab = list_next_or_null(free, free, struct slab, list);
         }
@@ -117,42 +179,6 @@ void cache_free(struct slab_cache *cache, void *obj) {
     }
 }
 
-static void estimate_cache(struct slab_cache *cache) {
-    size_t mem_size = PAGE_SIZE;
-    cache->obj_count = (mem_size - sizeof(struct slab)) /
-                       (sizeof(u32) + cache->obj_size);
-
-    cache->slab_header_size = align_po2(sizeof(struct slab) +
-                              cache->obj_count * sizeof(u32), ALIGNMENT);
-    if (cache->slab_header_size +
-            cache->obj_count * cache->obj_size > mem_size)
-        cache->obj_count--;
-}
-
-struct slab_cache *create_cache(const char *name, size_t size) {
-    // alloc cache from cache_cache
-    struct slab_cache *cache = cache_alloc(&cache_cache);
-    if (cache == NULL)
-        return NULL;
-
-    init_list_head(&cache->slabs_free);
-    init_list_head(&cache->slabs_partial);
-    init_list_head(&cache->slabs_full);
-
-    strncpy(cache->name, name, CACHE_NAME_SIZE);
-    cache->obj_size = align_po2(size, ALIGNMENT);
-
-    estimate_cache(cache);
-
-    cache->active_count = 0;
-    if (add_slab(cache))
-        return NULL;
-
-    list_add(&cache->list, &caches);
-
-    return cache;
-}
-
 void *smalloc(size_t size) {
     size = align_po2(size, GENERAL_CACHE_MIN_SIZE);
     if (size > GENERAL_CACHE_MAX_SIZE)
@@ -177,7 +203,7 @@ int init_slab_cache(void) {
     // it is the first available cache in chain
     cache_cache.obj_size = align_po2(cache_cache.obj_size, ALIGNMENT);
     estimate_cache(&cache_cache);
-    if (add_slab(&cache_cache))
+    if (grow_cache(&cache_cache))
         return -1;
 
     list_add(&cache_cache.list, &caches);
