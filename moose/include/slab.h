@@ -11,7 +11,6 @@ struct slab_cache {
     struct list_head slabs_free;
     u32 obj_size;
     u32 obj_count;
-    u32 order;
     char name[CACHE_NAME_SIZE];
     struct list_head list;
     // TODO: add constructor and destructor
@@ -22,6 +21,7 @@ struct slab_cache {
 
 struct slab {
     struct list_head list;
+    struct slab_cache *cache;
     void *memory;
     u32 used_count;
     u32 free;
