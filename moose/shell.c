@@ -1,7 +1,7 @@
-#include <arch/amd64/rtc.h>
 #include <disk.h>
 #include <errno.h>
 #include <fs/fat.h>
+#include <jiffies.h>
 #include <kmem.h>
 #include <kstdio.h>
 #include <shell.h>
@@ -238,7 +238,7 @@ static void do_tree(const char *path) {
                 kputc(' ');
             kprintf("%11s\n", file[1].name);
 
-            if (file[1].type == PFATFS_FILE_DIR) 
+            if (file[1].type == PFATFS_FILE_DIR)
                 ++stack_size;
         }
     }
@@ -247,7 +247,8 @@ static void do_tree(const char *path) {
 static void execute(const struct cmd *cmd) {
     switch (cmd->cmd) {
     case CMD_TIME:
-        kprintf("time: %zus\n", get_seconds());
+        kprintf("time: %lus\n",
+                (unsigned long)jiffies64_to_msecs(get_jiffies64()));
         break;
     case CMD_TREE:
         do_tree(cmd->a);
