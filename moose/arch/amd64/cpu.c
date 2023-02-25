@@ -30,43 +30,9 @@ struct registers {
 
 static_assert(sizeof(struct registers) == 0xa8);
 
-static void get_registers(struct registers *regs) {
-    asm("push %%rax\n"
-        "mov %0, %%rax\n"
-        "mov %%rdi, 0x0(%%rax)\n"
-        "mov %%rsi, 0x8(%%rax)\n"
-        "mov %%rbp, 0x10(%%rax)\n"
-        "mov %%rsp, 0x18(%%rax)\n"
-        "mov %%rbx, 0x20(%%rax)\n"
-        "mov %%rdx, 0x28(%%rax)\n"
-        "mov %%rcx, 0x30(%%rax)\n"
-        "mov %%rax, 0x38(%%rax)\n"
-        "mov %%r8, 0x40(%%rax)\n"
-        "mov %%r9, 0x48(%%rax)\n"
-        "mov %%r10, 0x50(%%rax)\n"
-        "mov %%r11, 0x58(%%rax)\n"
-        "mov %%r12, 0x60(%%rax)\n"
-        "mov %%r13, 0x68(%%rax)\n"
-        "mov %%r14, 0x70(%%rax)\n"
-        "mov %%r15, 0x78(%%rax)\n"
-        "push %%rbx\n"
-        "lea 0(%%rip), %%rbx\n"
-        "mov %%rbx, 0x80(%%rax)\n"
-        "pushf\n"
-        "pop %%rbx\n"
-        "mov %%rbx, 0x88(%%rax)\n"
-        "mov %%cr0, %%rbx\n"
-        "mov %%rbx, 0x90(%%rax)\n"
-        "mov %%cr2, %%rbx\n"
-        "mov %%rbx, 0x98(%%rax)\n"
-        "mov %%cr3, %%rbx\n"
-        "mov %%rbx, 0xa0(%%rax)\n"
-        "pop %%rbx\n"
-        "pop %%rax\n"
-        :
-        : "m"(regs)
-        : "memory");
-}
+extern void get_registers(struct registers *regs) __attribute__((used));
+extern void set_stack(u64 sp, u64 old_stack_base) __attribute__((used));
+extern void process_switch(struct task *old, struct task *new) __attribute__((used));
 
 static void print_registers(const struct registers *r) {
     kprintf("rip: %#018llx rflags: %#018llx\n", r->rip, r->rflags);
@@ -94,57 +60,4 @@ void dump_registers(void) {
 void halt_cpu(void) {
     cli();
     hlt();
-}
-
-void set_stack(u64 sp, u64 old_stack_base) {
-    asm volatile("movq %0, %%rdi\n"
-                 "movq %1, %%rcx\n"
-                 "movq %%rsp, %%rsi\n"
-                 "subq %%rsi, %%rcx\n"
-                 "subq %%rcx, %%rdi\n"
-                 "movq %%rdi, %%rbx\n"
-                 "rep movsb\n"
-                 "movq %%rbx, %%rsp\n"
-                 "movq %%rsp, %%rbp\n"
-                 :
-                 : "r"(sp), "r"(old_stack_base)
-                 : "memory");
-}
-
-void process_switch(struct task *old, struct task *new) {
-    asm volatile("movq %0, %%rax\n"
-                 "movq %1, %%rdx\n"
-                 /* save system V ABI preserved general-purpose registers */
-                 "pushq %%rbx\n"
-                 "pushq %%rsp\n"
-                 "pushq %%rbp\n"
-                 "pushq %%r12\n"
-                 "pushq %%r13\n"
-                 "pushq %%r14\n"
-                 "pushq %%r15\n"
-                 /* save flags and rbp */
-                 "pushfq\n"
-                 "pushq %%rbp\n"
-                 /* save esp and eip */
-                 "movq %%rsp, (%%rax)\n"
-                 "leaq 1f(%%rip), %%rdi\n"
-                 "mov %%rdi, 8(%%rax)\n"
-                 /* "movq 1f, 8(%%rax)\n" */
-                 /* switch stack */
-                 "movq (%%rdx), %%rsp\n"
-                 /* 'call' new thread */
-                 "pushq 8(%%rdx)\n"
-                 "ret\n"
-                 "1:\n"
-                 "popq %%rbp\n"
-                 "popfq\n"
-                 "popq %%r15\n"
-                 "popq %%r14\n"
-                 "popq %%r13\n"
-                 "popq %%r12\n"
-                 "popq %%rbp\n"
-                 "popq %%rsp\n"
-                 "popq %%rbx\n" ::"r"(old),
-                 "r"(new)
-                 : "memory");
 }
