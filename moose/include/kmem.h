@@ -50,8 +50,7 @@ static inline int memcmp(const void *l_, const void *r_, size_t c) {
     const u8 *r = r_;
     while (c--) {
         int d = *l++ - *r++;
-        if (d)
-            return d;
+        if (d) return d;
     }
 
     return 0;
