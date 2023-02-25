@@ -1,5 +1,5 @@
-#include <bitops.h>
 #include <assert.h>
+#include <bitops.h>
 #include <kernel.h>
 #include <kmalloc.h>
 #include <kmem.h>
@@ -49,8 +49,8 @@ static struct mem_block *subheap_find_best_block(struct subheap *heap,
     struct mem_block *best_node = NULL;
     size_t best_mem = heap->size;
 
-    list_for_each(iter, &heap->blocks) {
-        struct mem_block *node = list_entry(iter, struct mem_block, list);
+    struct mem_block *node;
+    list_for_each_entry(node, &heap->blocks, list) {
         if (!node->used && node->size >= size && node->size < best_mem) {
             best_node = node;
             best_mem = node->size;
@@ -61,8 +61,8 @@ static struct mem_block *subheap_find_best_block(struct subheap *heap,
 }
 
 static struct mem_block *find_best_block(size_t size) {
-    list_for_each(iter, &subheaps) {
-        struct subheap *heap = list_entry(iter, struct subheap, list);
+    struct subheap *heap;
+    list_for_each_entry(heap, &subheaps, list) {
         struct mem_block *block = subheap_find_best_block(heap, size);
         if (block)
             return block;
@@ -126,8 +126,8 @@ void *kzalloc(size_t size) {
 
 static struct subheap *find_block_heap(struct mem_block *block) {
     uintptr_t block_addr = (uintptr_t)block;
-    list_for_each(iter, &subheaps) {
-        struct subheap *heap = list_entry(iter, struct subheap, list);
+    struct subheap *heap;
+    list_for_each_entry(heap, &subheaps, list) {
         if (block_addr >= (uintptr_t)heap->memory &&
             block_addr < (uintptr_t)heap->memory + heap->size)
             return heap;
