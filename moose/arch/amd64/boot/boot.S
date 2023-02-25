@@ -26,5 +26,3 @@ boot:
     jmp *%eax
 halt:
     jmp halt
-
-boot_drive: .byte 0
