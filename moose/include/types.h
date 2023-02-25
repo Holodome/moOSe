@@ -55,6 +55,11 @@ static inline void list_remove(struct list_head *it) {
 
 #define list_entry(_ptr, _type, _member) container_of(_ptr, _type, _member)
 
+#define list_for_each_entry(_iter, _head, _member)                             \
+    for ((_iter) = list_entry((_head)->next, typeof(*(_iter)), _member);       \
+         &(_iter)->_member != _head;                                           \
+         (_iter) = list_entry(_iter->_member.next, typeof(*(_iter)), _member))
+
 #define list_prev_or_null(_ptr, _head, _type, _member)                         \
     ({                                                                         \
         struct list_head *__prev = (_ptr)->prev;                               \
