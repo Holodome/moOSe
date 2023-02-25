@@ -5,7 +5,7 @@
 #include <arch/amd64/memory_map.h>
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
-#include <arch/processor.h>
+#include <arch/cpu.h>
 #include <kernel.h>
 #include <kmem.h>
 #include <kthread.h>
@@ -64,12 +64,12 @@ __attribute__((noreturn)) void kmain(void) {
 
     if (init_phys_mem(ranges, usable_region_count)) {
         kprintf("physical memory init error\n");
-        halt_processor();
+        halt_cpu();
     }
 
     if (init_virt_mem(ranges, usable_region_count)) {
         kprintf("virtual memory init error\n");
-        halt_processor();
+        halt_cpu();
     }
 
     init_kinit_thread();
