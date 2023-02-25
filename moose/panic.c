@@ -1,7 +1,7 @@
-#include <arch/processor.h>
+#include <arch/cpu.h>
 #include <panic.h>
 
 void __panic(void) {
     dump_registers();
-    halt_processor();
+    halt_cpu();
 }

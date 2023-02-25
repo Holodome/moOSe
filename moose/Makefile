@@ -10,7 +10,7 @@ KERNEL_OBJS := $(D)/arch/amd64/kstart.o $(D)/kstdio.o $(D)/kmem.o $(D)/arch/amd6
 	$(D)/arch/amd64/keyboard.o $(D)/disk.o $(D)/physmem.o \
 	$(D)/disk.o $(D)/arch/amd64/rtc.o $(D)/tty.o \
 	$(D)/kmalloc.o $(D)/device.o $(D)/errno.o $(D)/arch/amd64/virtmem.o \
-	$(D)/vmalloc.o $(D)/arch/amd64/processor.o $(D)/panic.o \
+	$(D)/vmalloc.o $(D)/arch/amd64/cpu.o $(D)/panic.o \
 	$(D)/kthread.o $(D)/shell.o
 
 KERNEL_BOOT_OBJS := $(D)/arch/amd64/kboot.o $(D)/arch/amd64/long.o

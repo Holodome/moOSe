@@ -1,5 +1,5 @@
 #include <arch/amd64/asm.h>
-#include <arch/processor.h>
+#include <arch/cpu.h>
 #include <kstdio.h>
 
 struct registers {
@@ -90,7 +90,7 @@ void dump_registers(void) {
     print_registers(&regs);
 }
 
-void halt_processor(void) {
+void halt_cpu(void) {
     cli();
     hlt();
 }
