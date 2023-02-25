@@ -2,6 +2,8 @@
 
 #include <types.h>
 
+#define X86_FLAGS_IF 0x0200
+
 __attribute__((noreturn)) static inline void hlt(void) {
     asm volatile("hlt");
     __builtin_unreachable();
@@ -84,3 +86,12 @@ static inline void cmos_write(u8 idx, u8 data) {
     port_out8(0x70, idx);
     port_out8(0x71, data);
 }
+
+static inline u64 read_cpu_flags() {
+    u64 flags;
+    asm volatile("pushf\n"
+                 "pop %0\n"
+                 : "=rm"(flags)::"memory");
+    return flags;
+}
+

@@ -4,12 +4,6 @@
 
 #define KTHREAD_STACK_SIZE 4096
 
-struct task_cpu_state {
-    u64 rflags;
-    u64 rip;
-    u64 rsp;
-};
-
 struct task {
     //
 };
@@ -25,4 +19,5 @@ union kthread {
 
 int init_kinit_thread(void);
 
+void schedule(void);
 void process_switch(struct task *old, struct task *new);
