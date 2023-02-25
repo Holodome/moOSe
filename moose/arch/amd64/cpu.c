@@ -1,6 +1,7 @@
 #include <arch/amd64/asm.h>
 #include <arch/cpu.h>
 #include <kstdio.h>
+#include <kthread.h>
 
 struct registers {
     u64 rdi;
@@ -110,3 +111,40 @@ void set_stack(u64 sp, u64 old_stack_base) {
                  : "memory");
 }
 
+void process_switch(struct task *old, struct task *new) {
+    asm volatile("movq %0, %%rax\n"
+                 "movq %1, %%rdx\n"
+                 /* save system V ABI preserved general-purpose registers */
+                 "pushq %%rbx\n"
+                 "pushq %%rsp\n"
+                 "pushq %%rbp\n"
+                 "pushq %%r12\n"
+                 "pushq %%r13\n"
+                 "pushq %%r14\n"
+                 "pushq %%r15\n"
+                 /* save flags and rbp */
+                 "pushfq\n"
+                 "pushq %%rbp\n"
+                 /* save esp and eip */
+                 "movq %%rsp, (%%rax)\n"
+                 "leaq 1f(%%rip), %%rdi\n"
+                 "mov %%rdi, 8(%%rax)\n"
+                 /* "movq 1f, 8(%%rax)\n" */
+                 /* switch stack */
+                 "movq (%%rdx), %%rsp\n"
+                 /* 'call' new thread */
+                 "pushq 8(%%rdx)\n"
+                 "ret\n"
+                 "1:\n"
+                 "popq %%rbp\n"
+                 "popfq\n"
+                 "popq %%r15\n"
+                 "popq %%r14\n"
+                 "popq %%r13\n"
+                 "popq %%r12\n"
+                 "popq %%rbp\n"
+                 "popq %%rsp\n"
+                 "popq %%rbx\n" ::"r"(old),
+                 "r"(new)
+                 : "memory");
+}
