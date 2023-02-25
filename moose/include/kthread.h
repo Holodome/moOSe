@@ -21,10 +21,11 @@ union kthread {
     u64 stack[KTHREAD_STACK_SIZE / sizeof(u64)];
 };
 
-int init_kinit_thread(void);
+int init_kinit_thread(void (*fn)(void));
 
 void schedule(void);
-void process_switch(struct task *old, struct task *new);
-void create_process(void (*fn)(void *), void *args);
+void context_switch(struct task *old, struct task *new);
+struct task *create_task(void (*fn)(void));
+void bootstrap_task(struct task *task);
 
 extern struct task *current;

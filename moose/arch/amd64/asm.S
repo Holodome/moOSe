@@ -2,7 +2,8 @@
   are to big to be readable in inline assembly */
 .global get_registers
 .global set_stack
-.global process_switch
+.global context_switch
+.global bootstrap_task
 
 get_registers:
     pushq %rax
@@ -50,7 +51,7 @@ set_stack:
     movq %rsp, %rbp
     retq
 
-process_switch:
+context_switch:
     movq %rdi, %rax
     movq %rsi, %rdx
     /* save system V ABI preserved general-purpose registers */
@@ -85,3 +86,8 @@ process_switch:
     popq %rsp
     popq %rbx
     ret
+
+bootstrap_task:
+    movq (%rdi), %rsp
+    pushq 8(%rdi)
+    retq

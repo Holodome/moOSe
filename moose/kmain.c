@@ -72,22 +72,32 @@ __attribute__((noreturn)) void kmain(void) {
         halt_cpu();
     }
 
-    init_kinit_thread();
-    kmain_();
+    if (init_kinit_thread(kmain_)) {
+        kprintf("failed to init stack\n");
+        irq_disable();
+        halt_cpu();
+    }
+
+    __builtin_unreachable();
+}
+
+void do_stuff(void) {
+    kprintf("do stuff\n");
+    for (;;)
+        ;
 }
 
 void kmain_(void) {
+    extern void print_malloc_info(void);
+    /* print_malloc_info(); */
     disk_init();
     init_rtc();
     init_shell();
-    shell_execute_command("HELP");
 
+    struct task *new_task = create_task(do_stuff);
+    context_switch(current, new_task);
+    kprintf("initialized\n");
     for (;;) {
-        kprintf("moOSe>");
-
-        char buffer[128];
-        ssize_t length = read(tty_device, buffer, sizeof(buffer));
-        buffer[length] = 0;
-        shell_execute_command(buffer);
+        halt_cpu();
     }
 }
