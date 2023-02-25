@@ -110,15 +110,3 @@ void set_stack(u64 sp, u64 old_stack_base) {
                  : "memory");
 }
 
-void irq_disable(void) { cli(); }
-void irq_enable(void) { sti(); }
-int irqs_disabled(void) { return (read_cpu_flags() & X86_FLAGS_IF) != 0; }
-void irq_save(volatile unsigned long *dst) {
-    *dst = read_cpu_flags();
-    cli();
-}
-
-void irq_restore(unsigned long src) {
-    if (src & X86_FLAGS_IF)
-        sti();
-}
