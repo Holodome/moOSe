@@ -4,6 +4,8 @@
 #include <kernel.h>
 #include <kstdio.h>
 
+static LIST_HEAD(tasks);
+
 int init_kinit_thread(void) {
     union kthread *thread = kzalloc(sizeof(union kthread));
     if (!thread) 
@@ -12,3 +14,4 @@ int init_kinit_thread(void) {
     set_stack((u64)(thread + 1), FIXUP_ADDR(0x90000));
     return 0;
 }
+
