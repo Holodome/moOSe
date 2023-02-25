@@ -51,6 +51,7 @@ static struct mem_block *subheap_find_best_block(struct subheap *heap,
 
     struct mem_block *node;
     list_for_each_entry(node, &heap->blocks, list) {
+        assert(node->size != 0);
         if (!node->used && node->size >= size && node->size < best_mem) {
             best_node = node;
             best_mem = node->size;
@@ -83,6 +84,11 @@ static struct subheap *add_new_subheap(size_t min_size) {
     subheap->size = size - sizeof(struct subheap);
     init_subheap(subheap);
     list_add(&subheap->list, &subheaps);
+#ifndef __i386__
+    extern int kprintf(const char *, ...);
+    kprintf("added subheap %p-%p\n", subheap->memory,
+            subheap->memory + subheap->size);
+#endif
     return subheap;
 }
 
@@ -100,6 +106,8 @@ void *kmalloc(size_t size) {
         }
     }
 
+    assert(size != 0);
+
     // OOM
     if (!node)
         return NULL;
@@ -111,6 +119,8 @@ void *kmalloc(size_t size) {
         new_block->size = node->size - size - sizeof(struct mem_block);
         list_add(&new_block->list, &node->list);
         node->size = size;
+        assert(node->size != 0);
+        assert(new_block->size != 0);
     }
 
     node->used = 1;
@@ -143,6 +153,7 @@ void kfree(void *mem) {
     block->used = 0;
     struct subheap *subheap = find_block_heap(block);
     assert(subheap);
+    assert(0);
 
     struct mem_block *left = list_prev_or_null(&block->list, &subheap->blocks,
                                                struct mem_block, list);
@@ -159,3 +170,17 @@ void kfree(void *mem) {
         list_remove(&right->list);
     }
 }
+
+#ifndef __i386__
+extern int kprintf(const char *, ...);
+void print_malloc_info(void) {
+    struct subheap *heap;
+    struct mem_block *node;
+    list_for_each_entry(heap, &subheaps, list) {
+        kprintf("subheap %p-%p\n", heap->memory, heap->memory + heap->size);
+        list_for_each_entry(node, &heap->blocks, list) {
+            kprintf("block %p-%p\n", node + 1, node + 1 + node->size);
+        }
+    }
+}
+#endif

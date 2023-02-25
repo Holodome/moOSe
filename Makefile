@@ -20,7 +20,7 @@ LDFLAGS = -Map $(subst .elf,.map,$@)
 
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
 			-Imoose/include -Os -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
-			-mcmodel=large  
+			-mcmodel=large  -g
 
 ifneq ($(DEBUG),)
 	ASFLAGS += -g

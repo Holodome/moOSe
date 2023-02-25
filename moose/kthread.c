@@ -1,17 +1,35 @@
-#include <kthread.h>
-#include <kmalloc.h>
 #include <arch/cpu.h>
 #include <kernel.h>
+#include <kmalloc.h>
 #include <kstdio.h>
+#include <kthread.h>
 
 static LIST_HEAD(tasks);
+struct task *current;
 
-int init_kinit_thread(void) {
-    union kthread *thread = kzalloc(sizeof(union kthread));
-    if (!thread) 
+int init_kinit_thread(void (*fn)(void)) {
+    struct task *task = create_task(fn);
+    if (task == NULL)
         return -1;
 
-    set_stack((u64)(thread + 1), FIXUP_ADDR(0x90000));
+    current = task;
+    bootstrap_task(task);
     return 0;
 }
 
+struct task *create_task(void (*fn)(void)) {
+    struct task *task = kzalloc(sizeof(*task));
+    if (task == NULL)
+        return NULL;
+
+    task->info = kzalloc(sizeof(union kthread));
+    if (task->info == NULL) {
+        kfree(task);
+        return NULL;
+    }
+
+    task->stack = (void *)task->info + sizeof(union kthread);
+    task->eip = (void *)fn;
+
+    return task;
+}
