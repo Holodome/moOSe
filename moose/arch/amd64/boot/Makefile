@@ -3,8 +3,8 @@ D := moose/arch/amd64/boot
 STAGE1_OBJS := $(D)/boot.o
 STAGE2_OBJS := $(D)/entry.o $(D)/print.o $(D)/a20.o $(D)/protected.o \
 			   $(D)/memory.o $(D)/loader.o 
-STAGE1_LINK := $(D)/stage1.ld
-STAGE2_LINK := $(D)/stage2.ld
+STAGE1_LINK := $(D)/stage1.ld.out
+STAGE2_LINK := $(D)/stage2.ld.out
 
 $(D)/stage1.elf: $(STAGE1_OBJS) | $(STAGE1_LINK)
 	@echo "LD $@"

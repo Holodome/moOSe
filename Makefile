@@ -18,8 +18,8 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(subst .o,.d,$@)
 ASFLAGS = -msyntax=att --warn --fatal-warnings
 LDFLAGS = -Map $(subst .elf,.map,$@)
 
-CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles -Wl,-r \
-			-Imoose/include -Os -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
+CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles \
+			-Wl,-r -Imoose/include -Os -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
 			-mcmodel=large  -g
 
 ifneq ($(DEBUG),)
@@ -52,6 +52,7 @@ clean:
 		-o -name "*.elf" \
 		-o -name "*.i" \
 		-o -name "*.map" \
+		-o -name "*.out" \
 		-o -name "*.img")
 
 
@@ -69,6 +70,10 @@ include moose/Makefile
 %.bin: %.elf
 	@echo "OBJCOPY $@"
 	$(Q)$(OBJCOPY) -O binary $^ $@
+
+%.ld.out: %.ld
+	@echo "CPP $<"
+	$(Q)gcc -CC -E -P -x c -Imoose/include $< > $@
 
 %.i: %.c
 	$(Q)$(CC) $(CFLAGS) -E -o $@ $^

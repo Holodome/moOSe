@@ -1,11 +1,13 @@
+#include <param.h>
+
 ENTRY(kstart)
 SECTIONS {
-    . = 0x100000;
+    . = KERNEL_PHYSICAL_BASE;
     .text : {
         *(.text*)
         *(.data*)
         *(.rodata*)
-        . = ALIGN(4096);
+        . = ALIGN(PAGE_SIZE);
     }
     _end = .;
 
