@@ -5,7 +5,7 @@
 #include <kthread.h>
 
 static LIST_HEAD(tasks);
-struct task *current;
+volatile struct task *current;
 
 int init_kinit_thread(void (*fn)(void)) {
     struct task *task = create_task(fn);
@@ -32,4 +32,11 @@ struct task *create_task(void (*fn)(void)) {
     task->eip = (void *)fn;
 
     return task;
+}
+
+void context_switch(volatile struct task *old, volatile struct task *new) {
+    extern void context_switch_(volatile struct task * old,
+                                volatile struct task * new);
+    current = new;
+    context_switch_(old, new);
 }
