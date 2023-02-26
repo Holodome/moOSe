@@ -18,7 +18,7 @@ void *vsbrk(intptr_t inc __attribute__((unused))) { return NULL; }
 
 int load_kernel(void) {
     init_memory();
-    int result = disk_init();
+    int result = init_disk();
     if (result)
         return result;
 

@@ -82,26 +82,10 @@ __attribute__((noreturn)) void kmain(void) {
     __builtin_unreachable();
 }
 
-static volatile struct task *old_task;
-void do_stuff(void) {
-    kprintf("do stuff\n");
-    kprintf("current %p %p\n", current->stack, current->eip);
-    context_switch(current, old_task);
-    kprintf("current %p %p\n", current->stack, current->eip);
-    for (;;)
-        ;
-}
-
 void idle_task(void) {
-    kprintf("current %p %p\n", current->stack, current->eip);
-    disk_init();
+    init_disk();
     init_rtc();
     init_shell();
-
-    old_task = current;
-    struct task *new_task = create_task(do_stuff);
-    context_switch(current, new_task);
-    kprintf("initialized\n");
 
     for (;;) {
         halt_cpu();
