@@ -159,7 +159,7 @@ static void eoi(u8 irq) {
     port_out8(PIC1_CMD, PIC_EOI);
 }
 
-void isr_handler(const struct registers_state *regs) {
+void isr_handler(struct registers_state *regs) {
     unsigned no = regs->isr_number;
     if (no < 32) {
         kprintf("exception %s(%u): %u\n", get_exception_name(no), no,

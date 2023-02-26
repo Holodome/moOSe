@@ -1,23 +1,14 @@
 #include <arch/cpu.h>
+#include <assert.h>
 #include <kernel.h>
 #include <kmalloc.h>
 #include <kstdio.h>
 #include <kthread.h>
 
-static LIST_HEAD(tasks);
+LIST_HEAD(tasks);
 volatile struct task *current;
 
-int init_kinit_thread(void (*fn)(void)) {
-    struct task *task = create_task(fn);
-    if (task == NULL)
-        return -1;
-
-    current = task;
-    bootstrap_task(task);
-    return 0;
-}
-
-struct task *create_task(void (*fn)(void)) {
+static struct task *create_task(void (*fn)(void)) {
     struct task *task = kzalloc(sizeof(*task));
     if (task == NULL)
         return NULL;
@@ -28,15 +19,30 @@ struct task *create_task(void (*fn)(void)) {
         return NULL;
     }
 
-    task->stack = (void *)task->info + sizeof(union kthread);
-    task->eip = (void *)fn;
+    u64 stack_end = (u64)task->info + sizeof(union kthread);
+    task->regs.rip = (u64)fn;
+    task->regs.cs = 8;
+    task->regs.rflags = read_cpu_flags();
+    task->regs.ursp = stack_end;
+    task->regs.uss = 16;
 
     return task;
 }
 
-void context_switch(volatile struct task *old, volatile struct task *new) {
-    extern void context_switch_(volatile struct task * old,
-                                volatile struct task * new);
-    current = new;
-    context_switch_(old, new);
+int init_kinit_thread(void (*fn)(void)) {
+    struct task *task = create_task(fn);
+    if (task == NULL)
+        return -1;
+
+    current = task;
+    list_add(&task->list, &tasks);
+    extern void bootstrap_task();
+    bootstrap_task(current->regs.ursp, current->regs.rip);
+    return 0;
 }
+
+void launch_thread(void (*fn)(void)) {
+    struct task *task = create_task(fn);
+    list_add(&task->list, &tasks);
+}
+

@@ -1,8 +1,6 @@
 /* this is junkyard for all functions that require direct assembly and
   are to big to be readable in inline assembly */
 .global get_registers
-.global set_stack
-.global context_switch_
 .global bootstrap_task
 
 get_registers:
@@ -40,51 +38,8 @@ get_registers:
     popq %rax
     retq
 
-set_stack:
-    movq %rsi, %rcx
-    movq %rsp, %rsi
-    subq %rsi, %rcx
-    subq %rcx, %rdi
-    movq %rdi, %rbx
-    rep movsb
-    movq %rbx, %rsp
-    movq %rsp, %rbp
-    retq
-
-context_switch_:
-    movq %rdi, %rax
-    movq %rsi, %rdx
-    /* save system V ABI preserved general-purpose registers */
-    pushq %rbx
-    pushq %r12
-    pushq %r13
-    pushq %r14
-    pushq %r15
-    /* save flags and rbp */
-    pushfq
-    pushq %rbp
-    /* save esp and eip */
-    movq %rsp, (%rax)
-    leaq 1f(%rip), %rdi
-    movq %rdi, 8(%rax)
-    /* "movq 1f, 8(%rax)\n" */
-    /* switch stack */
-    movq (%rdx), %rsp
-    /* 'call' new thread */
-    pushq 8(%rdx)
-    retq
-1:
-    popq %rbp
-    popfq
-    popq %r15
-    popq %r14
-    popq %r13
-    popq %r12
-    popq %rbx
-    retq
-
 bootstrap_task:
-    movq (%rdi), %rsp
-    pushq 8(%rdi)
+    movq %rdi, %rsp
+    pushq %rsi
     retq
 

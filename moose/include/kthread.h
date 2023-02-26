@@ -1,15 +1,15 @@
 #pragma once
 
 #include <types.h>
+// FIXME: Cleanup this include 
+#include <arch/amd64/idt.h>
 
 #define KTHREAD_STACK_SIZE 4096
 
 struct task {
-    void *stack;
-    void *eip;
-
+    struct registers_state regs;
     struct kthread_info *info;
-    struct list_head next;
+    struct list_head list;
 };
 
 struct kthread_info {
@@ -22,10 +22,7 @@ union kthread {
 };
 
 int init_kinit_thread(void (*fn)(void));
-
-void schedule(void);
-void context_switch(volatile struct task *old, volatile struct task *new);
-struct task *create_task(void (*fn)(void));
-void bootstrap_task(struct task *task);
+void launch_thread(void (*fn)(void));
 
 extern volatile struct task *current;
+extern struct list_head tasks;
