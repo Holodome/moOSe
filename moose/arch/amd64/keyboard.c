@@ -21,7 +21,7 @@ static const char sc_ascii[] = {
     'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', '\'', '`', '?', '\\', 'Z',
     'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', '?', '?',  '?', ' '};
 
-static void keyboard_isr(const struct registers_state *regs
+static void keyboard_isr(struct registers_state *regs
                          __attribute__((unused))) {
     if (!is_listening) {
         return;

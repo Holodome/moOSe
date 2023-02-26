@@ -73,13 +73,15 @@ __attribute__((noreturn)) void kmain(void) {
         halt_cpu();
     }
 
-    if (init_kinit_thread(idle_task)) {
-        kprintf("failed to init idle task\n");
-        irq_disable();
-        halt_cpu();
-    }
+    init_kinit_thread(idle_task);
+    kprintf("failed to init idle task\n");
+    irq_disable();
+    halt_cpu();
+}
 
-    __builtin_unreachable();
+void other_task(void) {
+    for (;;)
+        kprintf("other hello\n");
 }
 
 void idle_task(void) {
@@ -87,7 +89,9 @@ void idle_task(void) {
     init_rtc();
     init_shell();
 
+    launch_thread(other_task);
+
     for (;;) {
-        halt_cpu();
+        kprintf("hello world\n");
     }
 }
