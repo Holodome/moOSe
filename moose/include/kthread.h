@@ -29,4 +29,3 @@ int launch_task(task_fn_t *fn);
 
 extern volatile struct task *current;
 extern struct list_head tasks;
-

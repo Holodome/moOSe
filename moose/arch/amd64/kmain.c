@@ -1,15 +1,16 @@
-#include <types.h>
-#include <mm/kmalloc.h>
-#include <kstdio.h>
-#include <mm/kmem.h>
-#include <arch/amd64/memmap.h>
-#include <arch/amd64/keyboard.h>
 #include <arch/amd64/idt.h>
-#include <mm/physmem.h>
-#include <arch/cpu.h>
+#include <arch/amd64/keyboard.h>
+#include <arch/amd64/memmap.h>
+#include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
-#include <kthread.h>
+#include <arch/cpu.h>
 #include <idle.h>
+#include <kstdio.h>
+#include <kthread.h>
+#include <mm/kmalloc.h>
+#include <mm/kmem.h>
+#include <mm/physmem.h>
+#include <types.h>
 
 static void zero_bss(void) {
     extern volatile u64 *__bss_start;
@@ -59,6 +60,8 @@ __attribute__((noreturn)) void kmain(void) {
         kprintf("failed to initialize virtual memory\n");
         halt_cpu();
     }
+
+    init_rtc();
 
     if (launch_first_task(idle_task)) {
         kprintf("failed to create idle task\n");
