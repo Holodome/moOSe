@@ -35,7 +35,7 @@ static int partition_write_block(struct device *dev __attribute__((unused)),
     return ata_pio_dev->write_block(dev, idx + partition_start, buf);
 }
 
-int disk_init(void) {
+int init_disk(void) {
     struct blk_device *blk_dev = ata_pio_dev;
     if (init_blk_device(blk_dev, disk_dev)) 
         return -1;

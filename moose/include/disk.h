@@ -3,7 +3,7 @@
 #include <kstdio.h>
 #include <types.h>
 
-int disk_init(void);
+int init_disk(void);
 
 extern struct device *disk_dev;
 extern struct device *disk_part_dev;
