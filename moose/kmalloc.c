@@ -84,11 +84,6 @@ static struct subheap *add_new_subheap(size_t min_size) {
     subheap->size = size - sizeof(struct subheap);
     init_subheap(subheap);
     list_add(&subheap->list, &subheaps);
-#ifndef __i386__
-    extern int kprintf(const char *, ...);
-    kprintf("added subheap %p-%p\n", subheap->memory,
-            subheap->memory + subheap->size);
-#endif
     return subheap;
 }
 

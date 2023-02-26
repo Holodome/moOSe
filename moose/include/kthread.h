@@ -24,8 +24,8 @@ union kthread {
 int init_kinit_thread(void (*fn)(void));
 
 void schedule(void);
-void context_switch(struct task *old, struct task *new);
+void context_switch(volatile struct task *old, volatile struct task *new);
 struct task *create_task(void (*fn)(void));
 void bootstrap_task(struct task *task);
 
-extern struct task *current;
+extern volatile struct task *current;

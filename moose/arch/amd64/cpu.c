@@ -32,8 +32,6 @@ static_assert(sizeof(struct registers) == 0xa8);
 
 extern void get_registers(struct registers *regs) __attribute__((used));
 extern void set_stack(u64 sp, u64 old_stack_base) __attribute__((used));
-extern void context_switch(struct task *old, struct task *new)
-    __attribute__((used));
 
 static void print_registers(const struct registers *r) {
     kprintf("rip: %#018llx rflags: %#018llx\n", r->rip, r->rflags);
