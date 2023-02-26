@@ -1,7 +1,7 @@
 .global kstart 
 .section ".text.kstart"
 
-#include <kernel.h>
+#include <param.h>
 
 kstart:
     mov %rsp, %rbp

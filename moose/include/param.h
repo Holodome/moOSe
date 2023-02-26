@@ -1,3 +1,6 @@
+/*
+ * Macros used both in C and Assembly code
+ */
 #pragma once
 
 #define PAGE_SIZE 4096

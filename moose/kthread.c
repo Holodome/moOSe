@@ -1,6 +1,6 @@
 #include <arch/cpu.h>
 #include <assert.h>
-#include <kernel.h>
+#include <param.h>
 #include <kmalloc.h>
 #include <kstdio.h>
 #include <kthread.h>

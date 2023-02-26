@@ -1,6 +1,6 @@
 #include <arch/amd64/virtmem.h>
 #include <errno.h>
-#include <kernel.h>
+#include <param.h>
 #include <kmem.h>
 #include <kstdio.h>
 #include <types.h>

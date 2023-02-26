@@ -1,7 +1,7 @@
 #include <kmalloc.h>
 #include <kstdio.h>
 #include <physmem.h>
-#include <kernel.h>
+#include <param.h>
 #include <bitops.h>
 #include <assert.h>
 #include <arch/amd64/types.h>

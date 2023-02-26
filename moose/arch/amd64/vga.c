@@ -1,6 +1,6 @@
 #include <tty.h>
 #include <arch/amd64/asm.h>
-#include <kernel.h>
+#include <param.h>
 
 #define WIDTH 80
 #define HEIGHT 25

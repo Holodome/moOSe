@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <bitops.h>
-#include <kernel.h>
+#include <param.h>
 #include <kmalloc.h>
 #include <kmem.h>
 #include <vmalloc.h>
