@@ -35,7 +35,7 @@ static void init_subheap(struct subheap *heap) {
     list_add(&block->list, &heap->blocks);
 }
 
-void init_memory(void) {
+void init_kmalloc(void) {
     static u8 initial_memory[INITIAL_HEAP_SIZE];
     static struct subheap initial_subheap = {
         .memory = initial_memory,

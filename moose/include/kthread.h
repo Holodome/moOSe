@@ -22,8 +22,11 @@ union kthread {
     u64 stack[KTHREAD_STACK_SIZE / sizeof(u64)];
 };
 
-int init_kinit_thread(void (*fn)(void));
-void launch_thread(void (*fn)(void));
+typedef void task_fn_t(void);
+
+int launch_first_task(task_fn_t *fn);
+int launch_task(task_fn_t *fn);
 
 extern volatile struct task *current;
 extern struct list_head tasks;
+

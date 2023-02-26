@@ -1,6 +1,5 @@
 #pragma once
 
-#include <arch/amd64/memory_map.h>
 #include <mm/kmem.h>
 #include <types.h>
 

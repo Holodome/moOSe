@@ -1,24 +1,15 @@
-#include <arch/amd64/ata.h>
-#include <arch/amd64/idt.h>
-
-#include <arch/amd64/keyboard.h>
-#include <arch/amd64/memory_map.h>
-#include <arch/amd64/rtc.h>
-#include <arch/amd64/virtmem.h>
-#include <arch/cpu.h>
-#include <kthread.h>
-#include <mm/vmalloc.h>
-
-#include <assert.h>
-#include <bitops.h>
-#include <disk.h>
-#include <errno.h>
-#include <fs/fat.h>
+#include <types.h>
 #include <mm/kmalloc.h>
 #include <kstdio.h>
+#include <mm/kmem.h>
+#include <arch/amd64/memmap.h>
+#include <arch/amd64/keyboard.h>
+#include <arch/amd64/idt.h>
 #include <mm/physmem.h>
-#include <shell.h>
-#include <tty.h>
+#include <arch/cpu.h>
+#include <arch/amd64/virtmem.h>
+#include <kthread.h>
+#include <idle.h>
 
 static void zero_bss(void) {
     extern volatile u64 *__bss_start;
@@ -28,11 +19,9 @@ static void zero_bss(void) {
         *p++ = 0;
 }
 
-__attribute__((noreturn)) void idle_task(void);
-
 __attribute__((noreturn)) void kmain(void) {
     zero_bss();
-    init_memory();
+    init_kmalloc();
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
@@ -62,34 +51,21 @@ __attribute__((noreturn)) void kmain(void) {
     }
 
     if (init_phys_mem(ranges, usable_region_count)) {
-        kprintf("physical memory init error\n");
+        kprintf("failed to initialize physical memory\n");
         halt_cpu();
     }
 
     if (init_virt_mem(ranges, usable_region_count)) {
-        kprintf("virtual memory init error\n");
+        kprintf("failed to initialize virtual memory\n");
         halt_cpu();
     }
 
-    init_kinit_thread(idle_task);
-    kprintf("failed to init idle task\n");
-    irq_disable();
-    halt_cpu();
-}
-
-void other_task(void) {
-    for (;;)
-        kprintf("other hello\n");
-}
-
-void idle_task(void) {
-    init_disk();
-    init_rtc();
-    init_shell();
-
-    launch_thread(other_task);
-
-    for (;;) {
-        kprintf("hello world\n");
+    if (launch_first_task(idle_task)) {
+        kprintf("failed to create idle task\n");
+        halt_cpu();
     }
+
+    for (;;)
+        halt_cpu();
 }
+

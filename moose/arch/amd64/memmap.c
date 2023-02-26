@@ -1,4 +1,4 @@
-#include <arch/amd64/memory_map.h>
+#include <arch/amd64/memmap.h>
 #include <param.h>
 
 #define MEMMAP_ADDR FIXUP_PTR((u8 *)0x500)

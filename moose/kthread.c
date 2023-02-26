@@ -1,17 +1,18 @@
 #include <arch/cpu.h>
 #include <assert.h>
-#include <param.h>
-#include <mm/kmalloc.h>
 #include <kstdio.h>
 #include <kthread.h>
+#include <mm/kmalloc.h>
+#include <param.h>
+
+extern void bootstrap_task(u64 rsp, u64 rip);
 
 LIST_HEAD(tasks);
 volatile struct task *current;
 
 static struct task *create_task(void (*fn)(void)) {
     struct task *task = kzalloc(sizeof(*task));
-    if (task == NULL)
-        return NULL;
+    if (task == NULL) return NULL;
 
     task->info = kzalloc(sizeof(union kthread));
     if (task->info == NULL) {
@@ -29,20 +30,21 @@ static struct task *create_task(void (*fn)(void)) {
     return task;
 }
 
-int init_kinit_thread(void (*fn)(void)) {
+int launch_first_task(void (*fn)(void)) {
     struct task *task = create_task(fn);
-    if (task == NULL)
-        return -1;
+    if (task == NULL) return -1;
 
     current = task;
     list_add(&task->list, &tasks);
-    extern void bootstrap_task();
     bootstrap_task(current->regs.ursp, current->regs.rip);
     return 0;
 }
 
-void launch_thread(void (*fn)(void)) {
+int launch_task(void (*fn)(void)) {
     struct task *task = create_task(fn);
+    if (task == NULL) return -1;
+
     list_add(&task->list, &tasks);
+    return 0;
 }
 

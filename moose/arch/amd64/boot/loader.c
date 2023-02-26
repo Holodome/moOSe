@@ -17,7 +17,7 @@ int kprintf(const char *fmt __attribute__((unused)), ...) { return 0; }
 void *vsbrk(intptr_t inc __attribute__((unused))) { return NULL; }
 
 int load_kernel(void) {
-    init_memory();
+    init_kmalloc();
     int result = init_disk();
     if (result)
         return result;
