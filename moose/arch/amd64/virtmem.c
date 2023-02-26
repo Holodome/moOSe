@@ -133,7 +133,7 @@ void unmap_virtual_region(u64 virt_addr, size_t count) {
 
 void flush_tlb_entry(u64 virt_addr) {
     unsigned long flags;
-    irq_save(&flags);
+    irq_save(flags);
     asm volatile("invlpg (%0)" : : "r"(virt_addr) : "memory");
     irq_restore(flags);
 }

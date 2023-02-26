@@ -28,9 +28,7 @@ __attribute__((always_inline)) static inline void *memset(void *dst_, int ch,
 static inline void *memmove(void *dst_, const void *src_, size_t c) {
     u8 *dst = dst_;
     const u8 *src = src_;
-    if (dst == src) {
-        return dst;
-    }
+    if (dst == src) return dst;
 
     if (dst < src) {
         for (; c; --c)
@@ -50,8 +48,7 @@ static inline int memcmp(const void *l_, const void *r_, size_t c) {
     const u8 *r = r_;
     while (c--) {
         int d = *l++ - *r++;
-        if (d)
-            return d;
+        if (d) return d;
     }
 
     return 0;

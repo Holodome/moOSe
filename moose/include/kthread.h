@@ -1,7 +1,8 @@
 #pragma once
 
+#include <list.h>
 #include <types.h>
-// FIXME: Cleanup this include 
+// FIXME: Cleanup this include
 #include <arch/amd64/idt.h>
 
 #define KTHREAD_STACK_SIZE 4096

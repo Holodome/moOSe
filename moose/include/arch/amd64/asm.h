@@ -94,4 +94,3 @@ static inline u64 read_cpu_flags() {
                  : "=rm"(flags)::"memory");
     return flags;
 }
-

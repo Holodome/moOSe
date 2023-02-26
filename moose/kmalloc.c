@@ -4,6 +4,7 @@
 #include <kmalloc.h>
 #include <kmem.h>
 #include <vmalloc.h>
+#include <list.h>
 
 #define INITIAL_HEAP_SIZE (1 << 14)
 #define ALIGNMENT 16

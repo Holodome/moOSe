@@ -10,4 +10,3 @@ u32 msecs_to_jiffies(u32 msecs);
 
 u64 jiffies64_to_msecs(u64 jiffies);
 u64 msecs_to_jiffies64(u64 msecs);
-

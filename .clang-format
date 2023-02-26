@@ -1,3 +1,6 @@
 BasedOnStyle: llvm
 ColumnLimit: 80
 IndentWidth: 4
+AllowShortIfStatementsOnASingleLine: true
+AllowShortBlocksOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
