@@ -1,10 +1,10 @@
 #include <arch/amd64/virtmem.h>
 #include <errno.h>
 #include <param.h>
-#include <kmem.h>
+#include <mm/kmem.h>
 #include <kstdio.h>
 #include <types.h>
-#include <vmalloc.h>
+#include <mm/vmalloc.h>
 #include <bitops.h>
 
 #define VMALLOC_BASE ((uintptr_t)0xffffc90000000000llu)

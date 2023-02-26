@@ -1,9 +1,9 @@
 #include <assert.h>
 #include <bitops.h>
 #include <param.h>
-#include <kmalloc.h>
-#include <kmem.h>
-#include <vmalloc.h>
+#include <mm/kmalloc.h>
+#include <mm/kmem.h>
+#include <mm/vmalloc.h>
 #include <list.h>
 
 #define INITIAL_HEAP_SIZE (1 << 14)

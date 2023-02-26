@@ -1,7 +1,7 @@
 #include <device.h>
 #include <errno.h>
-#include <kmalloc.h>
-#include <kmem.h>
+#include <mm/kmalloc.h>
+#include <mm/kmem.h>
 #include <kstdio.h>
 
 off_t lseek(struct device *dev, off_t off, int whence) {

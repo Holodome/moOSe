@@ -1,6 +1,6 @@
-#include <kmalloc.h>
+#include <mm/kmalloc.h>
 #include <kstdio.h>
-#include <physmem.h>
+#include <mm/physmem.h>
 #include <param.h>
 #include <bitops.h>
 #include <assert.h>

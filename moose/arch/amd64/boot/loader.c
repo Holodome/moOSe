@@ -7,7 +7,7 @@
 #include <../disk.c>
 #include <../errno.c>
 #include <../fs/fat.c>
-#include <../kmalloc.c>
+#include <../mm/kmalloc.c>
 
 #include <mbr.h>
 

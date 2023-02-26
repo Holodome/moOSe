@@ -6,18 +6,17 @@
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
 #include <arch/cpu.h>
-#include <kmem.h>
 #include <kthread.h>
-#include <vmalloc.h>
+#include <mm/vmalloc.h>
 
 #include <assert.h>
 #include <bitops.h>
 #include <disk.h>
 #include <errno.h>
 #include <fs/fat.h>
-#include <kmalloc.h>
+#include <mm/kmalloc.h>
 #include <kstdio.h>
-#include <physmem.h>
+#include <mm/physmem.h>
 #include <shell.h>
 #include <tty.h>
 

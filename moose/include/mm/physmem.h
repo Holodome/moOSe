@@ -1,6 +1,6 @@
 #pragma once
 
-#include <kmem.h>
+#include <mm/kmem.h>
 #include <types.h>
 
 // 1 - 2^BUDDY_MAX_ORDER pages in block

@@ -1,6 +1,6 @@
 #include <device.h>
 #include <errno.h>
-#include <kmem.h>
+#include <mm/kmem.h>
 #include <kstdio.h>
 #include <tty.h>
 

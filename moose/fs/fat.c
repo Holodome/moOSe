@@ -3,7 +3,7 @@
 #include <endian.h>
 #include <errno.h>
 #include <fs/fat.h>
-#include <kmem.h>
+#include <mm/kmem.h>
 #include <kstdio.h>
 
 #define PFATFS_ROOTDIR ((u32)1)

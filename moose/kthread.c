@@ -1,7 +1,7 @@
 #include <arch/cpu.h>
 #include <assert.h>
 #include <param.h>
-#include <kmalloc.h>
+#include <mm/kmalloc.h>
 #include <kstdio.h>
 #include <kthread.h>
 

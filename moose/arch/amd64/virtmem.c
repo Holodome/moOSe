@@ -2,10 +2,10 @@
 #include <arch/amd64/virtmem.h>
 #include <assert.h>
 #include <param.h>
-#include <kmem.h>
+#include <mm/kmem.h>
 #include <arch/cpu.h>
 #include <kstdio.h>
-#include <physmem.h>
+#include <mm/physmem.h>
 
 int alloc_virtual_page(u64 virt_addr) {
     ssize_t addr = alloc_page();
