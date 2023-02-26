@@ -52,5 +52,5 @@ static_assert(sizeof(struct registers_state) == 184);
 typedef void isr_t(struct registers_state *regs);
 
 void isr_handler(struct registers_state *regs);
-void setup_idt(void);
+void init_idt(void);
 void register_isr(int num, isr_t *isr);

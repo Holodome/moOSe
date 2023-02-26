@@ -181,7 +181,7 @@ void isr_handler(struct registers_state *regs) {
 
 void register_isr(int num, isr_t *isr) { isrs[IRQ_BASE + num] = isr; }
 
-void setup_idt(void) {
+void init_idt(void) {
     set_idt_entry(0, (u64)exception0);
     set_idt_entry(1, (u64)exception1);
     set_idt_entry(2, (u64)exception2);

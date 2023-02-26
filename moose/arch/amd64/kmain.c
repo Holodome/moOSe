@@ -39,7 +39,7 @@ __attribute__((noreturn)) void kmain(void) {
         usable_region_count += entry->type == MULTIBOOT_MEMORY_AVAILABLE;
     }
 
-    setup_idt();
+    init_idt();
     init_keyboard();
     struct mem_range *ranges = kmalloc(usable_region_count * sizeof(*ranges));
     for (u32 i = 0, j = 0; i < memmap_size; ++i) {
