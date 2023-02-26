@@ -12,8 +12,7 @@
 
 static volatile u64 jiffies;
 
-static void timer_interrupt(struct registers_state *regs
-                            __attribute__((unused))) {
+static void timer_interrupt(struct registers_state *regs) {
     ++jiffies;
     (void)cmos_read(0x8c);
     memcpy((void *)&current->regs, regs, sizeof(*regs));
@@ -48,7 +47,7 @@ void init_rtc(void) {
 
 u32 get_jiffies(void) { return (u32)jiffies; }
 u64 get_jiffies64(void) { return jiffies; }
-u64 jiffies64_to_msecs(u64 jiffies) { return jiffies / FREQUENCY; }
-u64 msecs_to_jiffies64(u64 msecs) { return msecs * FREQUENCY; }
-u32 jiffies_to_msecs(u32 jiffies) { return jiffies / FREQUENCY; }
-u32 msecs_to_jiffies(u32 msecs) { return msecs * FREQUENCY; }
+u64 jiffies64_to_msecs(u64 jiffies) { return jiffies * 1000 / FREQUENCY; }
+u64 msecs_to_jiffies64(u64 msecs) { return msecs * 1000 * FREQUENCY; }
+u32 jiffies_to_msecs(u32 jiffies) { return jiffies * 1000 / FREQUENCY; }
+u32 msecs_to_jiffies(u32 msecs) { return msecs * 1000 * FREQUENCY; }
