@@ -1,34 +1,67 @@
 #pragma once
 
+#include <list.h>
 #include <types.h>
 
-struct vfs_sb;
-struct vfs_inode;
-struct vfs_file;
-struct vfs_dentry;
+struct sb;
+struct inode;
+struct file;
+struct dentry;
 
-struct vfs_sb_ops {
-    struct vfs_inode (*alloc_inode)(struct vfs_sb *sb);
-    void (*destroy_inode)(struct vfs_inode *inode);
+struct sb_ops {
+    struct inode (*alloc_inode)(struct sb *sb);
+    void (*destroy_inode)(struct inode *inode);
 };
 
-struct vfs_sb {
+struct sb {
     u32 blk_sz;
     u32 blk_sz_bits;
 
-    struct vfs_sb_ops *ops;
+    void *private;
+    struct sb_ops *ops;
 
     struct list_head inode_list;
     struct list_head file_list;
 };
 
-struct vfs_inode_ops {
-};
+struct inode_ops {};
 
-struct vfs_inode {
+struct inode {
     u64 num;
+
+    void *private;
+    struct inode_ops *ops;
+    struct sb *sb;
+
+    struct list_head sb_list;
+    struct list_head dentry_list;
 };
 
-struct vfs_file_ops {
+struct file_ops {
+    loff_t (*llseek)(struct file *, loff_t, int);
+    ssize_t (*read)(struct file *, void *, size_t, loff_t *);
+    ssize_t (*write)(struct file *, const void *, size_t, loff_t *);
+    int (*open)(struct inode *, struct file *);
+    int (*release)(struct inode *, struct file *);
+    int (*readdir)(struct file *, struct dentry *);
+};
 
+struct file {
+    loff_t offset;
+
+    void *private;
+    struct file_ops *ops;
+    struct dentry *dentry;
+
+    struct list_head list;
+};
+
+struct dentry {
+    struct inode *inode;
+    struct dentry *parent;
+    const char *name;
+
+    struct list_head dir_list;
+    struct list_head subdir_list;
+    struct list_head inode_list;
 };
