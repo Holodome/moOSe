@@ -1,4 +1,4 @@
-#include <slab.h>
+#include <mm/slab.h>
 #include <mm/kmem.h>
 #include <bitops.h>
 #include <param.h>

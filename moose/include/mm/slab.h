@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <list.h>
+#include <types.h>
 
 #define CACHE_NAME_SIZE 32
 

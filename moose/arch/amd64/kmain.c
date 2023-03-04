@@ -11,7 +11,7 @@
 #include <mm/kmem.h>
 #include <mm/physmem.h>
 #include <types.h>
-#include <slab.h>
+#include <mm/slab.h>
 
 static void zero_bss(void) {
     extern volatile u64 *__bss_start;
@@ -24,6 +24,7 @@ static void zero_bss(void) {
 __attribute__((noreturn)) void kmain(void) {
     zero_bss();
     init_kmalloc();
+    init_slab_cache();
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
@@ -61,8 +62,6 @@ __attribute__((noreturn)) void kmain(void) {
         kprintf("failed to initialize virtual memory\n");
         halt_cpu();
     }
-
-    init_slab_cache();
     init_rtc();
 
     if (launch_first_task(idle_task)) {
