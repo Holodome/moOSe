@@ -6,7 +6,7 @@
 
 __attribute__((noreturn)) void other_task(void) {
     for (;;)
-        kprintf("other hello\n");
+        ;
 }
 
 void idle_task(void) {
@@ -15,7 +15,6 @@ void idle_task(void) {
 
     launch_task(other_task);
 
-    for (;;) {
-        kprintf("hello world\n");
-    }
+    for (;;)
+        ;
 }
