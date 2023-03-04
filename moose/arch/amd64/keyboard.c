@@ -4,6 +4,7 @@
 #include <arch/amd64/vga.h>
 #include <kstdio.h>
 #include <tty.h>
+#include <arch/cpu.h>
 
 #define PORT 0x60
 #define BACKSPACE 0x0e
@@ -55,7 +56,7 @@ ssize_t keyboard_read(void *buffer, size_t count) {
     dst_end = dst + count;
 
     while (is_listening)
-        ;
+        spinlock_hint();
 
     return dst - dst_start;
 }
