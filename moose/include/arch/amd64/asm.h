@@ -87,7 +87,6 @@ static inline void port_out32(u32 port, u32 data) {
     asm __volatile("outl %0, %w1" : : "a"(data), "d"(port));
 }
 
-
 static inline u8 cmos_read(u8 idx) {
     port_out8(0x70, idx);
     return port_in8(0x71);

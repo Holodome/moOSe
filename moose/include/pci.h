@@ -1,7 +1,7 @@
 #pragma once
 
-#include <mm/kmem.h>
 #include <list.h>
+#include <mm/kmem.h>
 
 #define PCI_BARS_COUNT 6
 
@@ -33,18 +33,18 @@ struct pci_device {
     u8 class_code;
     u8 hdr_type;
 
-    struct mem_range bars[PCI_BARS_COUNT];
-
     // for header type 0x0
     u16 sub_vendor_id;
     u16 subsystem_id;
 
-    u8 interrupt_line;
-    u8 interrupt_pin;
-
     // for header type 0x1 (pci-to-pci bridge)
     u8 secondary_bus;
     u8 subordinate_bus;
+
+    u8 interrupt_line;
+    u8 interrupt_pin;
+
+    struct mem_range bars[PCI_BARS_COUNT];
 };
 
 void init_pci(void);
@@ -59,3 +59,5 @@ u8 read_pci_config_u8(u8 bus, u8 device, u8 function, u8 offset);
 void write_pci_config_u32(u8 bus, u8 device, u8 function, u8 offset, u32 data);
 void write_pci_config_u16(u8 bus, u8 device, u8 function, u8 offset, u16 data);
 void write_pci_config_u8(u8 bus, u8 device, u8 function, u8 offset, u8 data);
+
+int pci_is_bridge(struct pci_device *device);
