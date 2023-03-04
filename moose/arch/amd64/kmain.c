@@ -11,6 +11,7 @@
 #include <mm/kmem.h>
 #include <mm/physmem.h>
 #include <types.h>
+#include <slab.h>
 
 static void zero_bss(void) {
     extern volatile u64 *__bss_start;
@@ -61,6 +62,7 @@ __attribute__((noreturn)) void kmain(void) {
         halt_cpu();
     }
 
+    init_slab_cache();
     init_rtc();
 
     if (launch_first_task(idle_task)) {
