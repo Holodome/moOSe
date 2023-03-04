@@ -69,6 +69,12 @@ static inline u16 port_in16(u16 port) {
     return result;
 }
 
+static inline u32 port_in32(u16 port) {
+    u32 result;
+    asm volatile("inl %w1, %0" : "=a"(result) : "d"(port));
+    return result;
+}
+
 static inline void port_out8(u16 port, u8 data) {
     asm volatile("out %%al, %%dx" : : "a"(data), "d"(port));
 }
@@ -76,6 +82,11 @@ static inline void port_out8(u16 port, u8 data) {
 static inline void port_out16(u16 port, u16 data) {
     asm volatile("out %%ax, %%dx" : : "a"(data), "d"(port));
 }
+
+static inline void port_out32(u32 port, u32 data) {
+    asm __volatile("outl %0, %w1" : : "a"(data), "d"(port));
+}
+
 
 static inline u8 cmos_read(u8 idx) {
     port_out8(0x70, idx);

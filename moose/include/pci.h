@@ -1,0 +1,53 @@
+#pragma once
+
+#include <kmem.h>
+
+#define PCI_CONFIG_ADDRESS 0xcf8
+#define PCI_CONFIG_DATA    0xcfc
+
+#define PCI_BARS_COUNT 6
+
+struct pci_device;
+
+struct pci_bus {
+    u8 index;
+    struct list_head list;
+    struct pci_bus *parent;
+    struct list_head children;
+
+    struct pci_device *bridge;
+    struct list_head devices;
+};
+
+// header type 0x2 (PCI-to-CardBus bridge) is unsupported
+struct pci_device {
+    struct list_head list;
+    struct pci_bus *bus;
+
+    u8 device_index;
+    u8 func_index;
+    u16 vendor;
+    u16 device;
+    u16 command;
+    u16 status;
+    u8 prog_if;
+    u8 subclass;
+    u8 class_code;
+    u8 hdr_type;
+
+    struct mem_range bars[PCI_BARS_COUNT];
+
+    // for header type 0x0
+    u16 sub_vendor_id;
+    u16 subsystem_id;
+
+    u8 interrupt_line;
+    u8 interrupt_pin;
+
+    // for header type 0x1 (pci-to-pci bridge)
+    u8 secondary_bus;
+    u8 subordinate_bus;
+};
+
+void init_pci(void);
+struct pci_device *get_pci_device(u16 vendor, u16 device);

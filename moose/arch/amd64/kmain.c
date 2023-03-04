@@ -11,6 +11,7 @@
 #include <mm/kmem.h>
 #include <mm/physmem.h>
 #include <types.h>
+#include <pci.h>
 
 static void zero_bss(void) {
     extern volatile u64 *__bss_start;
@@ -25,6 +26,8 @@ __attribute__((noreturn)) void kmain(void) {
     init_kmalloc();
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
+
+    init_pci();
 
     const struct memmap_entry *memmap;
     u32 memmap_size;
