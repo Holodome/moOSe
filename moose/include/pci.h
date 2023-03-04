@@ -60,4 +60,4 @@ void write_pci_config_u32(u8 bus, u8 device, u8 function, u8 offset, u32 data);
 void write_pci_config_u16(u8 bus, u8 device, u8 function, u8 offset, u16 data);
 void write_pci_config_u8(u8 bus, u8 device, u8 function, u8 offset, u8 data);
 
-int pci_is_bridge(struct pci_device *device);
+int is_pci_bridge(struct pci_device *device);

@@ -18,7 +18,6 @@
 #define PCI_DEVICE_ID		0x02	/* 16 bits */
 #define PCI_COMMAND		0x04	/* 16 bits */
 #define PCI_STATUS		0x06	/* 16 bits */
-#define PCI_REVISION_ID		0x08	/* Revision ID */
 #define PCI_PROG_IF		0x09	/* Reg. Level Programming Interface */
 #define PCI_SUBCLASS     	0x0a	/* Device subclass */
 #define PCI_CLASS               0x0b    /* Device class */
@@ -112,7 +111,7 @@ void write_pci_config_u32(u8 bus, u8 device, u8 function, u8 offset, u32 data) {
     io_wait();
 }
 
-int pci_is_bridge(struct pci_device *device) {
+int is_pci_bridge(struct pci_device *device) {
     return device->class_code == PCI_BRIDGE_CLASS &&
            device->subclass == PCI_BRIDGE_SUB_CLASS;
 }
@@ -128,6 +127,8 @@ static void read_common_header(struct pci_device *device) {
         bus_idx, device_idx, func_idx, PCI_DEVICE_ID);
     device->command = read_pci_config_u16(
         bus_idx, device_idx, func_idx, PCI_COMMAND);
+    device->status = read_pci_config_u16(
+        bus_idx, device_idx, func_idx, PCI_STATUS);
     device->prog_if = read_pci_config_u8(
         bus_idx, device_idx, func_idx, PCI_PROG_IF);
     device->subclass = read_pci_config_u8(
@@ -156,7 +157,7 @@ static struct pci_device *create_device(struct pci_bus *bus,
     device->bus = bus;
     read_common_header(device);
 
-    if (pci_is_bridge(device)) {
+    if (is_pci_bridge(device)) {
         device->secondary_bus = read_pci_config_u8(
             bus_idx, device_idx, func_idx, PCI_SECONDARY_BUS);
         device->subordinate_bus = read_pci_config_u8(
@@ -176,7 +177,8 @@ static struct pci_bus *scan_bus(u8 bus_idx) {
     if (bus == NULL)
         return NULL;
 
-    init_list_head(&bus->list);
+    init_list_head(&bus->children);
+    init_list_head(&bus->devices);
 
     for (u8 device_idx = 0; device_idx < 32; device_idx++) {
         for (u8 func_idx = 0; func_idx < 8; func_idx++) {
@@ -190,7 +192,7 @@ static struct pci_bus *scan_bus(u8 bus_idx) {
             if (device) {
                 list_add(&device->list, &bus->devices);
 
-                if (pci_is_bridge(device)) {
+                if (is_pci_bridge(device)) {
                     struct pci_bus *sub_bus = scan_bus(device->secondary_bus);
                     if (sub_bus) {
                         list_add(&sub_bus->list, &bus->children);
