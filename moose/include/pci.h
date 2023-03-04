@@ -48,6 +48,7 @@ struct pci_device {
 };
 
 void init_pci(void);
+struct pci_bus *get_root_bus(void);
 struct pci_device *get_pci_device(u16 vendor, u16 device);
 
 void io_wait(void);
@@ -61,3 +62,5 @@ void write_pci_config_u16(u8 bus, u8 device, u8 function, u8 offset, u16 data);
 void write_pci_config_u8(u8 bus, u8 device, u8 function, u8 offset, u8 data);
 
 int is_pci_bridge(struct pci_device *device);
+
+void debug_print_bus(struct pci_bus *bus);

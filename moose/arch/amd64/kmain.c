@@ -27,6 +27,10 @@ __attribute__((noreturn)) void kmain(void) {
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
+    init_pci();
+    struct pci_bus *root_bus = get_root_bus();
+    debug_print_bus(root_bus);
+
     const struct memmap_entry *memmap;
     u32 memmap_size;
     get_memmap(&memmap, &memmap_size);
@@ -63,7 +67,6 @@ __attribute__((noreturn)) void kmain(void) {
     }
 
     init_rtc();
-    init_pci();
 
     if (launch_first_task(idle_task)) {
         kprintf("failed to create idle task\n");

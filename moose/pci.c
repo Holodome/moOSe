@@ -14,21 +14,21 @@
 #define PCI_BRIDGE_SUB_CLASS 0x4
 
 // PCI configuration space registers
-#define PCI_VENDOR_ID		0x00	/* 16 bits */
-#define PCI_DEVICE_ID		0x02	/* 16 bits */
-#define PCI_COMMAND		0x04	/* 16 bits */
-#define PCI_STATUS		0x06	/* 16 bits */
-#define PCI_PROG_IF		0x09	/* Reg. Level Programming Interface */
-#define PCI_SUBCLASS     	0x0a	/* Device subclass */
-#define PCI_CLASS               0x0b    /* Device class */
-#define PCI_HEADER_TYPE		0x0e	/* 8 bits */
+#define PCI_VENDOR_ID		0x00
+#define PCI_DEVICE_ID		0x02
+#define PCI_COMMAND		0x04
+#define PCI_STATUS		0x06
+#define PCI_PROG_IF		0x09
+#define PCI_SUBCLASS     	0x0a
+#define PCI_CLASS               0x0b
+#define PCI_HEADER_TYPE		0x0e
 
-#define PCI_BASE_ADDRESS_0	0x10	/* 32 bits */
-#define PCI_BASE_ADDRESS_1	0x14	/* 32 bits [htype 0,1 only] */
-#define PCI_BASE_ADDRESS_2	0x18	/* 32 bits [htype 0 only] */
-#define PCI_BASE_ADDRESS_3	0x1c	/* 32 bits */
-#define PCI_BASE_ADDRESS_4	0x20	/* 32 bits */
-#define PCI_BASE_ADDRESS_5	0x24	/* 32 bits */
+#define PCI_BASE_ADDRESS_0	0x10
+#define PCI_BASE_ADDRESS_1	0x14
+#define PCI_BASE_ADDRESS_2	0x18
+#define PCI_BASE_ADDRESS_3	0x1c
+#define PCI_BASE_ADDRESS_4	0x20
+#define PCI_BASE_ADDRESS_5	0x24
 
 #define PCI_SUB_VENDOR          0x2c
 #define PCI_SUB_SYSTEM          0x2e
@@ -37,6 +37,8 @@
 
 #define PCI_SECONDARY_BUS       0x19
 #define PCI_SUBORDINATE_BUS     0x20
+
+static struct pci_bus *root_bus;
 
 void io_wait(void) {
     port_out32(0x80, 0);
@@ -179,6 +181,7 @@ static struct pci_bus *scan_bus(u8 bus_idx) {
 
     init_list_head(&bus->children);
     init_list_head(&bus->devices);
+    bus->index = bus_idx;
 
     for (u8 device_idx = 0; device_idx < 32; device_idx++) {
         for (u8 func_idx = 0; func_idx < 8; func_idx++) {
@@ -190,13 +193,16 @@ static struct pci_bus *scan_bus(u8 bus_idx) {
             struct pci_device *device =
                 create_device(bus, device_idx, func_idx);
             if (device) {
-                list_add(&device->list, &bus->devices);
+                list_add_tail(&device->list, &bus->devices);
 
                 if (is_pci_bridge(device)) {
                     struct pci_bus *sub_bus = scan_bus(device->secondary_bus);
                     if (sub_bus) {
-                        list_add(&sub_bus->list, &bus->children);
+                        list_add_tail(&sub_bus->list, &bus->children);
                     }
+
+                    sub_bus->bridge = device;
+                    sub_bus->parent = bus;
                 }
             }
         }
@@ -205,6 +211,34 @@ static struct pci_bus *scan_bus(u8 bus_idx) {
     return bus;
 }
 
-void init_pci(void) {
+struct pci_bus *get_root_bus(void) {
+    return root_bus;
+}
 
+void init_pci(void) {
+    root_bus = scan_bus(0);
+}
+
+static void debug_print_device(struct pci_device *device) {
+    kprintf("DEV: bus=%d, dev=%d, func=%d, vendor=%x, devid=%x, class=%#x, subclass=%#x\n",
+            device->bus->index, device->device_index, device->func_index,
+            device->vendor, device->device, device->class_code, device->subclass);
+}
+
+void debug_print_bus(struct pci_bus *bus) {
+    if (bus == NULL) {
+        return;
+    }
+
+    kprintf("BUS: bus=%d\n", bus->index);
+
+    struct pci_device *device;
+    list_for_each_entry(device, &bus->devices, list) {
+        debug_print_device(device);
+    }
+
+    struct pci_bus *sub_bus = NULL;
+    list_for_each_entry(sub_bus, &bus->children, list) {
+        debug_print_bus(sub_bus);
+    }
 }
