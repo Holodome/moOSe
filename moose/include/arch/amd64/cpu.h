@@ -18,3 +18,11 @@ static inline int irqs_disabled(void) {
     do {                                                                       \
         if (_flags & X86_FLAGS_IF) sti();                                      \
     } while (0)
+
+#define halt_cpu()                                                             \
+    do {                                                                       \
+        cli();                                                                 \
+        hlt();                                                                 \
+        __builtin_unreachable();                                               \
+    } while (0)
+#define wait_for_int() hlt()

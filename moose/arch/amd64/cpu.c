@@ -56,7 +56,3 @@ void dump_registers(void) {
     print_registers(&regs);
 }
 
-void halt_cpu(void) {
-    cli();
-    hlt();
-}

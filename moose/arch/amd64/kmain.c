@@ -10,8 +10,9 @@
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
-#include <types.h>
 #include <mm/slab.h>
+#include <panic.h>
+#include <types.h>
 
 static void zero_bss(void) {
     extern volatile u64 *__bss_start;
@@ -24,7 +25,7 @@ static void zero_bss(void) {
 __attribute__((noreturn)) void kmain(void) {
     zero_bss();
     init_kmalloc();
-    init_slab_cache();
+    /* init_slab_cache(); */
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
@@ -53,23 +54,15 @@ __attribute__((noreturn)) void kmain(void) {
         }
     }
 
-    if (init_phys_mem(ranges, usable_region_count)) {
-        kprintf("failed to initialize physical memory\n");
-        halt_cpu();
-    }
+    if (init_phys_mem(ranges, usable_region_count))
+        panic("failed to initialize physical memory\n");
 
-    if (init_virt_mem(ranges, usable_region_count)) {
-        kprintf("failed to initialize virtual memory\n");
-        halt_cpu();
-    }
+    if (init_virt_mem(ranges, usable_region_count))
+        panic("failed to initialize virtual memory\n");
+
     init_rtc();
+    if (launch_first_task(idle_task)) panic("failed to create idle task\n");
 
-    if (launch_first_task(idle_task)) {
-        kprintf("failed to create idle task\n");
-        halt_cpu();
-    }
-
-    for (;;)
-        halt_cpu();
+    halt_cpu();
 }
 

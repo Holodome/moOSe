@@ -4,11 +4,7 @@
 
 #define X86_FLAGS_IF 0x0200
 
-__attribute__((noreturn)) static inline void hlt(void) {
-    asm volatile("hlt");
-    __builtin_unreachable();
-}
-
+static inline void hlt(void) { asm volatile("hlt"); }
 static inline void cli(void) { asm volatile("cli" : : : "memory"); }
 static inline void sti(void) { asm volatile("sti" : : : "memory"); }
 static inline void pause(void) { asm volatile("pause"); }
