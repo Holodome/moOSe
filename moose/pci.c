@@ -1,7 +1,7 @@
 #include <arch/amd64/asm.h>
 #include <pci.h>
 #include <kstdio.h>
-#include <kmalloc.h>
+#include <mm/kmalloc.h>
 
 // bit 31
 #define PCI_ENABLE_BIT 0x80000000

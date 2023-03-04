@@ -1,6 +1,7 @@
 #pragma once
 
-#include <kmem.h>
+#include <mm/kmem.h>
+#include <list.h>
 
 #define PCI_CONFIG_ADDRESS 0xcf8
 #define PCI_CONFIG_DATA    0xcfc
