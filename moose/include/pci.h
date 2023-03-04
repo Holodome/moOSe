@@ -3,9 +3,6 @@
 #include <mm/kmem.h>
 #include <list.h>
 
-#define PCI_CONFIG_ADDRESS 0xcf8
-#define PCI_CONFIG_DATA    0xcfc
-
 #define PCI_BARS_COUNT 6
 
 struct pci_device;
@@ -52,3 +49,13 @@ struct pci_device {
 
 void init_pci(void);
 struct pci_device *get_pci_device(u16 vendor, u16 device);
+
+void io_wait(void);
+
+u32 read_pci_config_u32(u8 bus, u8 device, u8 function, u8 offset);
+u16 read_pci_config_u16(u8 bus, u8 device, u8 function, u8 offset);
+u8 read_pci_config_u8(u8 bus, u8 device, u8 function, u8 offset);
+
+void write_pci_config_u32(u8 bus, u8 device, u8 function, u8 offset, u32 data);
+void write_pci_config_u16(u8 bus, u8 device, u8 function, u8 offset, u16 data);
+void write_pci_config_u8(u8 bus, u8 device, u8 function, u8 offset, u8 data);

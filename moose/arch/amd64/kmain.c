@@ -28,6 +28,18 @@ __attribute__((noreturn)) void kmain(void) {
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
     init_pci();
+    u32 base = read_pci_config_u32(0, 3, 0, 0x14);
+    kprintf("base = %x\n", base);
+
+    write_pci_config_u32(0, 3, 0, 0x10, UINT_MAX);
+    u32 size = ~read_pci_config_u32(0, 3, 0, 0x14) + 1;
+
+    kprintf("size = %d\n", size);
+
+    write_pci_config_u32(0, 3, 0, 0x10, base);
+    base = read_pci_config_u32(0, 3, 0, 0x14);
+
+    kprintf("base = %x\n", base);
 
     const struct memmap_entry *memmap;
     u32 memmap_size;
