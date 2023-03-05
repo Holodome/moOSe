@@ -27,10 +27,6 @@ __attribute__((noreturn)) void kmain(void) {
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
-    init_pci();
-    struct pci_bus *root_bus = get_root_bus();
-    debug_print_bus(root_bus);
-
     const struct memmap_entry *memmap;
     u32 memmap_size;
     get_memmap(&memmap, &memmap_size);
@@ -63,6 +59,21 @@ __attribute__((noreturn)) void kmain(void) {
 
     if (init_virt_mem(ranges, usable_region_count)) {
         kprintf("failed to initialize virtual memory\n");
+        halt_cpu();
+    }
+
+    init_pci();
+    struct pci_bus *root_bus = get_root_bus();
+    debug_print_bus(root_bus);
+
+    struct pci_device *rtl8139 = get_pci_device(0x10ec, 0x8139);
+    if (rtl8139 == NULL) {
+        kprintf("rtl8139 is not connected\n");
+        halt_cpu();
+    }
+
+    if (enable_pci_device(rtl8139)) {
+        kprintf("failed to enable rtl8139\n");
         halt_cpu();
     }
 

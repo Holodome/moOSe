@@ -2,6 +2,7 @@
 
 #include <list.h>
 #include <mm/kmem.h>
+#include <mm/resource.h>
 
 #define PCI_BARS_COUNT 6
 
@@ -44,10 +45,11 @@ struct pci_device {
     u8 interrupt_line;
     u8 interrupt_pin;
 
-    struct mem_range bars[PCI_BARS_COUNT];
+    struct list_head resources;
 };
 
-void init_pci(void);
+int init_pci(void);
+int enable_pci_device(struct pci_device *device);
 struct pci_bus *get_root_bus(void);
 struct pci_device *get_pci_device(u16 vendor, u16 device);
 

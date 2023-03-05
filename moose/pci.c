@@ -2,6 +2,7 @@
 #include <pci.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
+#include <mm/resource.h>
 
 #define PCI_CONFIG_ADDRESS 0xcf8
 #define PCI_CONFIG_DATA    0xcfc
@@ -37,6 +38,8 @@
 
 #define PCI_SECONDARY_BUS       0x19
 #define PCI_SUBORDINATE_BUS     0x20
+
+#define PCI_BRIDGE_BARS_COUNT   2
 
 static struct pci_bus *root_bus;
 
@@ -215,8 +218,52 @@ struct pci_bus *get_root_bus(void) {
     return root_bus;
 }
 
-void init_pci(void) {
+int init_pci(void) {
     root_bus = scan_bus(0);
+    if (root_bus == NULL)
+        return -1;
+
+    return 0;
+}
+
+int enable_pci_device(struct pci_device *device) {
+    u8 bars_count = PCI_BARS_COUNT;
+    if (is_pci_bridge(device))
+        bars_count = PCI_BRIDGE_BARS_COUNT;
+
+    u8 bus_idx = device->bus->index;
+    u8 device_idx = device->device_index;
+    u8 func_idx = device->func_index;
+
+    init_list_head(&device->resources);
+
+    for (u8 bar_idx = 0; bar_idx < bars_count; bar_idx++) {
+        u8 bar_offset = PCI_BASE_ADDRESS_0 + bar_idx * sizeof(u32);
+        u32 bar = read_pci_config_u32(bus_idx, device_idx, func_idx, bar_offset);
+
+        u32 addr;
+        // io and memory spaces
+        if (bar & 1) {
+            addr = bar & 0xfffffff8;
+        } else {
+            addr = bar & 0xfffffff0;
+        }
+
+        write_pci_config_u32(bus_idx, device_idx, func_idx, bar_offset, UINT_MAX);
+        io_wait();
+        u32 size = ~read_pci_config_u32(bus_idx, device_idx,
+                                        func_idx, bar_offset) + 1;
+
+        write_pci_config_u32(bus_idx, device_idx, func_idx, bar_offset, bar);
+        io_wait();
+
+        struct resource *res = request_port_region(addr, size);
+        if (res) {
+            list_add_tail(&res->list, &device->resources);
+        }
+    }
+
+    return 0;
 }
 
 static struct pci_device *find_pci_device(struct pci_bus *bus, u16 vendor_id,
