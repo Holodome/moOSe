@@ -219,16 +219,42 @@ void init_pci(void) {
     root_bus = scan_bus(0);
 }
 
+static struct pci_device *find_pci_device(struct pci_bus *bus, u16 vendor_id,
+                                          u16 device_id) {
+    struct pci_device *device = NULL;
+    list_for_each_entry(device, &bus->devices, list) {
+        if (device->vendor == vendor_id && device->device == device_id) {
+            return device;
+        }
+    }
+
+    struct pci_bus *sub_bus;
+    list_for_each_entry(sub_bus, &bus->children, list) {
+        device = find_pci_device(sub_bus, vendor_id, device_id);
+        if (device)
+            return device;
+    }
+
+    return device;
+}
+
+struct pci_device *get_pci_device(u16 vendor, u16 device) {
+    if (root_bus == NULL)
+        return NULL;
+
+    return find_pci_device(root_bus, vendor, device);
+}
+
 static void debug_print_device(struct pci_device *device) {
-    kprintf("DEV: bus=%d, dev=%d, func=%d, vendor=%x, devid=%x, class=%#x, subclass=%#x\n",
+    kprintf("DEV: bus=%d, dev=%d, func=%d, vendor=%x, devid=%x, "
+            "class=%#x, subclass=%#x\n",
             device->bus->index, device->device_index, device->func_index,
             device->vendor, device->device, device->class_code, device->subclass);
 }
 
 void debug_print_bus(struct pci_bus *bus) {
-    if (bus == NULL) {
+    if (bus == NULL)
         return;
-    }
 
     kprintf("BUS: bus=%d\n", bus->index);
 
