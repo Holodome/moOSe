@@ -3,7 +3,7 @@
 
 LIST_HEAD(regions);
 
-struct resource *request_port_region(u64 base, size_t size) {
+struct resource *request_port_region(u64 base, u64 size) {
     if (size == 0)
         return NULL;
 

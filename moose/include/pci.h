@@ -55,13 +55,14 @@ struct pci_device *get_pci_device(u16 vendor, u16 device);
 
 void io_wait(void);
 
-u32 read_pci_config_u32(u8 bus, u8 device, u8 function, u8 offset);
-u16 read_pci_config_u16(u8 bus, u8 device, u8 function, u8 offset);
-u8 read_pci_config_u8(u8 bus, u8 device, u8 function, u8 offset);
+// bdf - (bus, device, function) encoded in u32
+u32 read_pci_config_u32(u32 bdf, u8 offset);
+u16 read_pci_config_u16(u32 bdf, u8 offset);
+u8 read_pci_config_u8(u32 bdf, u8 offset);
 
-void write_pci_config_u32(u8 bus, u8 device, u8 function, u8 offset, u32 data);
-void write_pci_config_u16(u8 bus, u8 device, u8 function, u8 offset, u16 data);
-void write_pci_config_u8(u8 bus, u8 device, u8 function, u8 offset, u8 data);
+void write_pci_config_u32(u32 bdf, u8 offset, u32 data);
+void write_pci_config_u16(u32 bdf, u8 offset, u16 data);
+void write_pci_config_u8(u32 bdf, u8 offset, u8 data);
 
 int is_pci_bridge(struct pci_device *device);
 
