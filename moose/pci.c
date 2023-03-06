@@ -1,4 +1,5 @@
 #include <arch/amd64/asm.h>
+#include <arch/amd64/cpu.h>
 #include <pci.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
@@ -46,17 +47,12 @@
 
 static struct pci_bus *root_bus;
 
-void io_wait(void) {
-    port_out32(0x80, 0);
-}
-
 u8 read_pci_config_u8(u32 bdf, u8 offset) {
     u32 addr = PCI_ENABLE_BIT | bdf | (offset & 0xf8);
     port_out32(PCI_CONFIG_ADDRESS, addr);
 
     io_wait();
-    u8 data = (u8)((port_in32(PCI_CONFIG_DATA) >>
-                      ((offset & 3) * 8)) & 0xff);
+    u8 data = (port_in32(PCI_CONFIG_DATA) >> ((offset & 3) * 8)) & 0xff;
 
     return data;
 }
@@ -66,8 +62,7 @@ u16 read_pci_config_u16(u32 bdf, u8 offset) {
     port_out32(PCI_CONFIG_ADDRESS, addr);
 
     io_wait();
-    u16 data = (u16)((port_in32(PCI_CONFIG_DATA) >>
-                      ((offset & 2) * 8)) & 0xffff);
+    u16 data = (port_in32(PCI_CONFIG_DATA) >> ((offset & 2) * 8)) & 0xffff;
 
     return data;
 }
@@ -90,7 +85,6 @@ void write_pci_config_u8(u32 bdf, u8 offset, u8 data) {
     u32 temp = (u32)data << ((offset & 3) * 8);
 
     port_out32(PCI_CONFIG_DATA, temp);
-    io_wait();
 }
 
 void write_pci_config_u16(u32 bdf, u8 offset, u16 data) {
@@ -101,7 +95,6 @@ void write_pci_config_u16(u32 bdf, u8 offset, u16 data) {
     u32 temp = (u32)data << ((offset & 2) * 8);
 
     port_out32(PCI_CONFIG_DATA, temp);
-    io_wait();
 }
 
 void write_pci_config_u32(u32 bdf, u8 offset, u32 data) {
@@ -110,7 +103,6 @@ void write_pci_config_u32(u32 bdf, u8 offset, u32 data) {
     io_wait();
 
     port_out32(PCI_CONFIG_DATA, data);
-    io_wait();
 }
 
 int is_pci_bridge(struct pci_device *device) {
@@ -153,15 +145,11 @@ static struct pci_device *create_device(struct pci_bus *bus,
     u32 bdf = BDF(bus_idx, device_idx, func_idx);
 
     if (is_pci_bridge(device)) {
-        device->secondary_bus = read_pci_config_u8(
-            bdf, PCI_SECONDARY_BUS);
-        device->subordinate_bus = read_pci_config_u8(
-            bdf, PCI_SUBORDINATE_BUS);
+        device->secondary_bus = read_pci_config_u8(bdf, PCI_SECONDARY_BUS);
+        device->subordinate_bus = read_pci_config_u8(bdf, PCI_SUBORDINATE_BUS);
     } else {
-        device->sub_vendor_id = read_pci_config_u16(
-            bdf, PCI_SUB_VENDOR);
-        device->subsystem_id = read_pci_config_u16(
-            bdf, PCI_SUB_SYSTEM);
+        device->sub_vendor_id = read_pci_config_u16(bdf, PCI_SUB_VENDOR);
+        device->subsystem_id = read_pci_config_u16(bdf, PCI_SUB_SYSTEM);
     }
 
     return device;

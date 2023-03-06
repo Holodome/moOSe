@@ -53,8 +53,6 @@ int enable_pci_device(struct pci_device *device);
 struct pci_bus *get_root_bus(void);
 struct pci_device *get_pci_device(u16 vendor, u16 device);
 
-void io_wait(void);
-
 // bdf - (bus, device, function) encoded in u32
 u32 read_pci_config_u32(u32 bdf, u8 offset);
 u16 read_pci_config_u16(u32 bdf, u8 offset);

@@ -18,3 +18,7 @@ static inline int irqs_disabled(void) {
     do {                                                                       \
         if (_flags & X86_FLAGS_IF) sti();                                      \
     } while (0)
+
+static inline void io_wait(void) {
+    port_out32(0x80, 0);
+}
