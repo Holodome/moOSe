@@ -52,9 +52,7 @@ u8 read_pci_config_u8(u32 bdf, u8 offset) {
     port_out32(PCI_CONFIG_ADDRESS, addr);
 
     io_wait();
-    u8 data = (port_in32(PCI_CONFIG_DATA) >> ((offset & 3) * 8)) & 0xff;
-
-    return data;
+    return (port_in32(PCI_CONFIG_DATA) >> ((offset & 3) * 8));
 }
 
 u16 read_pci_config_u16(u32 bdf, u8 offset) {
@@ -62,9 +60,7 @@ u16 read_pci_config_u16(u32 bdf, u8 offset) {
     port_out32(PCI_CONFIG_ADDRESS, addr);
 
     io_wait();
-    u16 data = (port_in32(PCI_CONFIG_DATA) >> ((offset & 2) * 8)) & 0xffff;
-
-    return data;
+    return (port_in32(PCI_CONFIG_DATA) >> ((offset & 2) * 8));
 }
 
 u32 read_pci_config_u32(u32 bdf, u8 offset) {
@@ -72,9 +68,7 @@ u32 read_pci_config_u32(u32 bdf, u8 offset) {
     port_out32(PCI_CONFIG_ADDRESS, addr);
 
     io_wait();
-    u32 data = port_in32(PCI_CONFIG_DATA);
-
-    return data;
+    return port_in32(PCI_CONFIG_DATA);
 }
 
 void write_pci_config_u8(u32 bdf, u8 offset, u8 data) {
@@ -143,7 +137,6 @@ static struct pci_device *create_device(struct pci_bus *bus,
     read_common_header(device);
 
     u32 bdf = BDF(bus_idx, device_idx, func_idx);
-
     if (is_pci_bridge(device)) {
         device->secondary_bus = read_pci_config_u8(bdf, PCI_SECONDARY_BUS);
         device->subordinate_bus = read_pci_config_u8(bdf, PCI_SUBORDINATE_BUS);
@@ -223,11 +216,7 @@ int enable_pci_device(struct pci_device *device) {
 
         u32 addr;
         // io and memory spaces
-        if (bar & 1) {
-            addr = bar & 0xfffffff8;
-        } else {
-            addr = bar & 0xfffffff0;
-        }
+        addr = bar & (bar & 1 ? 0xfffffff8 : 0xfffffff0);
 
         write_pci_config_u32(bdf, bar_offset, UINT_MAX);
         io_wait();
