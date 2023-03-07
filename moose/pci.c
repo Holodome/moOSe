@@ -15,31 +15,6 @@
 #define PCI_BRIDGE_CLASS 0x6
 #define PCI_BRIDGE_SUB_CLASS 0x4
 
-// PCI configuration space registers
-#define PCI_VENDOR_ID		0x00
-#define PCI_DEVICE_ID		0x02
-#define PCI_COMMAND		0x04
-#define PCI_STATUS		0x06
-#define PCI_PROG_IF		0x09
-#define PCI_SUBCLASS     	0x0a
-#define PCI_CLASS               0x0b
-#define PCI_HEADER_TYPE		0x0e
-
-#define PCI_BASE_ADDRESS_0	0x10
-#define PCI_BASE_ADDRESS_1	0x14
-#define PCI_BASE_ADDRESS_2	0x18
-#define PCI_BASE_ADDRESS_3	0x1c
-#define PCI_BASE_ADDRESS_4	0x20
-#define PCI_BASE_ADDRESS_5	0x24
-
-#define PCI_SUB_VENDOR          0x2c
-#define PCI_SUB_SYSTEM          0x2e
-#define PCI_INTERRUPT_LINE      0x3c
-#define PCI_INTERRUPT_PIN       0x3d
-
-#define PCI_SECONDARY_BUS       0x19
-#define PCI_SUBORDINATE_BUS     0x20
-
 #define PCI_BRIDGE_BARS_COUNT   2
 
 #define BDF(bus, device, func) \
@@ -48,19 +23,11 @@
 static struct pci_bus *root_bus;
 
 u8 read_pci_config_u8(u32 bdf, u8 offset) {
-    u32 addr = PCI_ENABLE_BIT | bdf | (offset & 0xf8);
-    port_out32(PCI_CONFIG_ADDRESS, addr);
-
-    io_wait();
-    return (port_in32(PCI_CONFIG_DATA) >> ((offset & 3) * 8));
+    return read_pci_config_u32(bdf, offset) >> ((offset & 3) * 8);
 }
 
 u16 read_pci_config_u16(u32 bdf, u8 offset) {
-    u32 addr = PCI_ENABLE_BIT | bdf | (offset & 0xf8);
-    port_out32(PCI_CONFIG_ADDRESS, addr);
-
-    io_wait();
-    return (port_in32(PCI_CONFIG_DATA) >> ((offset & 2) * 8));
+    return read_pci_config_u32(bdf, offset) >> ((offset & 2) * 8);
 }
 
 u32 read_pci_config_u32(u32 bdf, u8 offset) {
@@ -72,23 +39,23 @@ u32 read_pci_config_u32(u32 bdf, u8 offset) {
 }
 
 void write_pci_config_u8(u32 bdf, u8 offset, u8 data) {
-    u32 addr = PCI_ENABLE_BIT | bdf | (offset & 0xf8);
-    port_out32(PCI_CONFIG_ADDRESS, addr);
-    io_wait();
+    u32 temp = read_pci_config_u32(bdf, offset);
 
-    u32 temp = (u32)data << ((offset & 3) * 8);
+    u32 shift = (offset & 3) * 8;
+    temp &= ~(0xff << shift);
+    temp |= data << shift;
 
-    port_out32(PCI_CONFIG_DATA, temp);
+    write_pci_config_u32(bdf, offset, temp);
 }
 
 void write_pci_config_u16(u32 bdf, u8 offset, u16 data) {
-    u32 addr = PCI_ENABLE_BIT | bdf | (offset & 0xf8);
-    port_out32(PCI_CONFIG_ADDRESS, addr);
-    io_wait();
+    u32 temp = read_pci_config_u32(bdf, offset);
 
-    u32 temp = (u32)data << ((offset & 2) * 8);
+    u32 shift = (offset & 2) * 8;
+    temp &= ~(0xffff << shift);
+    temp |= data << shift;
 
-    port_out32(PCI_CONFIG_DATA, temp);
+    write_pci_config_u32(bdf, offset, temp);
 }
 
 void write_pci_config_u32(u32 bdf, u8 offset, u32 data) {
@@ -97,6 +64,7 @@ void write_pci_config_u32(u32 bdf, u8 offset, u32 data) {
     io_wait();
 
     port_out32(PCI_CONFIG_DATA, data);
+    io_wait();
 }
 
 int is_pci_bridge(struct pci_device *device) {
@@ -123,12 +91,8 @@ static void read_common_header(struct pci_device *device) {
     device->interrupt_pin = read_pci_config_u16(bdf, PCI_INTERRUPT_PIN);
 }
 
-static struct pci_device *create_device(struct pci_bus *bus,
+static void init_device(struct pci_device *device, struct pci_bus *bus,
                                         u8 device_idx, u8 func_idx) {
-    struct pci_device *device = kzalloc(sizeof(struct pci_device));
-    if (device == NULL)
-        return NULL;
-
     u8 bus_idx = bus->index;
     device->device_index = device_idx;
     device->func_index = func_idx;
@@ -144,12 +108,10 @@ static struct pci_device *create_device(struct pci_bus *bus,
         device->sub_vendor_id = read_pci_config_u16(bdf, PCI_SUB_VENDOR);
         device->subsystem_id = read_pci_config_u16(bdf, PCI_SUB_SYSTEM);
     }
-
-    return device;
 }
 
 static struct pci_bus *scan_bus(u8 bus_idx) {
-    struct pci_bus *bus = kzalloc(sizeof(struct pci_bus));
+    struct pci_bus *bus = kzalloc(sizeof(*bus));
     if (bus == NULL)
         return NULL;
 
@@ -160,25 +122,25 @@ static struct pci_bus *scan_bus(u8 bus_idx) {
     for (u8 device_idx = 0; device_idx < 32; device_idx++) {
         for (u8 func_idx = 0; func_idx < 8; func_idx++) {
             u32 bdf = BDF(bus_idx, device_idx, func_idx);
-            u16 vendor_id = read_pci_config_u16(
-                bdf, PCI_VENDOR_ID);
+            u16 vendor_id = read_pci_config_u16(bdf, PCI_VENDOR_ID);
             if (vendor_id == PCI_DEVICE_NOT_EXIST)
                 continue;
 
-            struct pci_device *device =
-                create_device(bus, device_idx, func_idx);
-            if (device) {
-                list_add_tail(&device->list, &bus->devices);
+            struct pci_device *device = kzalloc(sizeof(*device));
+            if (device == NULL)
+                return NULL;
 
-                if (is_pci_bridge(device)) {
-                    struct pci_bus *sub_bus = scan_bus(device->secondary_bus);
-                    if (sub_bus) {
-                        list_add_tail(&sub_bus->list, &bus->children);
-                    }
+            init_device(device, bus, device_idx, func_idx);
+            list_add_tail(&device->list, &bus->devices);
 
-                    sub_bus->bridge = device;
-                    sub_bus->parent = bus;
+            if (is_pci_bridge(device)) {
+                struct pci_bus *sub_bus = scan_bus(device->secondary_bus);
+                if (sub_bus) {
+                    list_add_tail(&sub_bus->list, &bus->children);
                 }
+
+                sub_bus->bridge = device;
+                sub_bus->parent = bus;
             }
         }
     }
@@ -219,16 +181,18 @@ int enable_pci_device(struct pci_device *device) {
         addr = bar & (bar & 1 ? 0xfffffff8 : 0xfffffff0);
 
         write_pci_config_u32(bdf, bar_offset, UINT_MAX);
-        io_wait();
         u32 size = ~read_pci_config_u32(bdf, bar_offset) + 1;
 
         write_pci_config_u32(bdf, bar_offset, bar);
-        io_wait();
+
+        if (size == 0)
+            continue;
 
         struct resource *res = request_port_region(addr, size);
-        if (res) {
-            list_add_tail(&res->list, &device->resources);
-        }
+        if (res == NULL)
+            return -1;
+
+        list_add_tail(&res->list, &device->resources);
     }
 
     return 0;
@@ -236,7 +200,7 @@ int enable_pci_device(struct pci_device *device) {
 
 static struct pci_device *find_pci_device(struct pci_bus *bus, u16 vendor_id,
                                           u16 device_id) {
-    struct pci_device *device = NULL;
+    struct pci_device *device;
     list_for_each_entry(device, &bus->devices, list) {
         if (device->vendor == vendor_id && device->device == device_id) {
             return device;
@@ -246,11 +210,12 @@ static struct pci_device *find_pci_device(struct pci_bus *bus, u16 vendor_id,
     struct pci_bus *sub_bus;
     list_for_each_entry(sub_bus, &bus->children, list) {
         device = find_pci_device(sub_bus, vendor_id, device_id);
-        if (device)
+        if (device) {
             return device;
+        }
     }
 
-    return device;
+    return NULL;
 }
 
 struct pci_device *get_pci_device(u16 vendor, u16 device) {

@@ -6,6 +6,31 @@
 
 #define PCI_BARS_COUNT 6
 
+// PCI configuration space registers
+#define PCI_VENDOR_ID		0x00
+#define PCI_DEVICE_ID		0x02
+#define PCI_COMMAND		0x04
+#define PCI_STATUS		0x06
+#define PCI_PROG_IF		0x09
+#define PCI_SUBCLASS     	0x0a
+#define PCI_CLASS               0x0b
+#define PCI_HEADER_TYPE		0x0e
+
+#define PCI_BASE_ADDRESS_0	0x10
+#define PCI_BASE_ADDRESS_1	0x14
+#define PCI_BASE_ADDRESS_2	0x18
+#define PCI_BASE_ADDRESS_3	0x1c
+#define PCI_BASE_ADDRESS_4	0x20
+#define PCI_BASE_ADDRESS_5	0x24
+
+#define PCI_SUB_VENDOR          0x2c
+#define PCI_SUB_SYSTEM          0x2e
+#define PCI_INTERRUPT_LINE      0x3c
+#define PCI_INTERRUPT_PIN       0x3d
+
+#define PCI_SECONDARY_BUS       0x19
+#define PCI_SUBORDINATE_BUS     0x20
+
 struct pci_device;
 
 struct pci_bus {

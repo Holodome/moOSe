@@ -10,8 +10,12 @@ struct resource *request_port_region(u64 base, u64 size) {
     struct resource *res;
     list_for_each_entry(res, &regions, list) {
         if (base < res->base + res->size &&
-            base + size > res->base)
+            base + size > res->base) {
+            if (base == res->base && size == res->size)
+                return res;
+
             return NULL;
+        }
     }
 
     struct resource *new_res = kmalloc(sizeof(struct resource));
