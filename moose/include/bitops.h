@@ -83,7 +83,9 @@
     ((CHAR_BIT * sizeof(_val)) - count_leading_zeroes(_val) - 1)
 
 #define DIV_ROUND_UP(_a, _b) (((_a) + (_b)-1) / (_b))
-#define BITS_TO_BITMAP(_bits) DIV_ROUND_UP(_bits, sizeof(long) * CHAR_BIT)
+
+#define BITMAP_STRIDE (sizeof(u64) * CHAR_BIT)
+#define BITS_TO_BITMAP(_bits) DIV_ROUND_UP(_bits, BITMAP_STRIDE)
 
 static inline int test_bit(u64 index, const u64 *bitmap) {
     return (bitmap[index >> 6] & (1l << (index & 0x3f))) != 0;

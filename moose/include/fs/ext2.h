@@ -25,6 +25,13 @@
 #define EXT2_FT_SOCK 6     // Socket File
 #define EXT2_FT_SYMLINK 7  // Symbolic Link
 
+#define EXT2_BAD_INO 1         // bad blocks inode
+#define EXT2_ROOT_INO 2        // root directory inode
+#define EXT2_ACL_IDX_INO 3     // ACL index inode (deprecated?)
+#define EXT2_ACL_DATA_INO 4    // ACL data inode (deprecated?)
+#define EXT2_BOOT_LOADER_INO 5 // boot loader inode
+#define EXT2_UNDEL_DIR_INO 6   //
+
 #define EXT2_SUPER_MAGIC 0xEF53
 
 #define EXT2_NAME_LEN 255
@@ -110,5 +117,12 @@ struct ext2_fs {
 
     size_t bgds_count;
     struct ext2_group_desc *bgds;
+
+    struct ext2_inode root_inode;
+
+    u32 block_size;
+    u32 inodes_per_block;
+    u32 group_inode_bitmap_size;
+    u32 group_block_bitmap_size;
 };
 
