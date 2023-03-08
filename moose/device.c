@@ -37,6 +37,30 @@ ssize_t write(struct device *dev, const void *buf, size_t buf_size) {
     return rc;
 }
 
+int seek_read(struct device *dev, off_t off, void *buf, size_t buf_size) {
+    off_t seek_result = lseek(dev, off, SEEK_SET);
+    if (seek_result < 0) 
+        return -1;
+
+    ssize_t read_result = read(dev, buf, buf_size);
+    if (read_result != (ssize_t)buf_size)
+        return -1;
+
+    return 0;
+}
+
+int seek_write(struct device *dev, off_t off, const void *buf, size_t buf_size) {
+    off_t seek_result = lseek(dev, off, SEEK_SET);
+    if (seek_result < 0) 
+        return -1;
+
+    ssize_t write_result = write(dev, buf, buf_size);
+    if (write_result != (ssize_t)buf_size)
+        return -1;
+
+    return 0;
+}
+
 int flush(struct device *dev) {
     int rc = 0;
     if (dev->ops.flush)
