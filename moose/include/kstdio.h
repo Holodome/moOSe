@@ -3,6 +3,7 @@
 #include <types.h>
 #include <varargs.h>
 
+// TODO: Move this from here
 #define SEEK_SET 0
 #define SEEK_END 1
 #define SEEK_CUR 2

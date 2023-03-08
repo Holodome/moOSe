@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fs/vfs.h>
 #include <types.h>
 
 // superblock state
@@ -7,14 +8,26 @@
 #define EXT2_ERROR_FS 2
 
 // superblock errors
-#define EXT2_ERRORS_CONTINUE 1 /* continue as nothing handled */
-#define EXT2_ERRORS_RO 2       /* remount read-only */
-#define EXT2_ERRORS_PANIC 3    /* cause kernel panic */
+#define EXT2_ERRORS_CONTINUE 1 // continue as nothing handled
+#define EXT2_ERRORS_RO 2       // remount read-only
+#define EXT2_ERRORS_PANIC 3    // cause kernel panic
 
 // superblock os
 #define EXT2_OS_MOOSE 100
 
+// dentry file type
+#define EXT2_FT_UNKNOWN 0  // Unknown File Type
+#define EXT2_FT_REG_FILE 1 // Regular File
+#define EXT2_FT_DIR 2      // Directory File
+#define EXT2_FT_CHRDEV 3   // Character Device
+#define EXT2_FT_BLKDEV 4   // Block Device
+#define EXT2_FT_FIFO 5     // Buffer File
+#define EXT2_FT_SOCK 6     // Socket File
+#define EXT2_FT_SYMLINK 7  // Symbolic Link
+
 #define EXT2_SUPER_MAGIC 0xEF53
+
+#define EXT2_NAME_LEN 255
 
 // superblock
 struct ext2_sb {
@@ -83,8 +96,19 @@ struct ext2_inode {
 
 static_assert(sizeof(struct ext2_inode) == 128);
 
-struct ext2_fs {
+struct ext2_dentry {
+    u32 inode;
+    u16 rec_len;
+    u8 name_len;
+    u8 file_type;
+    char name[];
 };
 
-int ext2_mount(struct ext2_fs *fs);
+struct ext2_fs {
+    struct ext2_sb sb;
+    struct device *dev;
+
+    size_t bgds_count;
+    struct ext2_group_desc *bgds;
+};
 
