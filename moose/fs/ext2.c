@@ -41,6 +41,10 @@ static int read_superblock(struct ext2_fs *fs, struct ext2_sb *sb) {
     return seek_read(fs->dev, EXT2_SB_OFFSET, sb, sizeof(*sb));
 }
 
+static int sync_superblock(struct ext2_fs *fs) {
+    return seek_write(fs->dev, EXT2_SB_OFFSET, &fs->sb, sizeof(fs->sb));
+}
+
 // note: need to provide is_dir because ext2 block group tracks directory count
 static ssize_t alloc_ino(struct ext2_fs *fs, int is_dir) {
     size_t bgdi;
@@ -59,14 +63,8 @@ static ssize_t alloc_ino(struct ext2_fs *fs, int is_dir) {
                   sizeof(bitmap)) < 0)
         return -EIO;
 
-    u64 found = 0;
-    for (size_t i = 0; i < fs->sb.s_inodes_per_group && !found;
-         i += BITMAP_STRIDE) {
-        u64 biti = bit_scan_forward(bitmap[i / BITMAP_STRIDE]);
-        if (biti) found = i + biti - 1;
-    }
-
-    if (!found) panic("Corrupted filestem");
+    u64 found = bitmap_first_clear(bitmap, fs->sb.s_inodes_per_group);
+    if (!found) panic("Corrupted filesystem");
 
     assert(desc->bg_free_inodes_count);
     --desc->bg_free_inodes_count;
@@ -79,8 +77,47 @@ static ssize_t alloc_ino(struct ext2_fs *fs, int is_dir) {
                    sizeof(bitmap)) < 0)
         return -EIO;
 
-    u32 ino = bgdi * fs->sb.s_inodes_per_group + found + 1;
+    if (sync_superblock(fs) < 0)
+        return -EIO;
+
+    u32 ino = bgdi * fs->sb.s_inodes_per_group + found;
     return ino;
+}
+
+static ssize_t alloc_block(struct ext2_fs *fs) {
+    size_t bgdi;
+    struct ext2_group_desc *desc = NULL;
+    for (bgdi = 0; bgdi < fs->bgds_count && !desc; ++bgdi) {
+        struct ext2_group_desc *test = fs->bgds + bgdi;
+        if (!test->bg_free_blocks_count) continue;
+
+        desc = test;
+    }
+
+    if (desc == NULL) return -ENOSPC;
+
+    u64 bitmap[fs->group_block_bitmap_size];
+    if (seek_read(fs->dev, desc->bg_block_bitmap * fs->block_size, bitmap,
+                  sizeof(bitmap)) < 0)
+        return -EIO;
+
+    u64 found = bitmap_first_clear(bitmap, fs->sb.s_blocks_per_group);
+    if (!found) panic("Corrupted filesystem");
+
+    assert(desc->bg_free_blocks_count);
+    --desc->bg_free_blocks_count;
+    assert(fs->sb.s_free_block_count);
+    --fs->sb.s_free_block_count;
+    set_bit(found, bitmap);
+
+    if (seek_write(fs->dev, desc->bg_block_bitmap * fs->block_size, bitmap,
+                   sizeof(bitmap)) < 0)
+        return -EIO;
+
+    if (sync_superblock(fs) < 0)
+        return -EIO;
+
+    return bgdi * fs->sb.s_blocks_per_group + found - 1;
 }
 
 int ext2_mount(struct ext2_fs *fs) {

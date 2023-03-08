@@ -99,6 +99,16 @@ static inline void clear_bit(u64 index, u64 *bitmap) {
     bitmap[index >> 6] &= ~(1l << (index & 0x3f));
 }
 
+static inline u64 bitmap_first_clear(const u64 *bitmap, u64 bit_count) {
+    u64 found = 0;
+    for (size_t i = 0; i < bit_count && !found; i += BITMAP_STRIDE) {
+        u64 biti = bit_scan_forward(bitmap[i / BITMAP_STRIDE]);
+        if (biti) found = i + biti - 1;
+    }
+
+    return found;
+}
+
 // align up power of 2
 static inline size_t align_po2(size_t val, size_t align) {
     val += align - 1;
