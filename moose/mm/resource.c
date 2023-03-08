@@ -20,7 +20,7 @@ struct resource *request_port_region(u64 base, u64 size) {
 
     struct resource *new_res = kmalloc(sizeof(struct resource));
     if (new_res == NULL)
-        return new_res;
+        return NULL;
 
     new_res->base = base;
     new_res->size = size;

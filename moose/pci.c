@@ -135,12 +135,13 @@ static struct pci_bus *scan_bus(u8 bus_idx) {
 
             if (is_pci_bridge(device)) {
                 struct pci_bus *sub_bus = scan_bus(device->secondary_bus);
-                if (sub_bus) {
-                    list_add_tail(&sub_bus->list, &bus->children);
-                }
+                if (sub_bus == NULL)
+                    return NULL;
 
                 sub_bus->bridge = device;
                 sub_bus->parent = bus;
+
+                list_add_tail(&sub_bus->list, &bus->children);
             }
         }
     }

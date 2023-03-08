@@ -10,6 +10,7 @@
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
+#include <rtl8139.h>
 #include <types.h>
 #include <pci.h>
 
@@ -63,20 +64,7 @@ __attribute__((noreturn)) void kmain(void) {
     }
 
     init_pci();
-    struct pci_bus *root_bus = get_root_bus();
-    debug_print_bus(root_bus);
-
-    struct pci_device *rtl8139 = get_pci_device(0x10ec, 0x8139);
-    if (rtl8139 == NULL) {
-        kprintf("rtl8139 is not connected\n");
-        halt_cpu();
-    }
-
-    if (enable_pci_device(rtl8139)) {
-        kprintf("failed to enable rtl8139\n");
-        halt_cpu();
-    }
-
+    init_rtl8139();
     init_rtc();
 
     if (launch_first_task(idle_task)) {
