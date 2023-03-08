@@ -23,16 +23,16 @@ int load_kernel(void) {
     if (result)
         return result;
 
-    struct pfatfs fs = {.dev = disk_part_dev};
+    struct fatfs fs = {.dev = disk_part_dev};
 
-    result = pfatfs_mount(&fs);
+    result = fatfs_mount(&fs);
     if (result != 0) {
         print("failed to mount");
         return result;
     }
 
-    struct pfatfs_file file;
-    result = pfatfs_open(&fs, "kernel.bin", &file);
+    struct fatfs_file file;
+    result = fatfs_open(&fs, "kernel.bin", &file);
     if (result != 0) {
         print("failed to open");
         return result;
@@ -41,7 +41,7 @@ int load_kernel(void) {
     uintptr_t addr = 0x100000;
     u32 iterations = (file.size + 511) / 512;
     for (; iterations--; addr += 512) {
-        result = pfatfs_read(&fs, &file, (void *)addr, 512);
+        result = fatfs_read(&fs, &file, (void *)addr, 512);
         if (result < 0) {
             print("failed to read");
             return result;

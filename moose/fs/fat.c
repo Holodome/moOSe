@@ -44,9 +44,9 @@
 
 #define PFATFS_IS_LEGACY_ROOTDIR(_fs, _file)                                   \
     (((_fs)->kind == PFATFS_FAT12 || (_fs)->kind == PFATFS_FAT16) &&           \
-     pfatfs__is_rootdir(_file))
+     is_rootdir(_file))
 
-typedef struct {
+struct dirent {
     char name[11];
     u8 attr;
     u8 crt_time_tenth;
@@ -57,32 +57,26 @@ typedef struct {
     u16 wrt_time;
     u16 wrt_date;
     u32 file_size;
-} pfatfs__dirent;
+};
 
-typedef struct {
+struct ldirent {
     u16 name[13];
     u8 ord;
     u8 attr;
     u8 type;
     u8 checksum;
-} pfatfs__ldirent;
+};
 
-typedef struct {
+struct fpath_iter {
     unsigned is_finished : 1;
     unsigned is_last : 1;
     int part_len;
     const char *part;
     const char *cursor;
     const char *end;
-} pfatfs__fpath_iter;
+};
 
-static int pfatfs__toupper(int a) {
-    if ('a' <= a && a <= 'z') a -= 'a' - 'A';
-    return a;
-}
-
-static size_t pfatfs__extract_basename(const char *filename,
-                                       size_t filename_len) {
+static size_t extract_basename(const char *filename, size_t filename_len) {
     size_t last_slash = filename_len - 1;
     for (; last_slash != 0; --last_slash) {
         if (filename[last_slash] == '/') { break; }
@@ -90,7 +84,7 @@ static size_t pfatfs__extract_basename(const char *filename,
     return last_slash;
 }
 
-static int pfatfs__is_illegal_dirname(u8 c) {
+static int is_illegal_dirname(u8 c) {
     // this LUT is generated using following script:
     /*
     illegal = list(range(0x20));
@@ -107,7 +101,7 @@ static int pfatfs__is_illegal_dirname(u8 c) {
 }
 
 #if 0
-static u8 pfatfs__checksum(u8 name[11]) {
+static u8 checksum(u8 name[11]) {
     u8 sum;
     for (size_t i = 0; i < 11; ++i)
         sum = (((sum & 0x01) != 0) ? 0x80 : 0x00) + (sum >> 1) + *name++;
@@ -115,7 +109,7 @@ static u8 pfatfs__checksum(u8 name[11]) {
 }
 #endif
 
-static u16 pfatfs__encode_date(pfatfs_date date) {
+static u16 encode_date(struct fatfs_date date) {
     if (date.day < 1)
         date.day = 1;
     else if (date.day > 31)
@@ -132,8 +126,8 @@ static u16 pfatfs__encode_date(pfatfs_date date) {
 }
 
 #if 0
-static pfatfs_date pfatfs__decode_date(u16 val) {
-    pfatfs_date date;
+static fatfs_date decode_date(u16 val) {
+    fatfs_date date;
     date.day = val & 0x1F;
     date.month = (val >> 5) & 0x3F;
     date.year = val >> 9;
@@ -141,7 +135,7 @@ static pfatfs_date pfatfs__decode_date(u16 val) {
 }
 #endif
 
-static u16 pfatfs__encode_time(pfatfs_time time) {
+static u16 encode_time(struct fatfs_time time) {
     time.secs = time.secs >> 1;
     if (time.secs > 29) time.secs = 29;
     if (time.mins > 59) time.mins = 59;
@@ -151,8 +145,8 @@ static u16 pfatfs__encode_time(pfatfs_time time) {
 }
 
 #if 0
-static pfatfs_time pfatfs__decode_time(u16 val) {
-    pfatfs_time time;
+static fatfs_time decode_time(u16 val) {
+    fatfs_time time;
     time.secs = val & 0x0F;
     time.mins = (val >> 5) & 0x1F;
     time.hours = val >> 11;
@@ -160,11 +154,10 @@ static pfatfs_time pfatfs__decode_time(u16 val) {
 }
 #endif
 
-static int pfatfs__83_eq_reg(const char *n83, const char *reg,
-                             size_t reg_length) {
+static int n83_eq_reg(const char *n83, const char *reg, size_t reg_length) {
     size_t cursor = 0;
     for (; cursor < 8 && cursor < reg_length; ++cursor) {
-        int s = pfatfs__toupper(reg[cursor]);
+        int s = toupper(reg[cursor]);
         if (s == '.') {
             if (n83[cursor] != ' ') return 0;
             break;
@@ -176,7 +169,7 @@ static int pfatfs__83_eq_reg(const char *n83, const char *reg,
 
     ++cursor;
     for (size_t i = 0; i < 3 && cursor < reg_length; ++i, ++cursor) {
-        int s = pfatfs__toupper(reg[cursor]);
+        int s = toupper(reg[cursor]);
 
         if (s != n83[8 + i]) return 0;
     }
@@ -184,18 +177,18 @@ static int pfatfs__83_eq_reg(const char *n83, const char *reg,
     return cursor == reg_length;
 }
 
-static int pfatfs__is_rootdir(pfatfs_file *file) {
-    assert(file->dirent_loc != PFATFS_ROOTDIR || file->type == PFATFS_FILE_DIR);
+static int is_rootdir(struct fatfs_file *file) {
+    assert(file->dirent_loc != PFATFS_ROOTDIR || file->type == FATFS_FILE_DIR);
     return file->dirent_loc == PFATFS_ROOTDIR;
 }
 
-static u32 pfatfs__cluster_to_bytes(pfatfs *fs, u32 cluster, u16 offset) {
+static u32 cluster_to_bytes(struct fatfs *fs, u32 cluster, u16 offset) {
     assert(cluster >= 2 && offset < fs->bytes_per_cluster);
     return (cluster - 2) * fs->bytes_per_cluster + offset + fs->data_offset;
 }
 
 // TODO: Properly test how this works
-static void pfatfs__iter_fpath_advance(pfatfs__fpath_iter *iter) {
+static void iter_fpath_advance(struct fpath_iter *iter) {
 start:
     if (iter->cursor >= iter->end) {
         iter->is_finished = 1;
@@ -212,24 +205,24 @@ start:
     if (iter->cursor == iter->end) iter->is_last = 1;
 }
 
-static pfatfs__fpath_iter pfatfs__iter_fpath(const char *filename, size_t len) {
-    pfatfs__fpath_iter iter = {};
+static struct fpath_iter iter_fpath(const char *filename, size_t len) {
+    struct fpath_iter iter = {};
     iter.cursor = filename;
     iter.part = filename;
     iter.end = filename + len;
-    pfatfs__iter_fpath_advance(&iter);
+    iter_fpath_advance(&iter);
     return iter;
 }
 
-static void pfatfs__iter_fpath_next(pfatfs__fpath_iter *iter) {
+static void iter_fpath_next(struct fpath_iter *iter) {
     iter->part = iter->cursor;
     iter->part_len = 0;
-    pfatfs__iter_fpath_advance(iter);
+    iter_fpath_advance(iter);
 }
 
 // Fat type is determined only by the total cluster count
-static pfatfs_kind pfatfs__decide_kind(u32 clusters) {
-    pfatfs_kind kind;
+static enum fatfs_kind decide_kind(u32 clusters) {
+    enum fatfs_kind kind;
     if (clusters < 4085)
         kind = PFATFS_FAT12;
     else if (clusters < 65525)
@@ -240,7 +233,7 @@ static pfatfs_kind pfatfs__decide_kind(u32 clusters) {
     return kind;
 }
 
-static int pfatfs__parse_bpb(pfatfs *fs) {
+static int parse_bpb(struct fatfs *fs) {
     // skip the boot sector stuff
     // read the part of the boot sector that has data we are interested in
     u8 bytes[25];
@@ -286,7 +279,7 @@ static int pfatfs__parse_bpb(pfatfs *fs) {
         rsvd_sec_cnt + (num_fats * fatsz) + root_dir_sectors;
     u32 data_sec = tot_sec - first_data_sector;
     u32 cluster_count = data_sec / sec_per_clus;
-    pfatfs_kind kind = pfatfs__decide_kind(cluster_count);
+    enum fatfs_kind kind = decide_kind(cluster_count);
 
     fs->kind = kind;
     fs->bytes_per_cluster = bytes_per_cluster;
@@ -304,7 +297,7 @@ static int pfatfs__parse_bpb(pfatfs *fs) {
     return 0;
 }
 
-static int pfatfs__read_dirent_(pfatfs *fs, pfatfs__dirent *dirent) {
+static int read_dirent_(struct fatfs *fs, struct dirent *dirent) {
     u8 bytes[PFATFS_DIRENT_SIZE];
     if (read(fs->dev, bytes, sizeof(bytes)) != sizeof(bytes)) return -EIO;
 
@@ -323,7 +316,7 @@ static int pfatfs__read_dirent_(pfatfs *fs, pfatfs__dirent *dirent) {
     return 0;
 }
 
-static int pfatfs__write_dirent_(pfatfs *fs, const pfatfs__dirent *dirent) {
+static int write_dirent_(struct fatfs *fs, const struct dirent *dirent) {
     u8 bytes[PFATFS_DIRENT_SIZE];
     memcpy(bytes, dirent->name, sizeof(dirent->name));
     bytes[11] = dirent->attr;
@@ -341,14 +334,14 @@ static int pfatfs__write_dirent_(pfatfs *fs, const pfatfs__dirent *dirent) {
     return 0;
 }
 
-int pfatfs_mount(pfatfs *fs) {
-    int result = pfatfs__parse_bpb(fs);
+int fatfs_mount(struct fatfs *fs) {
+    int result = parse_bpb(fs);
     if (result != 0) return result;
 
     return 0;
 }
 
-static ssize_t pfatfs__get_fat(pfatfs *fs, u32 cluster) {
+static ssize_t get_fat(struct fatfs *fs, u32 cluster) {
     u32 fat = PFATFS_FAT_BAD;
     u32 fat_off = fs->fat_offset;
     u8 bytes[sizeof(u32)];
@@ -393,7 +386,7 @@ static ssize_t pfatfs__get_fat(pfatfs *fs, u32 cluster) {
     return fat;
 }
 
-static int pfatfs__set_fat(pfatfs *fs, u32 cluster, u32 fat) {
+static int set_fat(struct fatfs *fs, u32 cluster, u32 fat) {
     u8 bytes[sizeof(u32)];
     u32 fat_off = fs->fat_offset;
 
@@ -439,57 +432,57 @@ static int pfatfs__set_fat(pfatfs *fs, u32 cluster, u32 fat) {
     return 0;
 }
 
-static ssize_t pfatfs__find_free_cluster(pfatfs *fs, u32 start_cluster,
-                                         u32 end_cluster) {
+static ssize_t find_free_cluster(struct fatfs *fs, u32 start_cluster,
+                                 u32 end_cluster) {
     for (size_t cluster = start_cluster; cluster < end_cluster; ++cluster) {
-        u32 fat = pfatfs__get_fat(fs, cluster);
+        u32 fat = get_fat(fs, cluster);
         if (fat == PFATFS_FAT_FREE) return cluster;
     }
 
     return -ENOSPC;
 }
 
-static ssize_t pfatfs__allocate_cluster(pfatfs *fs) {
-    ssize_t cluster = pfatfs__find_free_cluster(fs, 0, fs->cluster_count);
+static ssize_t allocate_cluster(struct fatfs *fs) {
+    ssize_t cluster = find_free_cluster(fs, 0, fs->cluster_count);
     if (cluster < 0) return cluster;
 
-    int result = pfatfs__set_fat(fs, cluster, PFATFS_FAT_EOF);
+    int result = set_fat(fs, cluster, PFATFS_FAT_EOF);
     if (result < 0) return result;
 
     return cluster;
 }
 
-static int pfatfs__read_dirent(pfatfs *fs, u32 loc, pfatfs__dirent *dirent) {
+static int read_dirent(struct fatfs *fs, u32 loc, struct dirent *dirent) {
     int result = lseek(fs->dev, loc, SEEK_SET);
-    if (result >= 0) result = pfatfs__read_dirent_(fs, dirent);
+    if (result >= 0) result = read_dirent_(fs, dirent);
 
     return result;
 }
 
-static int pfatfs__write_dirent(pfatfs *fs, u32 loc,
-                                const pfatfs__dirent *dirent) {
+static int write_dirent(struct fatfs *fs, u32 loc,
+                        const struct dirent *dirent) {
     int result = lseek(fs->dev, loc, SEEK_SET);
-    if (result >= 0) result = pfatfs__write_dirent_(fs, dirent);
+    if (result >= 0) result = write_dirent_(fs, dirent);
 
     return result;
 }
 
-static pfatfs_file pfatfs__get_rootdir(pfatfs *fs) {
+static struct fatfs_file get_rootdir(struct fatfs *fs) {
     u32 rootdir_clus = fs->rootdir.cluster;
-    pfatfs_file file = {.type = PFATFS_FILE_DIR,
-                        .start_cluster = rootdir_clus,
-                        .cluster = rootdir_clus,
-                        .dirent_loc = PFATFS_ROOTDIR};
+    struct fatfs_file file = {.type = FATFS_FILE_DIR,
+                              .start_cluster = rootdir_clus,
+                              .cluster = rootdir_clus,
+                              .dirent_loc = PFATFS_ROOTDIR};
     return file;
 }
 
-static ssize_t pfatfs__find_dirent(pfatfs *fs, u32 start, u32 end,
-                                   pfatfs__dirent *dirent) {
+static ssize_t find_dirent(struct fatfs *fs, u32 start, u32 end,
+                           struct dirent *dirent) {
     u32 offset = start;
     assert(offset % PFATFS_DIRENT_SIZE == 0);
     for (; offset < end; offset += PFATFS_DIRENT_SIZE) {
-        pfatfs__dirent temp;
-        int result = pfatfs__read_dirent_(fs, &temp);
+        struct dirent temp;
+        int result = read_dirent_(fs, &temp);
         if (result < 0) return result;
 
         int name0 = temp.name[0];
@@ -503,16 +496,15 @@ static ssize_t pfatfs__find_dirent(pfatfs *fs, u32 start, u32 end,
     return offset;
 }
 
-static int pfatfs__iter_dir_next(pfatfs *fs, pfatfs_file *dir,
-                                 pfatfs__dirent *dirent) {
+static int iter_dir_next(struct fatfs *fs, struct fatfs_file *dir,
+                         struct dirent *dirent) {
     if (PFATFS_IS_LEGACY_ROOTDIR(fs, dir)) {
         u32 rootdir_offset = fs->rootdir.legacy.offset;
         u32 rootdir_size = fs->rootdir.legacy.size;
         u32 offset = dir->offset;
         if (lseek(fs->dev, rootdir_offset + offset, SEEK_SET) < 0) return -EIO;
 
-        ssize_t new_offset =
-            pfatfs__find_dirent(fs, offset, rootdir_size, dirent);
+        ssize_t new_offset = find_dirent(fs, offset, rootdir_size, dirent);
         if (new_offset < 0) return new_offset;
 
         offset = (u32)new_offset;
@@ -526,17 +518,16 @@ static int pfatfs__iter_dir_next(pfatfs *fs, pfatfs_file *dir,
         u16 cluster_offset = dir->cluster_offset;
         assert(cluster_offset % PFATFS_DIRENT_SIZE == 0);
     retry:
-        if (lseek(fs->dev,
-                  pfatfs__cluster_to_bytes(fs, cluster, cluster_offset),
+        if (lseek(fs->dev, cluster_to_bytes(fs, cluster, cluster_offset),
                   SEEK_SET) < 0)
             return -EIO;
-        ssize_t new_offset = pfatfs__find_dirent(fs, cluster_offset,
-                                                 fs->bytes_per_cluster, dirent);
+        ssize_t new_offset =
+            find_dirent(fs, cluster_offset, fs->bytes_per_cluster, dirent);
         if (new_offset < 0) return new_offset;
         cluster_offset = new_offset;
 
         if (cluster_offset == fs->bytes_per_cluster) {
-            ssize_t new_cluster = pfatfs__get_fat(fs, cluster);
+            ssize_t new_cluster = get_fat(fs, cluster);
             if (new_cluster < 0) return new_cluster;
 
             if (!PFATFS_IS_FAT_REGULAR(new_cluster)) return -EINVAL;
@@ -548,18 +539,18 @@ static int pfatfs__iter_dir_next(pfatfs *fs, pfatfs_file *dir,
 
         dir->cluster = cluster;
         dir->cluster_offset = cluster_offset + PFATFS_DIRENT_SIZE;
-        return pfatfs__cluster_to_bytes(fs, cluster, cluster_offset);
+        return cluster_to_bytes(fs, cluster, cluster_offset);
     }
 
     return 0;
 }
 
-static ssize_t pfatfs__find_empty_dirent_(pfatfs *fs, u32 start, u32 end) {
+static ssize_t find_empty_dirent_(struct fatfs *fs, u32 start, u32 end) {
     u32 offset = start;
     assert(offset % PFATFS_DIRENT_SIZE == 0);
     for (; offset < end; offset += PFATFS_DIRENT_SIZE) {
-        pfatfs__dirent temp;
-        int result = pfatfs__read_dirent_(fs, &temp);
+        struct dirent temp;
+        int result = read_dirent_(fs, &temp);
         if (result < 0) return result;
         int name0 = temp.name[0];
         if (name0 == 0xe5 || name0 == 0x00) return offset;
@@ -568,15 +559,14 @@ static ssize_t pfatfs__find_empty_dirent_(pfatfs *fs, u32 start, u32 end) {
     return -ENOENT;
 }
 
-static ssize_t pfatfs__find_empty_dirent(pfatfs *fs, pfatfs_file *dir) {
+static ssize_t find_empty_dirent(struct fatfs *fs, struct fatfs_file *dir) {
     if (PFATFS_IS_LEGACY_ROOTDIR(fs, dir)) {
         u32 rootdir_offset = fs->rootdir.legacy.offset;
         u32 rootdir_size = fs->rootdir.legacy.size;
         u32 offset = dir->offset;
         if (lseek(fs->dev, rootdir_offset + offset, SEEK_SET) < 0) return -EIO;
 
-        ssize_t new_offset =
-            pfatfs__find_empty_dirent_(fs, offset, rootdir_size);
+        ssize_t new_offset = find_empty_dirent_(fs, offset, rootdir_size);
         if (new_offset < 0) return new_offset;
 
         offset = (u32)new_offset;
@@ -590,17 +580,16 @@ static ssize_t pfatfs__find_empty_dirent(pfatfs *fs, pfatfs_file *dir) {
         u16 cluster_offset = dir->cluster_offset;
         assert(cluster_offset % PFATFS_DIRENT_SIZE == 0);
     retry:
-        if (lseek(fs->dev,
-                  pfatfs__cluster_to_bytes(fs, cluster, cluster_offset),
+        if (lseek(fs->dev, cluster_to_bytes(fs, cluster, cluster_offset),
                   SEEK_SET) < 0)
             return -EIO;
-        ssize_t new_offset = pfatfs__find_empty_dirent_(fs, cluster_offset,
-                                                        fs->bytes_per_cluster);
+        ssize_t new_offset =
+            find_empty_dirent_(fs, cluster_offset, fs->bytes_per_cluster);
         if (new_offset < 0) return new_offset;
         cluster_offset = new_offset;
 
         if (cluster_offset == fs->bytes_per_cluster) {
-            ssize_t new_cluster = pfatfs__get_fat(fs, cluster);
+            ssize_t new_cluster = get_fat(fs, cluster);
             if (new_cluster < 0) return new_cluster;
 
             if (!PFATFS_IS_FAT_REGULAR(new_cluster)) return -EINVAL;
@@ -612,37 +601,36 @@ static ssize_t pfatfs__find_empty_dirent(pfatfs *fs, pfatfs_file *dir) {
 
         dir->cluster = cluster;
         dir->cluster_offset = cluster_offset + PFATFS_DIRENT_SIZE;
-        return pfatfs__cluster_to_bytes(fs, cluster, cluster_offset);
+        return cluster_to_bytes(fs, cluster, cluster_offset);
     }
 }
 
-static ssize_t pfatfs__add_dirent(pfatfs *fs, pfatfs_file *dir,
-                                  const pfatfs__dirent *dirent) {
-    ssize_t dirent_loc = pfatfs__find_empty_dirent(fs, dir);
+static ssize_t add_dirent(struct fatfs *fs, struct fatfs_file *dir,
+                          const struct dirent *dirent) {
+    ssize_t dirent_loc = find_empty_dirent(fs, dir);
     if (dirent_loc < 0) return dirent_loc;
 
-    return pfatfs__write_dirent(fs, dirent_loc, dirent);
+    return write_dirent(fs, dirent_loc, dirent);
 }
 
-static void pfatfs__init_child(pfatfs__dirent *dirent, pfatfs_file *child,
-                               u32 dirent_loc) {
+static void init_child(struct dirent *dirent, struct fatfs_file *child,
+                       u32 dirent_loc) {
     assert(dirent_loc % PFATFS_DIRENT_SIZE == 0);
     memset(child, 0, sizeof(*child));
     memcpy(child->name, dirent->name, sizeof(dirent->name));
-    child->type = (dirent->attr & PFATFS_DIRENT_ATTR_DIR) != 0
-                      ? PFATFS_FILE_DIR
-                      : PFATFS_FILE_REG;
+    child->type = (dirent->attr & PFATFS_DIRENT_ATTR_DIR) != 0 ? FATFS_FILE_DIR
+                                                               : FATFS_FILE_REG;
     child->dirent_loc = dirent_loc;
     child->size = dirent->file_size;
     child->cluster = child->start_cluster = dirent->fst_clus;
 }
 
-static ssize_t pfatfs__dir_empty(pfatfs *fs, pfatfs_file *dir) {
-    assert(dir->type == PFATFS_FILE_DIR);
+static ssize_t dir_empty(struct fatfs *fs, struct fatfs_file *dir) {
+    assert(dir->type == FATFS_FILE_DIR);
 
     for (;;) {
-        pfatfs__dirent dirent;
-        ssize_t result = pfatfs__iter_dir_next(fs, dir, &dirent);
+        struct dirent dirent;
+        ssize_t result = iter_dir_next(fs, dir, &dirent);
         if (result == -ENOENT) break;
         if (result < 0) return result;
 
@@ -655,18 +643,18 @@ static ssize_t pfatfs__dir_empty(pfatfs *fs, pfatfs_file *dir) {
     return 0;
 }
 
-static int pfatfs__find_child(pfatfs *fs, pfatfs_file *parent,
-                              pfatfs_file *child, const char *name,
-                              size_t name_len) {
-    assert(parent->type == PFATFS_FILE_DIR);
+static int find_child(struct fatfs *fs, struct fatfs_file *parent,
+                      struct fatfs_file *child, const char *name,
+                      size_t name_len) {
+    assert(parent->type == FATFS_FILE_DIR);
 
     for (;;) {
-        pfatfs__dirent dirent;
-        ssize_t dirent_loc = pfatfs__iter_dir_next(fs, parent, &dirent);
+        struct dirent dirent;
+        ssize_t dirent_loc = iter_dir_next(fs, parent, &dirent);
         if (dirent_loc < 0) return dirent_loc;
 
-        if (pfatfs__83_eq_reg(dirent.name, name, name_len)) {
-            pfatfs__init_child(&dirent, child, dirent_loc);
+        if (n83_eq_reg(dirent.name, name, name_len)) {
+            init_child(&dirent, child, dirent_loc);
             return 0;
         }
     }
@@ -674,28 +662,30 @@ static int pfatfs__find_child(pfatfs *fs, pfatfs_file *parent,
     return -ENOENT;
 }
 
-int pfatfs_readdir(pfatfs *fs, pfatfs_file *dir, pfatfs_file *child) {
-    if (dir->type != PFATFS_FILE_DIR) return -ENOTDIR;
+int fatfs_readdir(struct fatfs *fs, struct fatfs_file *dir,
+                  struct fatfs_file *child) {
+    if (dir->type != FATFS_FILE_DIR) return -ENOTDIR;
 
-    pfatfs__dirent dirent;
+    struct dirent dirent;
     ssize_t dirent_loc;
     for (;;) {
-        dirent_loc = pfatfs__iter_dir_next(fs, dir, &dirent);
+        dirent_loc = iter_dir_next(fs, dir, &dirent);
         if (dirent_loc < 0) return dirent_loc;
         if (dirent.name[0] != 0x00 && (u8)dirent.name[0] != 0xe5) break;
     }
 
-    pfatfs__init_child(&dirent, child, dirent_loc);
+    init_child(&dirent, child, dirent_loc);
     return 0;
 }
 
-ssize_t pfatfs_read(pfatfs *fs, pfatfs_file *file, void *buffer, size_t count) {
-    if (file->type != PFATFS_FILE_REG) return -EISDIR;
+ssize_t fatfs_read(struct fatfs *fs, struct fatfs_file *file, void *buffer,
+                   size_t count) {
+    if (file->type != FATFS_FILE_REG) return -EISDIR;
 
     char *cursor = (char *)buffer;
     while (count != 0) {
         if (file->cluster_offset >= fs->bytes_per_cluster) {
-            ssize_t new_cluster = pfatfs__get_fat(fs, file->cluster);
+            ssize_t new_cluster = get_fat(fs, file->cluster);
             if (new_cluster < 0) return new_cluster;
 
             if (new_cluster == PFATFS_FAT_EOF) goto end;
@@ -712,8 +702,7 @@ ssize_t pfatfs_read(pfatfs *fs, pfatfs_file *file, void *buffer, size_t count) {
             to_read = file->size - file->offset;
 
         if (seek_read(fs->dev,
-                      pfatfs__cluster_to_bytes(fs, file->cluster,
-                                               file->cluster_offset),
+                      cluster_to_bytes(fs, file->cluster, file->cluster_offset),
                       cursor, to_read) < 0)
             return -EIO;
 
@@ -731,21 +720,21 @@ end:
     return cursor - (char *)buffer;
 }
 
-ssize_t pfatfs_write(pfatfs *fs, pfatfs_file *file, const void *buffer,
-                     size_t count) {
-    if (file->type != PFATFS_FILE_REG) return -EISDIR;
+ssize_t fatfs_write(struct fatfs *fs, struct fatfs_file *file,
+                    const void *buffer, size_t count) {
+    if (file->type != FATFS_FILE_REG) return -EISDIR;
 
     const char *cursor = (const char *)buffer;
     while (count != 0) {
         if (file->cluster_offset >= fs->bytes_per_cluster) {
-            ssize_t next_cluster = pfatfs__get_fat(fs, file->cluster);
+            ssize_t next_cluster = get_fat(fs, file->cluster);
             if (next_cluster < 0) return next_cluster;
 
             if (next_cluster == PFATFS_FAT_EOF) {
-                next_cluster = pfatfs__allocate_cluster(fs);
+                next_cluster = allocate_cluster(fs);
                 if (next_cluster < 0) return next_cluster;
 
-                int result = pfatfs__set_fat(fs, file->cluster, next_cluster);
+                int result = set_fat(fs, file->cluster, next_cluster);
                 if (result < 0) return result;
             } else if (!PFATFS_IS_FAT_REGULAR(next_cluster)) {
                 return -EINVAL;
@@ -759,10 +748,10 @@ ssize_t pfatfs_write(pfatfs *fs, pfatfs_file *file, const void *buffer,
         if (file->cluster_offset + to_write > fs->bytes_per_cluster)
             to_write = fs->bytes_per_cluster - file->cluster_offset;
 
-        if (seek_write(fs->dev,
-                       pfatfs__cluster_to_bytes(fs, file->cluster,
-                                                file->cluster_offset),
-                       cursor, to_write) < 0)
+        if (seek_write(
+                fs->dev,
+                cluster_to_bytes(fs, file->cluster, file->cluster_offset),
+                cursor, to_write) < 0)
             return -EIO;
 
         cursor += to_write;
@@ -773,57 +762,58 @@ ssize_t pfatfs_write(pfatfs *fs, pfatfs_file *file, const void *buffer,
         assert(file->cluster_offset <= fs->bytes_per_cluster);
     }
 
-    pfatfs__dirent dirent;
-    int result = pfatfs__read_dirent(fs, file->dirent_loc, &dirent);
+    struct dirent dirent;
+    int result = read_dirent(fs, file->dirent_loc, &dirent);
     if (result < 0) return result;
 
     if (dirent.file_size < file->offset) {
         dirent.file_size = file->offset;
-        result = pfatfs__write_dirent(fs, file->dirent_loc, &dirent);
+        result = write_dirent(fs, file->dirent_loc, &dirent);
         if (result < 0) return result;
     }
 
     return cursor - (const char *)buffer;
 }
 
-int pfatfs_truncate(pfatfs *fs, pfatfs_file *file, size_t length) {
-    if (file->type != PFATFS_FILE_REG) return -EISDIR;
+int fatfs_truncate(struct fatfs *fs, struct fatfs_file *file, size_t length) {
+    if (file->type != FATFS_FILE_REG) return -EISDIR;
 
     // find cluster specified by 'length'
-    int result = pfatfs_seek(fs, file, length, SEEK_SET);
+    int result = fatfs_seek(fs, file, length, SEEK_SET);
     if (result < 0) return result;
     // iterate linker list of clusters marking them all 'empty'
-    ssize_t cluster = pfatfs__get_fat(fs, file->cluster);
+    ssize_t cluster = get_fat(fs, file->cluster);
     if (cluster < 0) return cluster;
 
-    result = pfatfs__set_fat(fs, file->cluster, PFATFS_FAT_EOF);
+    result = set_fat(fs, file->cluster, PFATFS_FAT_EOF);
     if (result < 0) return result;
     if (PFATFS_IS_FAT_REGULAR(cluster)) {
         for (;;) {
             // note that if read fails here some clusters are not freed
-            ssize_t next_cluster = pfatfs__get_fat(fs, cluster);
+            ssize_t next_cluster = get_fat(fs, cluster);
             if (next_cluster < 0) return next_cluster;
 
             if (next_cluster == PFATFS_FAT_EOF) break;
             if (!PFATFS_IS_FAT_REGULAR(next_cluster)) return -EINVAL;
 
             cluster = next_cluster;
-            result = pfatfs__set_fat(fs, cluster, PFATFS_FAT_FREE);
+            result = set_fat(fs, cluster, PFATFS_FAT_FREE);
             if (result < 0) return result;
         }
     }
 
-    pfatfs__dirent dirent;
-    result = pfatfs__read_dirent(fs, file->dirent_loc, &dirent);
+    struct dirent dirent;
+    result = read_dirent(fs, file->dirent_loc, &dirent);
     if (result < 0) return result;
     dirent.file_size = length;
-    result = pfatfs__write_dirent(fs, file->dirent_loc, &dirent);
+    result = write_dirent(fs, file->dirent_loc, &dirent);
     if (result < 0) return result;
 
     return 0;
 }
 
-int pfatfs_seek(pfatfs *fs, pfatfs_file *file, off_t offset, int whence) {
+int fatfs_seek(struct fatfs *fs, struct fatfs_file *file, off_t offset,
+               int whence) {
     u32 new_offset;
     switch (whence) {
     case SEEK_CUR:
@@ -852,7 +842,7 @@ int pfatfs_seek(pfatfs *fs, pfatfs_file *file, off_t offset, int whence) {
     assert(new_offset >= file->offset);
     while (file->offset != new_offset) {
         if (file->cluster_offset >= fs->bytes_per_cluster) {
-            ssize_t new_cluster = pfatfs__get_fat(fs, file->cluster);
+            ssize_t new_cluster = get_fat(fs, file->cluster);
             if (new_cluster < 0) return new_cluster;
 
             if (!PFATFS_IS_FAT_REGULAR(new_cluster)) return -EINVAL;
@@ -873,15 +863,14 @@ int pfatfs_seek(pfatfs *fs, pfatfs_file *file, off_t offset, int whence) {
     return 0;
 }
 
-static int pfatfs_openv(pfatfs *fs, const char *filename, size_t filename_len,
-                        pfatfs_file *file) {
-    pfatfs_file search = pfatfs__get_rootdir(fs);
-    for (pfatfs__fpath_iter iter = pfatfs__iter_fpath(filename, filename_len);
-         !iter.is_finished; pfatfs__iter_fpath_next(&iter)) {
+static int fatfs_openv(struct fatfs *fs, const char *filename,
+                       size_t filename_len, struct fatfs_file *file) {
+    struct fatfs_file search = get_rootdir(fs);
+    for (struct fpath_iter iter = iter_fpath(filename, filename_len);
+         !iter.is_finished; iter_fpath_next(&iter)) {
 
-        pfatfs_file child = {0};
-        int result =
-            pfatfs__find_child(fs, &search, &child, iter.part, iter.part_len);
+        struct fatfs_file child = {0};
+        int result = find_child(fs, &search, &child, iter.part, iter.part_len);
         if (result != 0) return result;
 
         search = child;
@@ -893,23 +882,23 @@ static int pfatfs_openv(pfatfs *fs, const char *filename, size_t filename_len,
     return 0;
 }
 
-static int pfatfs__init_basename(pfatfs__dirent *dirent, const char *filename,
-                                 size_t filename_len) {
+static int init_basename(struct dirent *dirent, const char *filename,
+                         size_t filename_len) {
     memset(dirent->name, ' ', sizeof(dirent->name));
     const char *before_dot = filename;
     for (size_t cursor = 0;
          before_dot < filename + filename_len && *before_dot != '.';
          ++cursor, ++before_dot) {
-        u8 c = pfatfs__toupper(*before_dot);
-        if (pfatfs__is_illegal_dirname(c)) return -EINVAL;
+        u8 c = toupper(*before_dot);
+        if (is_illegal_dirname(c)) return -EINVAL;
         dirent->name[cursor] = c;
     }
 
     const char *after_dot = before_dot + 1;
     for (size_t cursor = 8; after_dot < filename + filename_len && cursor < 11;
          ++cursor, ++after_dot) {
-        u8 c = pfatfs__toupper(*after_dot);
-        if (pfatfs__is_illegal_dirname(c)) return -EINVAL;
+        u8 c = toupper(*after_dot);
+        if (is_illegal_dirname(c)) return -EINVAL;
         dirent->name[cursor] = c;
     }
 
@@ -918,120 +907,124 @@ static int pfatfs__init_basename(pfatfs__dirent *dirent, const char *filename,
     return 0;
 }
 
-static int pfatfs__dirent_create(const char *filename, size_t filename_len,
-                                 const pfatfs_file_create_info *info,
-                                 pfatfs__dirent *dirent) {
-    int result = pfatfs__init_basename(dirent, filename, filename_len);
+static int dirent_create(const char *filename, size_t filename_len,
+                         const struct fatfs_file_create_info *info,
+                         struct dirent *dirent) {
+    int result = init_basename(dirent, filename, filename_len);
     if (result >= 0 && info != NULL) {
         dirent->attr = info->attrs;
         dirent->crt_time_tenth = (info->time.secs & 0x1) * 10;
-        dirent->crt_time = pfatfs__encode_time(info->time);
+        dirent->crt_time = encode_time(info->time);
         dirent->crt_date = dirent->lst_acc_date = dirent->wrt_date =
-            pfatfs__encode_date(info->date);
+            encode_date(info->date);
     }
 
     return result;
 }
 
-static int pfatfs_createv(pfatfs *fs, const char *filename, size_t filename_len,
-                          const pfatfs_file_create_info *info,
-                          pfatfs_file *file) {
-    size_t basename_idx = pfatfs__extract_basename(filename, filename_len);
-    pfatfs_file dir;
-    int result = pfatfs_openv(fs, filename, basename_idx, &dir);
+static int fatfs_createv(struct fatfs *fs, const char *filename,
+                         size_t filename_len,
+                         const struct fatfs_file_create_info *info,
+                         struct fatfs_file *file) {
+    size_t basename_idx = extract_basename(filename, filename_len);
+    struct fatfs_file dir;
+    int result = fatfs_openv(fs, filename, basename_idx, &dir);
     if (result < 0) return result;
-    assert(dir.type == PFATFS_FILE_DIR);
+    assert(dir.type == FATFS_FILE_DIR);
 
-    ssize_t first_cluster = pfatfs__allocate_cluster(fs);
+    ssize_t first_cluster = allocate_cluster(fs);
     if (first_cluster < 0) return first_cluster;
 
     if (basename_idx != 0) ++basename_idx;
 
-    pfatfs__dirent dirent = {0};
-    result = pfatfs__dirent_create(filename + basename_idx,
-                                   filename_len - basename_idx, info, &dirent);
+    struct dirent dirent = {0};
+    result = dirent_create(filename + basename_idx, filename_len - basename_idx,
+                           info, &dirent);
     if (result < 0) return result;
     dirent.fst_clus = first_cluster;
-    ssize_t dirent_loc = pfatfs__add_dirent(fs, &dir, &dirent);
+    ssize_t dirent_loc = add_dirent(fs, &dir, &dirent);
     if (dirent_loc < 0) return dirent_loc;
 
-    pfatfs__init_child(&dirent, file, dirent_loc);
+    init_child(&dirent, file, dirent_loc);
     return 0;
 }
 
-static int pfatfs_renamev(pfatfs *fs, const char *oldpath, size_t oldpath_len,
-                          const char *newpath, size_t newpath_length) {
-    size_t new_basename_idx = pfatfs__extract_basename(newpath, newpath_length);
-    pfatfs_file new_dir;
-    int result = pfatfs_openv(fs, newpath, new_basename_idx, &new_dir);
+static int fatfs_renamev(struct fatfs *fs, const char *oldpath,
+                         size_t oldpath_len, const char *newpath,
+                         size_t newpath_length) {
+    size_t new_basename_idx = extract_basename(newpath, newpath_length);
+    struct fatfs_file new_dir;
+    int result = fatfs_openv(fs, newpath, new_basename_idx, &new_dir);
     if (result < 0) return result;
-    assert(new_dir.type == PFATFS_FILE_DIR);
+    assert(new_dir.type == FATFS_FILE_DIR);
 
     if (new_basename_idx != 0) ++new_basename_idx;
 
-    pfatfs_file old;
-    result = pfatfs_openv(fs, oldpath, oldpath_len, &old);
+    struct fatfs_file old;
+    result = fatfs_openv(fs, oldpath, oldpath_len, &old);
     if (result < 0) return result;
 
-    pfatfs__dirent dirent;
-    result = pfatfs__read_dirent(fs, old.dirent_loc, &dirent);
+    struct dirent dirent;
+    result = read_dirent(fs, old.dirent_loc, &dirent);
     if (result < 0) return result;
 
-    pfatfs__init_basename(&dirent, newpath, newpath_length);
+    init_basename(&dirent, newpath, newpath_length);
     if (result < 0) return result;
 
-    ssize_t new_dirent_loc = pfatfs__add_dirent(fs, &new_dir, &dirent);
+    ssize_t new_dirent_loc = add_dirent(fs, &new_dir, &dirent);
     if (new_dirent_loc < 0) return new_dirent_loc;
 
     dirent.name[0] = 0xe5;
-    return pfatfs__write_dirent(fs, old.dirent_loc, &dirent);
+    return write_dirent(fs, old.dirent_loc, &dirent);
 }
 
-static int pfatfs_mkdirv(pfatfs *fs, const char *filename,
-                         size_t filename_len) {
-    pfatfs_file_create_info info = {0};
+static int fatfs_mkdirv(struct fatfs *fs, const char *filename,
+                        size_t filename_len) {
+    struct fatfs_file_create_info info = {0};
     info.attrs = PFATFS_DIRENT_ATTR_DIR;
-    pfatfs_file file;
-    return pfatfs_createv(fs, filename, filename_len, &info, &file);
+    struct fatfs_file file;
+    return fatfs_createv(fs, filename, filename_len, &info, &file);
 }
 
-static int pfatfs_removev(pfatfs *fs, const char *filename,
-                          size_t filename_len) {
-    pfatfs_file search;
-    int result = pfatfs_openv(fs, filename, filename_len, &search);
+static int fatfs_removev(struct fatfs *fs, const char *filename,
+                         size_t filename_len) {
+    struct fatfs_file search;
+    int result = fatfs_openv(fs, filename, filename_len, &search);
     if (result < 0) return result;
-    if (search.type == PFATFS_FILE_DIR) {
-        if (pfatfs__is_rootdir(&search)) return -EINVAL;
-        result = pfatfs__dir_empty(fs, &search);
+    if (search.type == FATFS_FILE_DIR) {
+        if (is_rootdir(&search)) return -EINVAL;
+        result = dir_empty(fs, &search);
         if (result < 0) return result;
     }
 
-    pfatfs__dirent dirent;
-    result = pfatfs__read_dirent(fs, search.dirent_loc, &dirent);
+    struct dirent dirent;
+    result = read_dirent(fs, search.dirent_loc, &dirent);
     if (result < 0) return result;
     dirent.name[0] = 0xe5;
-    return pfatfs__write_dirent(fs, search.dirent_loc, &dirent);
+    return write_dirent(fs, search.dirent_loc, &dirent);
 }
 
-int pfatfs_open(pfatfs *fs, const char *filename, pfatfs_file *file) {
-    return pfatfs_openv(fs, filename, strlen(filename), file);
+int fatfs_open(struct fatfs *fs, const char *filename,
+               struct fatfs_file *file) {
+    return fatfs_openv(fs, filename, strlen(filename), file);
 }
 
-int pfatfs_rename(pfatfs *fs, const char *oldpath, const char *newpath) {
-    return pfatfs_renamev(fs, oldpath, strlen(oldpath), newpath,
-                          strlen(newpath));
+int fatfs_rename(struct fatfs *fs, const char *oldpath, const char *newpath) {
+    return fatfs_renamev(fs, oldpath, strlen(oldpath), newpath,
+                         strlen(newpath));
 }
 
-int pfatfs_mkdir(pfatfs *fs, const char *path) {
-    return pfatfs_mkdirv(fs, path, strlen(path));
+int fatfs_mkdir(struct fatfs *fs, const char *path) {
+    return fatfs_mkdirv(fs, path, strlen(path));
 }
 
-int pfatfs_remove(pfatfs *fs, const char *path) {
-    return pfatfs_removev(fs, path, strlen(path));
+int fatfs_remove(struct fatfs *fs, const char *path) {
+    return fatfs_removev(fs, path, strlen(path));
 }
 
-int pfatfs_create(pfatfs *fs, const char *filename,
-                  const pfatfs_file_create_info *info, pfatfs_file *file) {
-    return pfatfs_createv(fs, filename, strlen(filename), info, file);
+int fatfs_create(struct fatfs *fs, const char *filename,
+                 const struct fatfs_file_create_info *info,
+                 struct fatfs_file *file) {
+    return fatfs_createv(fs, filename, strlen(filename), info, file);
 }
 

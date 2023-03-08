@@ -2,9 +2,9 @@
 
 #include <types.h>
 
-typedef enum { PFATFS_FAT12, PFATFS_FAT16, PFATFS_FAT32 } pfatfs_kind;
+enum fatfs_kind { PFATFS_FAT12, PFATFS_FAT16, PFATFS_FAT32 };
 
-typedef enum { PFATFS_FILE_REG, PFATFS_FILE_DIR } pfatfs_file_type;
+enum fatfs_file_type { FATFS_FILE_REG, FATFS_FILE_DIR };
 
 // Archive
 #define PFATFS_FATTR_ARCH 0x1
@@ -15,9 +15,9 @@ typedef enum { PFATFS_FILE_REG, PFATFS_FILE_DIR } pfatfs_file_type;
 // Hidden file
 #define PFATFS_FATTR_HID 0x8
 
-typedef struct pfatfs {
+struct fatfs {
     struct device *dev;
-    pfatfs_kind kind;
+    enum fatfs_kind kind;
 
     union {
         u32 cluster;
@@ -32,11 +32,11 @@ typedef struct pfatfs {
     u32 data_offset;
     u16 bytes_per_cluster;
     u32 cluster_count;
-} pfatfs;
+};
 
-typedef struct pfatfs_file {
+struct fatfs_file {
     char name[11];
-    pfatfs_file_type type;
+    enum fatfs_file_type type;
     u32 dirent_loc;
     u8 attrs;
 
@@ -45,39 +45,43 @@ typedef struct pfatfs_file {
     u32 cluster;
     u32 start_cluster;
     u32 size;
-} pfatfs_file;
+};
 
-typedef struct pfatfs_date {
+struct fatfs_date {
     u8 day;
     u8 month;
     // starting from 1980
     u8 year;
-} pfatfs_date;
+};
 
-typedef struct pfatfs_time {
+struct fatfs_time {
     u8 secs;
     u8 mins;
     u8 hours;
-} pfatfs_time;
+};
 
-typedef struct pfatfs_file_create_info {
+struct fatfs_file_create_info {
     u8 attrs;
-    pfatfs_date date;
-    pfatfs_time time;
-} pfatfs_file_create_info;
+    struct fatfs_date date;
+    struct fatfs_time time;
+};
 
-int pfatfs_mount(pfatfs *fs);
+int fatfs_mount(struct fatfs *fs);
 
-ssize_t pfatfs_read(pfatfs *fs, pfatfs_file *file, void *buffer, size_t count);
-ssize_t pfatfs_write(pfatfs *fs, pfatfs_file *file, const void *buffer,
-                     size_t count);
-int pfatfs_seek(pfatfs *fs, pfatfs_file *file, off_t offset, int whence);
-int pfatfs_truncate(pfatfs *fs, pfatfs_file *file, size_t length);
-int pfatfs_readdir(pfatfs *fs, pfatfs_file *file, pfatfs_file *child);
+ssize_t fatfs_read(struct fatfs *fs, struct fatfs_file *file, void *buffer,
+                   size_t count);
+ssize_t fatfs_write(struct fatfs *fs, struct fatfs_file *file,
+                    const void *buffer, size_t count);
+int fatfs_seek(struct fatfs *fs, struct fatfs_file *file, off_t offset,
+               int whence);
+int fatfs_truncate(struct fatfs *fs, struct fatfs_file *file, size_t length);
+int fatfs_readdir(struct fatfs *fs, struct fatfs_file *file,
+                  struct fatfs_file *child);
 
-int pfatfs_open(pfatfs *fs, const char *filename, pfatfs_file *file);
-int pfatfs_create(pfatfs *fs, const char *filename,
-                  const pfatfs_file_create_info *info, pfatfs_file *file);
-int pfatfs_rename(pfatfs *fs, const char *oldpath, const char *newpath);
-int pfatfs_mkdir(pfatfs *fs, const char *path);
-int pfatfs_remove(pfatfs *fs, const char *path);
+int fatfs_open(struct fatfs *fs, const char *filename, struct fatfs_file *file);
+int fatfs_create(struct fatfs *fs, const char *filename,
+                 const struct fatfs_file_create_info *info,
+                 struct fatfs_file *file);
+int fatfs_rename(struct fatfs *fs, const char *oldpath, const char *newpath);
+int fatfs_mkdir(struct fatfs *fs, const char *path);
+int fatfs_remove(struct fatfs *fs, const char *path);
