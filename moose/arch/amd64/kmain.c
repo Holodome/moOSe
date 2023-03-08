@@ -64,6 +64,12 @@ __attribute__((noreturn)) void kmain(void) {
     }
 
     init_pci();
+    struct pci_bus *bus = get_root_bus();
+    debug_print_bus(bus);
+
+    struct pci_device *e1000 = get_pci_device(0x8086, 0x100e);
+    kprintf("LINE: %x %x\n", e1000->interrupt_line, e1000->interrupt_pin);
+
     init_rtl8139();
     init_rtc();
 

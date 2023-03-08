@@ -31,6 +31,9 @@
 #define PCI_SECONDARY_BUS       0x19
 #define PCI_SUBORDINATE_BUS     0x20
 
+#define BDF(bus, device, func) \
+    (((bus) << 16) | ((device) << 11) | ((func) << 8))
+
 struct pci_device;
 
 struct pci_bus {
@@ -50,6 +53,7 @@ struct pci_device {
 
     u8 device_index;
     u8 func_index;
+    u32 bdf;
     u16 vendor;
     u16 device;
     u16 command;

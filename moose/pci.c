@@ -17,9 +17,6 @@
 
 #define PCI_BRIDGE_BARS_COUNT   2
 
-#define BDF(bus, device, func) \
-    (((bus) << 16) | ((device) << 11) | ((func) << 8))
-
 static struct pci_bus *root_bus;
 
 u8 read_pci_config_u8(u32 bdf, u8 offset) {
@@ -101,6 +98,7 @@ static void init_device(struct pci_device *device, struct pci_bus *bus,
     read_common_header(device);
 
     u32 bdf = BDF(bus_idx, device_idx, func_idx);
+    device->bdf = bdf;
     if (is_pci_bridge(device)) {
         device->secondary_bus = read_pci_config_u8(bdf, PCI_SECONDARY_BUS);
         device->subordinate_bus = read_pci_config_u8(bdf, PCI_SUBORDINATE_BUS);

@@ -40,7 +40,6 @@ qemu: all
 	-device pci-bridge,id=bridge1,bus=pci.0,chassis_nr=4 \
 	-device rtl8139,netdev=moose0,bus=pci.0 -netdev socket,id=moose0,listen=:1234 \
     -device e1000,netdev=moose1,bus=bridge1 -netdev socket,id=moose1,listen=:1235 \
-    -device e1000,netdev=moose2,bus=bridge1 -netdev socket,id=moose2,listen=:1236 \
 	-hda $(TARGET_IMG)
 
 qemu-debug: all
