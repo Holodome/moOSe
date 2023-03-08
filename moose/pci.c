@@ -28,7 +28,7 @@ u16 read_pci_config_u16(u32 bdf, u8 offset) {
 }
 
 u32 read_pci_config_u32(u32 bdf, u8 offset) {
-    u32 addr = PCI_ENABLE_BIT | bdf | (offset & 0xf8);
+    u32 addr = PCI_ENABLE_BIT | bdf | (offset & 0xfc);
     port_out32(PCI_CONFIG_ADDRESS, addr);
 
     io_wait();
@@ -56,7 +56,7 @@ void write_pci_config_u16(u32 bdf, u8 offset, u16 data) {
 }
 
 void write_pci_config_u32(u32 bdf, u8 offset, u32 data) {
-    u32 addr = PCI_ENABLE_BIT | bdf | (offset & 0xf8);
+    u32 addr = PCI_ENABLE_BIT | bdf | (offset & 0xfc);
     port_out32(PCI_CONFIG_ADDRESS, addr);
     io_wait();
 
@@ -169,15 +169,13 @@ int enable_pci_device(struct pci_device *device) {
     u8 func_idx = device->func_index;
     u32 bdf = BDF(bus_idx, device_idx, func_idx);
 
-    init_list_head(&device->resources);
-
-    for (u8 bar_idx = 0; bar_idx < bars_count; bar_idx++) {
+    for (u8 bar_idx = 0, res_idx = 0; bar_idx < bars_count; bar_idx++) {
         u8 bar_offset = PCI_BASE_ADDRESS_0 + bar_idx * sizeof(u32);
         u32 bar = read_pci_config_u32(bdf, bar_offset);
 
         u32 addr;
         // io and memory spaces
-        addr = bar & (bar & 1 ? 0xfffffff8 : 0xfffffff0);
+        addr = bar & (bar & 1 ? 0xfffffffc : 0xfffffff0);
 
         write_pci_config_u32(bdf, bar_offset, UINT_MAX);
         u32 size = ~read_pci_config_u32(bdf, bar_offset) + 1;
@@ -191,7 +189,7 @@ int enable_pci_device(struct pci_device *device) {
         if (res == NULL)
             return -1;
 
-        list_add_tail(&res->list, &device->resources);
+        device->resources[res_idx++] = res;
     }
 
     return 0;

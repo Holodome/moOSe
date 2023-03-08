@@ -74,7 +74,7 @@ struct pci_device {
     u8 interrupt_line;
     u8 interrupt_pin;
 
-    struct list_head resources;
+    struct resource *resources[PCI_BARS_COUNT];
 };
 
 int init_pci(void);
