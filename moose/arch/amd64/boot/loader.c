@@ -23,7 +23,7 @@ int load_kernel(void) {
     if (result)
         return result;
 
-    struct pfatfs fs = {.device = disk_part_dev};
+    struct pfatfs fs = {.dev = disk_part_dev};
 
     result = pfatfs_mount(&fs);
     if (result != 0) {

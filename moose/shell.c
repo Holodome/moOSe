@@ -289,7 +289,7 @@ static void execute(const struct cmd *cmd) {
 }
 
 int init_shell(void) {
-    shell.fs.device = disk_part_dev;
+    shell.fs.dev = disk_part_dev;
     int result = pfatfs_mount(&shell.fs);
     if (result)
         return -1;
