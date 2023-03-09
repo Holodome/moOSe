@@ -2,7 +2,6 @@
 #include <disk.h>
 #include <errno.h>
 #include <fs/fat.h>
-#include <mm/kmem.h>
 #include <mbr.h>
 
 static struct device disk_dev_;
