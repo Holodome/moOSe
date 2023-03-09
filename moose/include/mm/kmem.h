@@ -6,4 +6,3 @@ struct mem_range {
     u64 base;
     u64 size;
 };
-

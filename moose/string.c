@@ -75,17 +75,13 @@ size_t strlcpy(char *dst, const char *src, size_t maxlen) {
 void *memcpy(void *dst_, const void *src_, size_t c) {
     u8 *dst = dst_;
     const u8 *src = src_;
-    while (c--)
-        *dst++ = *src++;
-
+    while (c--) *dst++ = *src++;
     return dst_;
 }
 
 void *memset(void *dst_, int ch, size_t c) {
     u8 *dst = dst_;
-    while (c--)
-        *dst++ = ch;
-
+    while (c--) *dst++ = ch;
     return dst_;
 }
 
@@ -95,8 +91,7 @@ void *memmove(void *dst_, const void *src_, size_t c) {
     if (dst == src) return dst;
 
     if (dst < src) {
-        for (; c; --c)
-            *dst++ = *src++;
+        for (; c; --c) *dst++ = *src++;
     } else {
         while (c) {
             --c;
@@ -120,15 +115,13 @@ int memcmp(const void *l_, const void *r_, size_t c) {
 
 size_t strlen(const char *str) {
     const char *cur = str;
-    while (*++cur)
-        ;
+    while (*++cur) {}
     return cur - str;
 }
 
 char *strncpy(char *dst, const char *src, size_t c) {
     char *ptr = dst;
-    while (*src && c--)
-        *dst++ = *src++;
+    while (*src && c--) *dst++ = *src++;
     *dst = '\0';
     return ptr;
 }
@@ -136,8 +129,7 @@ char *strncpy(char *dst, const char *src, size_t c) {
 char *strcpy(char *dst, const char *src) {
     void *result = dst;
     int c;
-    while ((c = *src++))
-        *dst++ = c;
+    while ((c = *src++)) *dst++ = c;
 
     *dst = '\0';
     return result;
@@ -153,8 +145,7 @@ char *strcat(char *dst, const char *src) {
 
 char *strncat(char *dst, const char *src, size_t c) {
     void *result = dst;
-    while (*dst++)
-        ;
+    while (*dst++) {}
     strncpy(dst, src, c);
     return result;
 }
@@ -164,8 +155,7 @@ size_t strlcat(char *dst, const char *src, size_t size) {
     const char *s = src;
     size_t n = size;
 
-    while (n-- && *d)
-        d++;
+    while (n-- && *d) d++;
 
     size_t dlen = d - dst;
     n = size - dlen;

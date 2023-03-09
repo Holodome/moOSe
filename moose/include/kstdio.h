@@ -21,4 +21,3 @@ void perror(const char *msg);
 
 int isdigit(int c);
 int toupper(int c);
-
