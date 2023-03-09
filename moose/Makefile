@@ -12,7 +12,7 @@ KERNEL_OBJS := $(D)/arch/amd64/kstart.o $(D)/kstdio.o $(D)/arch/amd64/vga.o \
 	$(D)/mm/kmalloc.o $(D)/device.o $(D)/errno.o $(D)/arch/amd64/virtmem.o \
 	$(D)/mm/vmalloc.o $(D)/arch/amd64/cpu.o $(D)/panic.o \
 	$(D)/kthread.o $(D)/shell.o $(D)/arch/amd64/asm.o $(D)/idle.o \
-	$(D)/mm/slab.o $(D)/string.o
+	$(D)/mm/slab.o $(D)/string.o $(D)/ctype.o
 
 KERNEL_BOOT_OBJS := $(D)/arch/amd64/kboot.o $(D)/arch/amd64/long.o
 KERNEL_BOOT_LINK := $(D)/arch/amd64/kernel-boot.ld.out

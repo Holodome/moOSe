@@ -19,5 +19,3 @@ int kputs(const char *str);
 char *strerror(int errnum);
 void perror(const char *msg);
 
-int isdigit(int c);
-int toupper(int c);
