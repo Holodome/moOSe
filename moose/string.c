@@ -132,3 +132,61 @@ char *strncpy(char *dst, const char *src, size_t c) {
     *dst = '\0';
     return ptr;
 }
+
+char *strcpy(char *dst, const char *src) {
+    void *result = dst;
+    int c;
+    while ((c = *src++))
+        *dst++ = c;
+
+    *dst = '\0';
+    return result;
+}
+
+char *strcat(char *dst, const char *src) {
+    void *result = dst;
+    while (*dst++)
+        ;
+    strcpy(dst, src);
+    return result;
+}
+
+char *strncat(char *dst, const char *src, size_t c) {
+    void *result = dst;
+    while (*dst++)
+        ;
+    strncpy(dst, src, c);
+    return result;
+}
+
+size_t strlcat(char *dst, const char *src, size_t size) {
+    char *d = dst;
+    const char *s = src;
+    size_t n = size;
+
+    while (n-- && *d)
+        d++;
+
+    size_t dlen = d - dst;
+    n = size - dlen;
+
+    if (n == 0) return dlen + strlen(s);
+    while (*s) {
+        if (n != 1) {
+            *d++ = *s;
+            n--;
+        }
+        s++;
+    }
+    *d = '\0';
+
+    return dlen + (s - src);
+}
+
+int strcmp(const char *as, const char *bs) {
+    int a, b;
+    while ((a = *as++) && (b = *bs++))
+        if (a != b) return a - b;
+
+    return 0;
+}

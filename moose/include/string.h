@@ -14,5 +14,10 @@ char *strchr(const char *string, int symb);
 char *strrchr(const char *string, int symb);
 size_t strlen(const char *str);
 char *strncpy(char *dst, const char *src, size_t c);
+char *strcpy(char *dst, const char *src);
+char *strcat(char *dst, const char *src);
+char *strncat(char *dst, const char *src, size_t c);
+int strcmp(const char *,const char *);
 
 size_t strlcpy(char *dst, const char *src, size_t size);
+size_t strlcat(char *dst, const char *src, size_t size);
