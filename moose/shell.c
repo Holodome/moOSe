@@ -2,9 +2,9 @@
 #include <errno.h>
 #include <fs/fat.h>
 #include <arch/jiffies.h>
-#include <mm/kmem.h>
 #include <kstdio.h>
 #include <shell.h>
+#include <string.h>
 
 enum shell_command {
     CMD_LS,

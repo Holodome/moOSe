@@ -1,8 +1,8 @@
 #include <mm/slab.h>
-#include <mm/kmem.h>
 #include <bitops.h>
 #include <param.h>
 #include <mm/physmem.h>
+#include <string.h>
 
 #define FREE_QUEUE_END UINT_MAX
 #define FREE_QUEUE_PTR(_slab) \
