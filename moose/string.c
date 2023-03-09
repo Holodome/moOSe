@@ -130,15 +130,13 @@ char *strcpy(char *dst, const char *src) {
     void *result = dst;
     int c;
     while ((c = *src++)) *dst++ = c;
-
     *dst = '\0';
     return result;
 }
 
 char *strcat(char *dst, const char *src) {
     void *result = dst;
-    while (*dst++)
-        ;
+    while (*dst++) {}
     strcpy(dst, src);
     return result;
 }
