@@ -180,3 +180,82 @@ int strcmp(const char *as, const char *bs) {
 
     return 0;
 }
+
+int strncmp(const char *as, const char *bs, size_t c) {
+    int a, b;
+    while ((a = *as++) && (b = *bs++) && c--)
+        if (a != b) return a - b;
+
+    return 0;
+}
+
+char *strchrnul(const char *s, int ch) {
+    do {
+        if (*s == ch) return (char *)s;
+    } while (*s++);
+
+    return (char *)s;
+}
+
+char *strnchr(const char *s, int ch, size_t c) {
+    if (!c) return NULL;
+
+    do {
+        if (*s == ch) return (char *)s;
+    } while (*s++ && --c);
+
+    return NULL;
+}
+
+char *strnchrnul(const char *s, int ch, size_t c) {
+    if (!c) return (char *)s;
+
+    do {
+        if (*s == ch) return (char *)s;
+    } while (*s++ && --c);
+
+    return (char *)s;
+}
+
+char *strstr(const char *s, const char *a) {
+    if (!*a) return (char *)s;
+    for (; *s; ++s) {
+        if (*s != *a) continue;
+
+        const char *test_s = s;
+        const char *test_b = s;
+        for (;;) {
+            if (!*test_b) return (char *)s;
+            if (*test_s++ != *test_b++) break;
+        }
+    }
+
+    return NULL;
+}
+
+size_t strnlen(const char *s, size_t c) {
+    if (c == 0) return 0;
+
+    const char *start = s;
+    while (*s++ && c--) {}
+    return s - start;
+}
+
+char *strsep(char **sp, const char *sep) {
+    char *start = *sp;
+    char *found = (void *)strpbrk(start, sep);
+    if (found == NULL) return NULL;
+
+    *sp = found + 1;
+    *found = '\0';
+    return start;
+}
+
+void *memchr(const void *src_, int ch, size_t c) {
+    const u8 *src = src_;
+    for (; c--; ++src) {
+        if (*src == ch) return (void *)src;
+    }
+
+    return NULL;
+}
