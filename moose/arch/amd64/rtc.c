@@ -3,9 +3,9 @@
 #include <arch/amd64/rtc.h>
 #include <arch/cpu.h>
 #include <assert.h>
-#include <mm/kmem.h>
 #include <kstdio.h>
 #include <kthread.h>
+#include <string.h>
 
 #define RATE 8
 #define FREQUENCY (32768 >> (RATE - 1))

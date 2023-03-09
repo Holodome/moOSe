@@ -8,6 +8,7 @@
 #include <../errno.c>
 #include <../fs/fat.c>
 #include <../mm/kmalloc.c>
+#include <../string.c>
 
 #include <mbr.h>
 
