@@ -73,6 +73,10 @@ __attribute__((noreturn)) void kmain(void) {
     }
     debug_print_mac_addr();
 
+    rtl8139_send("hello", 6);
+    rtl8139_send("world", 6);
+    kprintf("messages are sent successfully\n");
+
     init_rtc();
 
     if (launch_first_task(idle_task)) {

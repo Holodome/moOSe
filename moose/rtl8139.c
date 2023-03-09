@@ -8,6 +8,8 @@
 
 #define RTL_REG_MAC0            0x0
 #define RTL_REG_MAR0	        0x08
+#define TRL_REG_TX_STATUS       0x10
+#define RTL_REG_TX_ADDR         0x20
 #define RTL_REG_RX_BUFFER       0x30
 #define RTL_REG_CMD		0x37
 #define RTL_REG_INT_MASK        0x3c
@@ -24,13 +26,13 @@ static struct {
     struct pci_device *dev;
     char rx_buffer[RX_BUFFER_SIZE];
     char tx_buffer[TX_BUFFER_SIZE];
+    u8 tx_index;
 } rtl8139;
 
 static void rtl8139_handler(struct registers_state *regs
                             __attribute__((unused))) {
-    write_pci_config_u16(
-        rtl8139.dev->bdf, rtl8139.ioaddr + RTL_REG_INT_STATUS, 0x5);
-    kprintf("interrupt is fired\n");
+    kprintf("rtl8139 interrupt is fired\n");
+    port_out16(rtl8139.ioaddr + RTL_REG_INT_STATUS, 0x5);
 }
 
 void debug_print_mac_addr(void) {
@@ -69,6 +71,7 @@ int init_rtl8139(void) {
 
     rtl8139.ioaddr = ioaddr;
     rtl8139.dev = dev;
+    rtl8139.tx_index = 0;
 
     // pci bus mastering
     u32 command = read_pci_config_u16(dev->bdf, PCI_COMMAND);
@@ -98,4 +101,22 @@ int init_rtl8139(void) {
     register_isr(isr, rtl8139_handler);
 
     return 0;
+}
+
+void rtl8139_send(void *data, u16 size) {
+    char buffer[TX_BUFFER_SIZE];
+    memcpy(buffer, data, size);
+
+    u8 tx_offset = sizeof(u32) * rtl8139.tx_index++;
+    port_out32(rtl8139.ioaddr + RTL_REG_TX_ADDR + tx_offset,
+               ADDR_TO_PHYS((u64)buffer));
+
+    u16 tx_status = rtl8139.ioaddr + TRL_REG_TX_STATUS + tx_offset;
+    port_out32(tx_status, size);
+
+    if(rtl8139.tx_index > 3)
+        rtl8139.tx_index = 0;
+
+    while (((port_in32(tx_status) >> 15) & 1) != 1)
+        ;
 }
