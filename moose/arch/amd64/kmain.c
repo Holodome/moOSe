@@ -71,6 +71,7 @@ __attribute__((noreturn)) void kmain(void) {
         kprintf("failed to initialize rtl8139\n");
         halt_cpu();
     }
+    debug_print_mac_addr();
 
     init_rtc();
 

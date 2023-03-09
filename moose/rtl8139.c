@@ -20,6 +20,7 @@
 
 static struct {
     u32 ioaddr;
+    u8 mac_addr[6];
     struct pci_device *dev;
     char rx_buffer[RX_BUFFER_SIZE];
     char tx_buffer[TX_BUFFER_SIZE];
@@ -27,9 +28,25 @@ static struct {
 
 static void rtl8139_handler(struct registers_state *regs
                             __attribute__((unused))) {
-    kprintf("interrupt is fired\n");
     write_pci_config_u16(
         rtl8139.dev->bdf, rtl8139.ioaddr + RTL_REG_INT_STATUS, 0x5);
+    kprintf("interrupt is fired\n");
+}
+
+void debug_print_mac_addr(void) {
+    u32 mac1 = port_in32(rtl8139.ioaddr + RTL_REG_MAC0);
+    u32 mac2 = port_in32(rtl8139.ioaddr + RTL_REG_MAC0 + 4);
+    rtl8139.mac_addr[0] = mac1 >> 0;
+    rtl8139.mac_addr[1] = mac1 >> 8;
+    rtl8139.mac_addr[2] = mac1 >> 16;
+    rtl8139.mac_addr[3] = mac1 >> 24;
+
+    rtl8139.mac_addr[4] = mac2 >> 0;
+    rtl8139.mac_addr[5] = mac2 >> 8;
+    kprintf("MAC: %01x:%01x:%01x:%01x:%01x:%01x\n",
+            rtl8139.mac_addr[0], rtl8139.mac_addr[1],
+            rtl8139.mac_addr[2], rtl8139.mac_addr[3],
+            rtl8139.mac_addr[4], rtl8139.mac_addr[5]);
 }
 
 int init_rtl8139(void) {
@@ -74,6 +91,8 @@ int init_rtl8139(void) {
 
     // rx buffer config (AB+AM+APM+AAP), nowrap
     port_out8(ioaddr + RTL_REG_RX_CONFIG, 0xf);
+
+    port_out8(ioaddr + RTL_REG_CMD, 0x0c);
 
     u8 isr = dev->interrupt_line;
     register_isr(isr, rtl8139_handler);
