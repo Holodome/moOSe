@@ -3,6 +3,7 @@
 #include <kstdio.h>
 #include <tty.h>
 #include <string.h>
+#include <ctype.h>
 
 struct printf_opts {
     size_t width;
@@ -510,6 +511,4 @@ void perror(const char *msg) {
     kprintf("%s\n", strerror(errno));
 }
 
-int isdigit(int c) { return c >= '0' && c <= '9'; }
-int toupper(int c) { return 'a' <= c && c <= 'z' ? c + 'A' - 'a' : c; };
 
