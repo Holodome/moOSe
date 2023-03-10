@@ -111,7 +111,7 @@ enum {
 #define SEEK_END 1
 #define SEEK_CUR 2
 
-// <sys/stat.h>
+// <sys/types.h>
 
 typedef u32 uid_t;
 typedef u32 gid_t;
@@ -130,6 +130,27 @@ typedef i32 iseconds_t;
 typedef u32 clock_t;
 
 typedef i64 off_t;
+
+// <time.h>
+
+struct ktm {
+    int tm_sec;
+    int tm_min;
+    int tm_hour;
+    int tm_mday;
+    int tm_mon;
+    int tm_year;
+    int tm_wday;
+    int tm_yday;
+    int im_isdt;
+};
+
+struct ktimespec {
+    time_t tv_sec;
+    long tv_nsec;
+};
+
+// <sys/stat.h>
 
 // note: these are shamelessly taken from linux
 
@@ -167,6 +188,23 @@ typedef i64 off_t;
 #define S_IROTH 00004
 #define S_IWOTH 00002
 #define S_IXOTH 00001
+
+struct kstat {
+    dev_t st_dev;
+    ino_t st_ino;
+    mode_t st_mode;
+    nlink_t st_nlink;
+    uid_t st_uid;
+    gid_t st_gid;
+    dev_t st_rdev;
+    off_t st_size;
+    blcksize_t st_blksize;
+    blkcnt_t st_blkcnt;
+
+    struct ktimespec st_atim;
+    struct ktimespec st_mtim;
+    struct ktimespec st_ctim;
+};
 
 // <fcntl.h>
 

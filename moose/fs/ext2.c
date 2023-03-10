@@ -217,13 +217,14 @@ free_bgds:
     return rc;
 }
 
-ssize_t ext2_read(struct file *, void *, size_t, loff_t *);
-ssize_t ext2_write(struct file *, const void *, size_t, loff_t *);
+ssize_t ext2_read(struct file *, void *, size_t, off_t *);
+ssize_t ext2_write(struct file *, const void *, size_t, off_t *);
 int ext2_open(struct inode *, struct file *);
 int ext2_release(struct inode *, struct file *);
 int ext2_readdir(struct file *, struct dentry *);
 
-struct file_ops ops = {.read = ext2_read,
+struct file_ops ops = {.lseek = __generic_lseek,
+                       .read = ext2_read,
                        .write = ext2_write,
                        .open = ext2_open,
                        .release = ext2_release,

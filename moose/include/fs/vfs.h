@@ -4,17 +4,17 @@
 #include <types.h>
 #include <fs/posix.h>
 
-struct sb;
+struct superblock;
 struct inode;
 struct file;
 struct dentry;
 
 struct sb_ops {
-    struct inode (*alloc_inode)(struct sb *sb);
+    struct inode (*alloc_inode)(struct superblock *sb);
     void (*destroy_inode)(struct inode *inode);
 };
 
-struct sb {
+struct superblock {
     u32 blk_sz;
     u32 blk_sz_bits;
 
@@ -28,15 +28,20 @@ struct sb {
 struct inode_ops {};
 
 struct inode {
-    ino_t num;
+    ino_t ino;
     mode_t mode;
     uid_t uid;
     gid_t gid;
-    off_t file_size;
+    off_t size;
+    nlink_t nlink;
+    blkcnt_t block_count;
+    struct ktimespec atime;
+    struct ktimespec mtime;
+    struct ktimespec ctime;
 
     void *private;
     struct inode_ops *ops;
-    struct sb *sb;
+    struct superblock *sb;
 
     struct list_head sb_list;
     struct list_head dentry_list;
@@ -70,3 +75,6 @@ struct dentry {
     struct list_head subdir_list;
     struct list_head inode_list;
 };
+
+void fill_kstat(struct inode *inode, struct kstat *stat);
+off_t __generic_lseek(struct file *filp, off_t offset, int whence);
