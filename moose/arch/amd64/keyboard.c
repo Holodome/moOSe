@@ -24,11 +24,12 @@ static const char sc_ascii[] = {
 
 static void keyboard_isr(struct registers_state *regs
                          __attribute__((unused))) {
+    // read value so interrupt is flushed
+    u8 codepoint = port_in8(PORT);
     if (!is_listening) {
         return;
     }
 
-    u8 codepoint = port_in8(PORT);
     if (codepoint > SC_MAX)
         return;
 
