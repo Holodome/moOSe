@@ -136,7 +136,7 @@ static ssize_t alloc_block(struct ext2_fs *fs) {
         return -EIO;
 
     u64 found = bitmap_first_clear(bitmap, fs->sb.s_blocks_per_group);
-    if (!found) panic("Corrupted filesystem");
+    assert(found);
 
     assert(desc->bg_free_blocks_count);
     --desc->bg_free_blocks_count;
@@ -185,7 +185,7 @@ int ext2_mount(struct ext2_fs *fs) {
 
     if (lseek(fs->dev, EXT2_BGD_OFFSET, SEEK_SET) < 0) return -EIO;
 
-    // TODO: Actual count should depend on filessytem partition size
+    // TODO: Actual count should depend on filesystem partition size
     // roughly partition_size_in_blocks / (8 * block_size)
     size_t bgds_count = 1;
     size_t bgds_size = bgds_count * sizeof(struct ext2_group_desc);
