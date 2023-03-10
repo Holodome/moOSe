@@ -53,10 +53,23 @@ struct file *get_empty_filp(void) {
 }
 
 struct dentry *create_dentry(struct dentry *parent, const char *str) {
+    expects(parent != NULL);
+
     struct dentry *entry = kzalloc(sizeof(*entry));
     if (!entry) return NULL;
+    entry->name = strdup(str);
+    if (!entry->name) goto err_dentry;
+
+    init_list_head(&entry->dir_list);
+    init_list_head(&entry->subdir_list);
+    init_list_head(&entry->inode_list);
+    entry->parent = parent;
+    list_add(&entry->subdir_list, &parent->subdir_list);
 
     return entry;
+err_dentry:
+    kfree(entry);
+    return NULL;
 }
 
 void init_dentry(struct dentry *entry, struct inode *inode) {

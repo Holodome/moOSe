@@ -29,6 +29,8 @@ struct superblock {
     u32 blk_sz;
     u32 blk_sz_bits;
 
+    struct dentry *root;
+
     void *private;
     struct sb_ops *ops;
 
@@ -63,8 +65,8 @@ struct inode {
 
 struct file_ops {
     off_t (*lseek)(struct file *, off_t, int);
-    ssize_t (*read)(struct file *, void *, size_t, off_t *);
-    ssize_t (*write)(struct file *, const void *, size_t, off_t *);
+    ssize_t (*read)(struct file *, void *, size_t);
+    ssize_t (*write)(struct file *, const void *, size_t);
     int (*open)(struct inode *, struct file *);
     int (*release)(struct inode *, struct file *);
     int (*readdir)(struct file *, struct dentry *);

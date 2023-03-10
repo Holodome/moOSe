@@ -116,7 +116,7 @@ struct ext2_inode {
     u32 i_blocks;
     u32 i_flags;
     u32 i_osd1;
-    u32 block[15];
+    u32 i_block[15];
     u32 i_generation;
     u32 i_file_acl;
     u32 i_dir_acl;
@@ -136,7 +136,6 @@ struct ext2_dentry {
 
 struct ext2_fs {
     struct ext2_sb sb;
-    struct device *dev;
 
     size_t bgds_count;
     struct ext2_group_desc *bgds;
