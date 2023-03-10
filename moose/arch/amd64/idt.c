@@ -1,6 +1,7 @@
 #include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
 #include <kstdio.h>
+#include <panic.h>
 
 // Port address for master PIC
 #define PIC1 0x20
@@ -159,14 +160,12 @@ static void eoi(u8 irq) {
 void isr_handler(struct registers_state *regs) {
     unsigned no = regs->isr_number;
     if (no < 32) {
-        kprintf("exception %s(%u): %u\n", get_exception_name(no), no,
-                (unsigned)regs->exception_code);
         if (no == EXCEPTION_PAGE_FAULT) {
             kprintf("address: %#018llx\n", read_cr2());
+        } else {
+            _panic("exception %s(%u): %u\n", get_exception_name(no), no,
+                   (unsigned)regs->exception_code);
         }
-        print_registers(regs);
-        cli();
-        hlt();
     } else {
         isr_t *isr = isrs[no];
         if (isr != NULL) isr(regs);
