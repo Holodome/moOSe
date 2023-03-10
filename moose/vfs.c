@@ -1,9 +1,10 @@
 #include "fs/vfs.h"
 
 #include <assert.h>
+#include <mm/kmalloc.h>
 
 void fill_kstat(struct inode *inode, struct kstat *stat) {
-    stat->st_dev = 0; 
+    stat->st_dev = 0;
     stat->st_ino = inode->ino;
     stat->st_mode = inode->mode;
     stat->st_nlink = inode->nlink;
@@ -18,7 +19,7 @@ void fill_kstat(struct inode *inode, struct kstat *stat) {
     stat->st_ctim = inode->ctime;
 }
 
-off_t __generic_lseek(struct file *filp, off_t offset, int whence) {
+off_t generic_lseek(struct file *filp, off_t offset, int whence) {
     off_t new_offset;
     switch (whence) {
     case SEEK_SET:
@@ -32,7 +33,7 @@ off_t __generic_lseek(struct file *filp, off_t offset, int whence) {
             new_offset = filp->offset + offset;
         break;
     case SEEK_END:
-        new_offset = filp->dentry->inode->file_size;
+        new_offset = filp->dentry->inode->size;
         break;
     default:
         return -EINVAL;
@@ -43,4 +44,22 @@ off_t __generic_lseek(struct file *filp, off_t offset, int whence) {
     return 0;
 }
 
+struct file *get_empty_filp(void) {
+    struct file *filp = kzalloc(sizeof(*filp));
+    if (!filp) return NULL;
+
+    init_list_head(&filp->list);
+    return filp;
+}
+
+struct dentry *create_dentry(struct dentry *parent, const char *str) {
+    struct dentry *entry = kzalloc(sizeof(*entry));
+    if (!entry) return NULL;
+
+    return entry;
+}
+
+void init_dentry(struct dentry *entry, struct inode *inode) {
+    entry->inode = inode;
+}
 

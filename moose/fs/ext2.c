@@ -223,9 +223,9 @@ int ext2_open(struct inode *, struct file *);
 int ext2_release(struct inode *, struct file *);
 int ext2_readdir(struct file *, struct dentry *);
 
-struct file_ops ops = {.lseek = __generic_lseek,
-                       .read = ext2_read,
-                       .write = ext2_write,
-                       .open = ext2_open,
-                       .release = ext2_release,
-                       .readdir = ext2_readdir};
+const struct file_ops ops = {.lseek = generic_lseek,
+                             .read = ext2_read,
+                             .write = ext2_write,
+                             .open = ext2_open,
+                             .release = ext2_release,
+                             .readdir = ext2_readdir};

@@ -1,13 +1,24 @@
 #pragma once
 
+#include <fs/posix.h>
 #include <list.h>
 #include <types.h>
-#include <fs/posix.h>
 
 struct superblock;
 struct inode;
 struct file;
 struct dentry;
+
+struct filesystem {
+    const char *name;
+    struct dentry *(*mount)(struct filesystem *);
+    void (*kill_sb)(struct superblock *);
+
+    struct list_head list;
+};
+
+int register_filesystem(struct filesystem *fs);
+int unregister_filesystem(struct filesystem *fs);
 
 struct sb_ops {
     struct inode (*alloc_inode)(struct superblock *sb);
@@ -25,7 +36,9 @@ struct superblock {
     struct list_head file_list;
 };
 
-struct inode_ops {};
+struct inode_ops {
+    struct dentry *(*lookup)(struct inode *inode, struct dentry *dentry);
+};
 
 struct inode {
     ino_t ino;
@@ -41,6 +54,7 @@ struct inode {
 
     void *private;
     struct inode_ops *ops;
+    struct file_ops *file_ops;
     struct superblock *sb;
 
     struct list_head sb_list;
@@ -76,5 +90,10 @@ struct dentry {
     struct list_head inode_list;
 };
 
+struct file *get_empty_filp(void);
 void fill_kstat(struct inode *inode, struct kstat *stat);
-off_t __generic_lseek(struct file *filp, off_t offset, int whence);
+off_t generic_lseek(struct file *filp, off_t offset, int whence);
+int generic_file_open(struct inode *inode, struct file *filp);
+
+void init_dentry(struct dentry *entry, struct inode *inode);
+struct dentry *create_dentry(struct dentry *parent, const char *str);

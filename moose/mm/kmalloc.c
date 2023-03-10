@@ -3,6 +3,7 @@
 #include <param.h>
 #include <mm/kmalloc.h>
 #include <mm/vmalloc.h>
+#include <string.h>
 #include <list.h>
 #include <string.h>
 
@@ -165,6 +166,13 @@ void kfree(void *mem) {
         block->size += right->size + sizeof(struct mem_block);
         list_remove(&right->list);
     }
+}
+
+char *kstrdup(const char *str) {
+    size_t len = strlen(str);
+    void *memory = kmalloc(len + 1);
+    strcpy(memory, str);
+    return memory;
 }
 
 #ifndef __i386__
