@@ -1,10 +1,10 @@
 #include <assert.h>
 #include <device.h>
 #include <endian.h>
-#include <errno.h>
 #include <fs/fat.h>
 #include <kstdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #define PFATFS_ROOTDIR ((u32)1)
 #define PFATFS_DIRENT_SIZE 32

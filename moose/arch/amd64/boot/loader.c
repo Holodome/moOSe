@@ -5,10 +5,10 @@
 #include <../arch/amd64/ata.c>
 #include <../device.c>
 #include <../disk.c>
-#include <../errno.c>
 #include <../fs/fat.c>
 #include <../mm/kmalloc.c>
 #include <../string.c>
+#include <../ctype.c>
 
 #include <mbr.h>
 

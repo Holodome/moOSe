@@ -2,8 +2,6 @@
 
 #include <arch/amd64/types.h>
 
-typedef ssize_t loff_t;
-typedef ssize_t off_t;
 #define static_assert(_x) _Static_assert(_x, #_x)
 #define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(*_arr))
 #define offsetof(_struct, _field) ((size_t)(&((_struct *)(0))->_field))

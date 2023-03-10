@@ -1,5 +1,4 @@
 #include <device.h>
-#include <errno.h>
 #include <mm/kmalloc.h>
 #include <kstdio.h>
 #include <string.h>
@@ -8,7 +7,6 @@ off_t lseek(struct device *dev, off_t off, int whence) {
     off_t result = dev->ops.lseek(dev, off, whence);
     int rc = 0;
     if (result < 0) {
-        errno = -result;
         rc = -1;
     }
 
@@ -19,7 +17,6 @@ ssize_t read(struct device *dev, void *buf, size_t buf_size) {
     ssize_t result = dev->ops.read(dev, buf, buf_size);
     ssize_t rc = result;
     if (result < 0) {
-        errno = -result;
         rc = -1;
     }
 
@@ -30,7 +27,6 @@ ssize_t write(struct device *dev, const void *buf, size_t buf_size) {
     ssize_t result = dev->ops.write(dev, buf, buf_size);
     ssize_t rc = result;
     if (result < 0) {
-        errno = -result;
         rc = -1;
     }
 

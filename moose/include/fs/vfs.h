@@ -2,6 +2,7 @@
 
 #include <list.h>
 #include <types.h>
+#include <fs/posix.h>
 
 struct sb;
 struct inode;
@@ -27,7 +28,11 @@ struct sb {
 struct inode_ops {};
 
 struct inode {
-    u64 num;
+    ino_t num;
+    mode_t mode;
+    uid_t uid;
+    gid_t gid;
+    off_t file_size;
 
     void *private;
     struct inode_ops *ops;
@@ -38,16 +43,16 @@ struct inode {
 };
 
 struct file_ops {
-    loff_t (*llseek)(struct file *, loff_t, int);
-    ssize_t (*read)(struct file *, void *, size_t, loff_t *);
-    ssize_t (*write)(struct file *, const void *, size_t, loff_t *);
+    off_t (*lseek)(struct file *, off_t, int);
+    ssize_t (*read)(struct file *, void *, size_t, off_t *);
+    ssize_t (*write)(struct file *, const void *, size_t, off_t *);
     int (*open)(struct inode *, struct file *);
     int (*release)(struct inode *, struct file *);
     int (*readdir)(struct file *, struct dentry *);
 };
 
 struct file {
-    loff_t offset;
+    off_t offset;
 
     void *private;
     struct file_ops *ops;

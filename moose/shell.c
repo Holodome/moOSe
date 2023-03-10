@@ -1,5 +1,4 @@
 #include <disk.h>
-#include <errno.h>
 #include <fs/fat.h>
 #include <arch/jiffies.h>
 #include <kstdio.h>
@@ -115,7 +114,7 @@ static void do_cat(const char *filename) {
     struct fatfs_file file = {0};
     int result = fatfs_open(&shell.fs, filename, &file);
     if (result != 0) {
-        kprintf("Open err: %s\n", strerror(-result));
+        kprintf("Open err\n");
         return;
     }
 
@@ -124,7 +123,7 @@ static void do_cat(const char *filename) {
          ++i) {
         ssize_t result = fatfs_read(&shell.fs, &file, buffer, sizeof(buffer));
         if (result < 0) {
-            kprintf("Read err: %s\n", strerror(-result));
+            kprintf("Read err\n");
             return;
         }
 
@@ -137,7 +136,7 @@ static void do_ls(const char *filename) {
     struct fatfs_file file = {0};
     int result = fatfs_open(&shell.fs, filename, &file);
     if (result != 0) {
-        kprintf("Open err: %s\n", strerror(-result));
+        kprintf("Open err\n");
         return;
     }
 
@@ -154,7 +153,7 @@ static void do_ls(const char *filename) {
             break;
         }
         if (result < 0) {
-            kprintf("Read err: %s\n", strerror(-result));
+            kprintf("Read err\n");
             return;
         }
         kprintf("%zu: %11s %c %ub\n", i, (char *)new_file.name,
@@ -165,14 +164,14 @@ static void do_ls(const char *filename) {
 static void do_mkdir(const char *filename) {
     int result = fatfs_mkdir(&shell.fs, filename);
     if (result != 0) {
-        kprintf("Mkdir err: %s\n", strerror(-result));
+        kprintf("Mkdir err\n");
     }
 }
 
 static void do_rm(const char *filename) {
     int result = fatfs_remove(&shell.fs, filename);
     if (result != 0) {
-        kprintf("Rm err: %s\n", strerror(-result));
+        kprintf("Rm err\n");
     }
 }
 
@@ -180,14 +179,14 @@ static void do_create(const char *filename) {
     struct fatfs_file file;
     int result = fatfs_create(&shell.fs, filename, NULL, &file);
     if (result < 0) {
-        kprintf("Create err: %s\n", strerror(-result));
+        kprintf("Create err\n");
     }
 }
 
 static void do_rename(const char *a, const char *b) {
     int result = fatfs_rename(&shell.fs, a, b);
     if (result < 0) {
-        kprintf("Rename err: %s\n", strerror(-result));
+        kprintf("Rename err\n");
     }
 }
 
@@ -195,7 +194,7 @@ static void do_write(const char *str, const char *filename) {
     struct fatfs_file file = {0};
     int result = fatfs_open(&shell.fs, filename, &file);
     if (result != 0) {
-        kprintf("Open err: %s\n", strerror(-result));
+        kprintf("Open err\n");
         return;
     }
 
@@ -220,7 +219,7 @@ static void do_tree(const char *path) {
     size_t stack_size = 1;
     int result = fatfs_open(&shell.fs, path, stack);
     if (result != 0) {
-        kprintf("Open err: %s\n", strerror(-result));
+        kprintf("Open err\n");
         return;
     }
     kprintf("/\n");
@@ -231,7 +230,7 @@ static void do_tree(const char *path) {
         if (result == -ENOENT) {
             --stack_size;
         } else if (result < 0) {
-            kprintf("Readdir err: %s\n", strerror(-result));
+            kprintf("Readdir err\n");
             break;
         } else {
             for (size_t i = 0; i < stack_size * 2; ++i)
