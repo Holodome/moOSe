@@ -10,7 +10,7 @@
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
-#include <rtl8139.h>
+#include <net/rtl8139.h>
 #include <types.h>
 #include <pci.h>
 
@@ -73,9 +73,9 @@ __attribute__((noreturn)) void kmain(void) {
     }
     debug_print_mac_addr();
 
-    rtl8139_send("hello", 6);
-    rtl8139_send("world", 6);
-    kprintf("messages are sent successfully\n");
+    u8 mac[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+    char *message = "Hello world";
+    rtl8139_send(mac, message, strlen(message));
 
     init_rtc();
 
