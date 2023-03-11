@@ -6,7 +6,7 @@
 #include <mm/vmalloc.h>
 #include <list.h>
 
-#define INITIAL_HEAP_SIZE (1 << 14)
+#define INITIAL_HEAP_SIZE (1 << 19)
 #define ALIGNMENT 16
 
 struct mem_block {

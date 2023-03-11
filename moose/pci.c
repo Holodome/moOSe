@@ -4,6 +4,7 @@
 #include <kstdio.h>
 #include <mm/kmalloc.h>
 #include <mm/resource.h>
+#include <assert.h>
 
 #define PCI_CONFIG_ADDRESS 0xcf8
 #define PCI_CONFIG_DATA    0xcfc
@@ -15,7 +16,7 @@
 #define PCI_BRIDGE_CLASS 0x6
 #define PCI_BRIDGE_SUB_CLASS 0x4
 
-#define PCI_BRIDGE_BARS_COUNT   2
+#define PCI_BRIDGE_BARS_COUNT 2
 
 static struct pci_bus *root_bus;
 
@@ -171,21 +172,35 @@ int enable_pci_device(struct pci_device *device) {
 
     for (u8 bar_idx = 0, res_idx = 0; bar_idx < bars_count; bar_idx++) {
         u8 bar_offset = PCI_BASE_ADDRESS_0 + bar_idx * sizeof(u32);
-        u32 bar = read_pci_config_u32(bdf, bar_offset);
-
-        u32 addr;
-        // io and memory spaces
-        addr = bar & (bar & 1 ? 0xfffffffc : 0xfffffff0);
+        u64 bar = read_pci_config_u32(bdf, bar_offset);
 
         write_pci_config_u32(bdf, bar_offset, UINT_MAX);
         u32 size = ~read_pci_config_u32(bdf, bar_offset) + 1;
-
         write_pci_config_u32(bdf, bar_offset, bar);
 
         if (size == 0)
             continue;
 
-        struct resource *res = request_port_region(addr, size);
+        struct resource *res;
+        if (bar & 1) {
+            // io space bar
+            u32 addr = bar & 0xfffffffc;
+            res = request_port_region(addr, size);
+        } else {
+            // memory space bar
+            u8 mem_type = (bar >> 1) & 3;
+
+            u64 addr = bar & 0xfffffff0;
+            // 64-bit memory bar
+            if (mem_type == 0x2) {
+                bar = read_pci_config_u32(bdf, bar_offset + 4);
+                addr += (bar << 32);
+                bar_idx++;
+            }
+
+            res = request_mem_region(addr, size);
+        }
+
         if (res == NULL)
             return -1;
 
