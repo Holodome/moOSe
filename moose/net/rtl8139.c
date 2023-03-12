@@ -1,7 +1,8 @@
 #include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
-#include <mm/kmalloc.h>
 #include <net/rtl8139.h>
+#include <net/common.h>
+#include <mm/kmalloc.h>
 #include <kstdio.h>
 #include <param.h>
 #include <pci.h>
@@ -25,43 +26,33 @@
 
 #define RX_BUFFER_SIZE (8192 + 16)
 // 1522 - 4 bytes for crc
-#define TX_BUFFER_SIZE 1518
+#define TX_BUFFER_SIZE (ETH_FRAME_MAX_SIZE - 4)
 
-// minimum 64 bytes - 4 bytes for crc
-// because crc append function enabled
-#define MIN_FRAME_SIZE 60
+// 64 bytes - 4 bytes for crc
+#define MIN_FRAME_SIZE (ETH_FRAME_MIN_SIZE - 4)
 
 static struct {
     u32 ioaddr;
     u8 mac_addr[6];
     struct pci_device *dev;
-    char rx_buffer[RX_BUFFER_SIZE];
-    char tx_buffer[TX_BUFFER_SIZE];
+    char rx_buffer[RX_BUFFER_SIZE] __attribute__((aligned(32)));
+    char tx_buffer[TX_BUFFER_SIZE] __attribute__((aligned(32)));
     u8 tx_index;
 } rtl8139;
 
 static void rtl8139_handler(struct registers_state *regs
                             __attribute__((unused))) {
-    u16 isr = port_in16(RTL_REG_INT_STATUS);
-    kprintf("%x\n", isr);
+    u16 isr = port_in16(rtl8139.ioaddr + RTL_REG_INT_STATUS);
 
     if (isr & RTL_RER || isr & RTL_TER) {
         kprintf("int error\n");
-        port_out16(rtl8139.ioaddr + RTL_REG_INT_STATUS, 0x5);
-        return;
-    }
-
-    if (isr & RTL_ROK) {
+    } else if (isr & RTL_ROK) {
         kprintf("int recieved\n");
-        port_out16(rtl8139.ioaddr + RTL_REG_INT_STATUS, 0x5);
-        return;
+    } else if (isr & RTL_TOK) {
+        kprintf("int sent\n");
     }
 
-    if (isr & RTL_TOK) {
-        kprintf("int sent\n");
-        port_out16(rtl8139.ioaddr + RTL_REG_INT_STATUS, 0x5);
-        return;
-    }
+    port_out16(rtl8139.ioaddr + RTL_REG_INT_STATUS, 0x5);
 }
 
 void debug_print_mac_addr(void) {
@@ -112,9 +103,6 @@ int init_rtl8139(void) {
     command |= (1 << 2);
     write_pci_config_u16(dev->bdf, PCI_COMMAND, command);
 
-    u16 isr1 = port_in16(RTL_REG_INT_STATUS);
-    kprintf("%x\n", isr1);
-
     // power on device
     port_out8(ioaddr + RTL_REG_CONFIG1, 0x0);
 
@@ -133,9 +121,9 @@ int init_rtl8139(void) {
     port_out8(ioaddr + RTL_REG_RX_CONFIG, 0xf);
 
     // disable loopback
-    u32 tx_config = port_in32(RTL_REG_TX_CONFIG);
+    u32 tx_config = port_in32(ioaddr + RTL_REG_TX_CONFIG);
     tx_config &= ~((1 << 17) | (1 << 18));
-    port_out32(RTL_REG_TX_CONFIG, tx_config);
+    port_out32(ioaddr + RTL_REG_TX_CONFIG, tx_config);
 
     port_out8(ioaddr + RTL_REG_CMD, 0x0c);
 
@@ -145,15 +133,14 @@ int init_rtl8139(void) {
     return 0;
 }
 
-void rtl8139_send(u8 *dst_mac, void *data, u16 size) {
+void rtl8139_send(u8 *dst_mac, u16 eth_type, void *payload, u16 size) {
     struct eth_header *header = (struct eth_header*)rtl8139.tx_buffer;
 
     memcpy(header->dst_mac, dst_mac, sizeof(header->dst_mac));
     memcpy(header->src_mac, rtl8139.mac_addr, sizeof(header->src_mac));
-    // FIXME: for example ip protocol
-    header->eth_type = 0x0800;
+    header->eth_type = eth_type;
 
-    memcpy(rtl8139.tx_buffer + sizeof(*header), data, size);
+    memcpy(rtl8139.tx_buffer + sizeof(*header), payload, size);
 
     u16 frame_size = sizeof(*header) + size;
     // pad frame with zeros, to be at least mininum size
@@ -167,11 +154,8 @@ void rtl8139_send(u8 *dst_mac, void *data, u16 size) {
                ADDR_TO_PHYS((u64)rtl8139.tx_buffer));
 
     u16 tx_status = rtl8139.ioaddr + TRL_REG_TX_STATUS + tx_offset;
-    port_out32(tx_status, size);
+    port_out32(tx_status, frame_size);
 
     if(rtl8139.tx_index > 3)
         rtl8139.tx_index = 0;
-
-    while (((port_in32(tx_status) >> 15) & 1) != 1)
-        ;
 }
