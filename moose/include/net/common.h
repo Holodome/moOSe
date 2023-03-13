@@ -6,14 +6,7 @@
 #define ETH_PAYLOAD_MAX_SIZE 1500
 #define ETH_PAYLOAD_MIN_SIZE 46
 
-static inline u64 bswap64(u64 x) {
-    return __builtin_bswap64(x);
-}
+#define ETH_TYPE_IPV4     0x0800
+#define ETH_TYPE_ARP      0x0806
+#define ETH_TYPE_IPV6     0x86DD
 
-static inline u32 bswap32(u32 x) {
-    return __builtin_bswap32(x);
-}
-
-static inline u16 bswap16(u16 x) {
-    return ((x & 0xff) << 8) | ((x & 0xff00) >> 8);
-}

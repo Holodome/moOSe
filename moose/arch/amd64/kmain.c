@@ -11,6 +11,7 @@
 #include <mm/kmem.h>
 #include <mm/physmem.h>
 #include <net/rtl8139.h>
+#include <net/common.h>
 #include <types.h>
 #include <pci.h>
 
@@ -75,7 +76,7 @@ __attribute__((noreturn)) void kmain(void) {
 
     u8 mac[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
     char *message = "Hello world";
-    rtl8139_send(mac, message, strlen(message));
+    rtl8139_send(mac, ETH_TYPE_IPV4, message, strlen(message));
 
     init_rtc();
 

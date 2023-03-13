@@ -1,6 +1,8 @@
 #include <net/ip.h>
+#include <net/arp.h>
 #include <net/common.h>
 #include <net/rtl8139.h>
+#include <endian.h>
 #include <mm/kmem.h>
 
 u8 rtl8139_ipaddr[] = {10, 0, 2, 15};
@@ -44,5 +46,5 @@ void ipv4_send(u8 *ipaddr, u8 protocol, void *payload, u16 size) {
 
     u8 dst_mac[6];
 
-    rtl8139_send(dst_mac, ETHERTYPE_IPV4, frame, size);
+    rtl8139_send(dst_mac, ETH_TYPE_IPV4, frame, size);
 }
