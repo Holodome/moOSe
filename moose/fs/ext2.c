@@ -34,33 +34,40 @@ static off_t calc_inode_phys_offset(const struct ext2_fs *fs, ino_t ino) {
     return ino_table * fs->block_size + ino_offset;
 }
 
-static int read_inode(struct ext2_fs *fs, struct ext2_inode *inode, ino_t ino) {
+static int read_inode(struct superblock *fs, struct ext2_inode *inode,
+                      ino_t ino) {
+    struct ext2_fs *ext2 = fs->private;
     assert(ino);
-    off_t inode_offset = calc_inode_phys_offset(fs, ino);
+    off_t inode_offset = calc_inode_phys_offset(ext2, ino);
     return seek_read(fs->dev, inode_offset, inode, sizeof(*inode));
 }
 
-static int write_inode(struct ext2_fs *fs, const struct ext2_inode *inode,
+static int write_inode(struct superblock *fs, const struct ext2_inode *inode,
                        ino_t ino) {
+    struct ext2_fs *ext2 = fs->private;
     assert(ino);
-    off_t inode_offset = calc_inode_phys_offset(fs, ino);
+    off_t inode_offset = calc_inode_phys_offset(ext2, ino);
     return seek_write(fs->dev, inode_offset, inode, sizeof(*inode));
 }
 
-static int read_superblock(struct ext2_fs *fs, struct ext2_sb *sb) {
+static int read_superblock(struct superblock *fs, struct ext2_sb *sb) {
     return seek_read(fs->dev, EXT2_SB_OFFSET, sb, sizeof(*sb));
 }
 
-static int sync_superblock(struct ext2_fs *fs) {
-    return seek_write(fs->dev, EXT2_SB_OFFSET, &fs->sb, sizeof(fs->sb));
+static int sync_superblock(struct superblock *fs) {
+    struct ext2_fs *ext2 = fs->private;
+    return seek_write(fs->dev, EXT2_SB_OFFSET, &ext2->sb, sizeof(ext2->sb));
 }
 
 // note: need to provide is_dir because ext2 block group tracks directory count
-static ssize_t alloc_ino(struct ext2_fs *fs, int is_dir) {
+static ssize_t alloc_ino(struct superblock *fs, int is_dir) {
+    struct ext2_fs *ext2 = fs->private;
+    struct ext2_sb *sb = &ext2->sb;
+        
     size_t bgdi;
     struct ext2_group_desc *desc = NULL;
-    for (bgdi = 0; bgdi < fs->bgds_count && !desc; ++bgdi) {
-        struct ext2_group_desc *test = fs->bgds + bgdi;
+    for (bgdi = 0; bgdi < ext2->bgds_count && !desc; ++bgdi) {
+        struct ext2_group_desc *test = ext2->bgds + bgdi;
         if (!test->bg_free_inodes_count) continue;
 
         desc = test;
@@ -68,37 +75,38 @@ static ssize_t alloc_ino(struct ext2_fs *fs, int is_dir) {
 
     if (desc == NULL) return -ENOSPC;
 
-    u64 bitmap[fs->group_inode_bitmap_size];
-    if (seek_read(fs->dev, desc->bg_inode_bitmap * fs->block_size, bitmap,
+    u64 bitmap[ext2->group_inode_bitmap_size];
+    if (seek_read(fs->dev, desc->bg_inode_bitmap * ext2->block_size, bitmap,
                   sizeof(bitmap)) < 0)
         return -EIO;
 
-    u64 found = bitmap_first_clear(bitmap, fs->sb.s_inodes_per_group);
+    u64 found = bitmap_first_clear(bitmap, sb->s_inodes_per_group);
     assert(found);
 
     assert(desc->bg_free_inodes_count);
     --desc->bg_free_inodes_count;
-    assert(fs->sb.s_free_inode_count);
-    --fs->sb.s_free_inode_count;
+    assert(sb->s_free_inode_count);
+    --sb->s_free_inode_count;
     desc->bg_used_dirs_count += !!is_dir;
     set_bit(found, bitmap);
 
-    if (seek_write(fs->dev, desc->bg_inode_bitmap * fs->block_size, bitmap,
+    if (seek_write(fs->dev, desc->bg_inode_bitmap * ext2->block_size, bitmap,
                    sizeof(bitmap)) < 0)
         return -EIO;
 
     if (sync_superblock(fs) < 0) return -EIO;
 
-    return bgdi * fs->sb.s_inodes_per_group + found;
+    return bgdi * sb->s_inodes_per_group + found;
 }
 
-static int free_ino(struct ext2_fs *fs, ino_t ino, int is_dir) {
+static int free_ino(struct superblock *sb, ino_t ino, int is_dir) {
+    struct ext2_fs *ext2 = sb->private;
     u32 ino_group, ino_in_group;
-    calc_ino_group(fs, ino, &ino_group, &ino_in_group);
-    assert(ino_group < fs->bgds_count);
-    struct ext2_group_desc *group = fs->bgds + ino_group;
-    u64 bitmap[fs->group_inode_bitmap_size];
-    if (seek_read(fs->dev, group->bg_inode_bitmap * fs->block_size, bitmap,
+    calc_ino_group(ext2, ino, &ino_group, &ino_in_group);
+    assert(ino_group < ext2->bgds_count);
+    struct ext2_group_desc *group = ext2->bgds + ino_group;
+    u64 bitmap[ext2->group_inode_bitmap_size];
+    if (seek_read(sb->dev, group->bg_inode_bitmap * ext2->block_size, bitmap,
                   sizeof(bitmap)) < 0)
         return -EIO;
 
@@ -108,17 +116,18 @@ static int free_ino(struct ext2_fs *fs, ino_t ino, int is_dir) {
     ++group->bg_free_inodes_count;
     assert(!is_dir || group->bg_used_dirs_count);
     group->bg_used_dirs_count -= is_dir;
-    ++fs->sb.s_free_inode_count;
+    ++ext2->sb.s_free_inode_count;
 
-    if (seek_write(fs->dev, group->bg_inode_bitmap * fs->block_size, bitmap,
+    if (seek_write(sb->dev, group->bg_inode_bitmap * ext2->block_size, bitmap,
                    sizeof(bitmap)) < 0)
         return -EIO;
 
-    if (sync_superblock(fs) < 0) return -EIO;
+    if (sync_superblock(sb) < 0) return -EIO;
     return 0;
 }
 
-static ssize_t alloc_block(struct ext2_fs *fs) {
+static ssize_t alloc_block(struct superblock *sb) {
+    struct ext2_fs *fs = sb->private;
     size_t bgdi;
     struct ext2_group_desc *desc = NULL;
     for (bgdi = 0; bgdi < fs->bgds_count && !desc; ++bgdi) {
@@ -131,7 +140,7 @@ static ssize_t alloc_block(struct ext2_fs *fs) {
     if (desc == NULL) return -ENOSPC;
 
     u64 bitmap[fs->group_block_bitmap_size];
-    if (seek_read(fs->dev, desc->bg_block_bitmap * fs->block_size, bitmap,
+    if (seek_read(sb->dev, desc->bg_block_bitmap * fs->block_size, bitmap,
                   sizeof(bitmap)) < 0)
         return -EIO;
 
@@ -144,22 +153,23 @@ static ssize_t alloc_block(struct ext2_fs *fs) {
     --fs->sb.s_free_block_count;
     set_bit(found, bitmap);
 
-    if (seek_write(fs->dev, desc->bg_block_bitmap * fs->block_size, bitmap,
+    if (seek_write(sb->dev, desc->bg_block_bitmap * fs->block_size, bitmap,
                    sizeof(bitmap)) < 0)
         return -EIO;
 
-    if (sync_superblock(fs) < 0) return -EIO;
+    if (sync_superblock(sb) < 0) return -EIO;
 
     return bgdi * fs->sb.s_blocks_per_group + found - 1;
 }
 
-static int free_block(struct ext2_fs *fs, blkcnt_t block) {
+static int free_block(struct superblock *sb, blkcnt_t block) {
+    struct ext2_fs *fs = sb->private;
     u32 block_group, block_in_group;
     calc_block_group(fs, block, &block_group, &block_in_group);
     assert(block_group < fs->bgds_count);
     struct ext2_group_desc *group = fs->bgds + block_group;
     u64 bitmap[fs->group_block_bitmap_size];
-    if (seek_read(fs->dev, group->bg_block_bitmap * fs->block_size, bitmap,
+    if (seek_read(sb->dev, group->bg_block_bitmap * fs->block_size, bitmap,
                   sizeof(bitmap)) < 0)
         return -EIO;
 
@@ -169,21 +179,22 @@ static int free_block(struct ext2_fs *fs, blkcnt_t block) {
     ++group->bg_free_blocks_count;
     ++fs->sb.s_free_block_count;
 
-    if (seek_write(fs->dev, group->bg_block_bitmap * fs->block_size, bitmap,
+    if (seek_write(sb->dev, group->bg_block_bitmap * fs->block_size, bitmap,
                    sizeof(bitmap)) < 0)
         return -EIO;
 
-    if (sync_superblock(fs) < 0) return -EIO;
+    if (sync_superblock(sb) < 0) return -EIO;
 
     return 0;
 }
 
-int ext2_mount(struct ext2_fs *fs) {
+int ext2_mount(struct superblock *sb) {
+    struct ext2_fs *fs = sb->private;
     int rc = 0;
 
-    if (read_superblock(fs, &fs->sb) < 0) return -EIO;
+    if (read_superblock(sb, &fs->sb) < 0) return -EIO;
 
-    if (lseek(fs->dev, EXT2_BGD_OFFSET, SEEK_SET) < 0) return -EIO;
+    if (lseek(sb->dev, EXT2_BGD_OFFSET, SEEK_SET) < 0) return -EIO;
 
     // TODO: Actual count should depend on filesystem partition size
     // roughly partition_size_in_blocks / (8 * block_size)
@@ -191,7 +202,7 @@ int ext2_mount(struct ext2_fs *fs) {
     size_t bgds_size = bgds_count * sizeof(struct ext2_group_desc);
     struct ext2_group_desc *bgds = kmalloc(bgds_size);
     for (size_t i = 0; i < bgds_count; ++i) {
-        if (read(fs->dev, bgds + i, sizeof(*bgds)) != sizeof(*bgds)) {
+        if (read(sb->dev, bgds + i, sizeof(*bgds)) != sizeof(*bgds)) {
             rc = -EIO;
             goto free_bgds;
         }
@@ -205,7 +216,7 @@ int ext2_mount(struct ext2_fs *fs) {
     fs->group_inode_bitmap_size = BITS_TO_BITMAP(fs->sb.s_inodes_per_group);
     fs->group_inode_bitmap_size = BITS_TO_BITMAP(fs->sb.s_blocks_per_group);
 
-    if (read_inode(fs, &fs->root_inode, EXT2_ROOT_INO) < 0) {
+    if (read_inode(sb, &fs->root_inode, EXT2_ROOT_INO) < 0) {
         rc = -EIO;
         goto free_bgds;
     }
