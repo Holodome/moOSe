@@ -1,9 +1,7 @@
 #include <arch/amd64/asm.h>
 #include <arch/amd64/virtmem.h>
-#include <assert.h>
 #include <param.h>
 #include <arch/cpu.h>
-#include <kstdio.h>
 #include <mm/physmem.h>
 #include <string.h>
 

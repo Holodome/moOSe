@@ -3,7 +3,6 @@
 #include <arch/amd64/rtc.h>
 #include <arch/cpu.h>
 #include <assert.h>
-#include <kstdio.h>
 #include <kthread.h>
 #include <string.h>
 

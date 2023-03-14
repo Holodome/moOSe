@@ -3,7 +3,6 @@
 #include <arch/amd64/keyboard.h>
 #include <arch/amd64/vga.h>
 #include <kstdio.h>
-#include <tty.h>
 #include <arch/cpu.h>
 
 #define PORT 0x60

@@ -10,7 +10,6 @@
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
-#include <mm/slab.h>
 #include <panic.h>
 #include <types.h>
 
