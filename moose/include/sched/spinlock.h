@@ -31,14 +31,14 @@ int spin_is_locked(spinlock_t *spinlock);
 
 #define spin_unlock_irq(_spinlock)                                             \
     do {                                                                       \
-        irq_enable();                                                          \
         spin_unlock(_spinlock);                                                \
+        irq_enable();                                                          \
     } while (0)
 
 #define spin_unlock_irqrestore(_spinlock, _flags)                              \
     do {                                                                       \
-        irq_restore(_flags);                                                   \
         spin_unlock(_spinlock);                                                \
+        irq_restore(_flags);                                                   \
     } while (0)
 
 #define spin_trylock_irq(_spinlock)                                            \
