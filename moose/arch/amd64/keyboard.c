@@ -12,12 +12,13 @@
 #define SC_MAX 57
 
 static struct {
+    spinlock_t read_lock;
     spinlock_t lock;
     atomic_t is_listening;
     u8 *dst_start;
     u8 *dst;
     u8 *dst_end;
-} keyboard = {.lock = SPIN_LOCK_INIT()};
+} keyboard = {.read_lock = SPIN_LOCK_INIT(), .lock = SPIN_LOCK_INIT()};
 
 static const char sc_ascii[] = {
     '?', '?', '1', '2', '3', '4', '5', '6', '7', '8', '9',  '0', '-', '=',  '?',
@@ -60,6 +61,7 @@ static void keyboard_isr(struct registers_state *regs __attribute__((unused))) {
 void init_keyboard(void) { register_isr(1, keyboard_isr); }
 
 ssize_t keyboard_read(void *buffer, size_t count) {
+    spin_lock(&keyboard.read_lock);
     u64 flags;
     spin_lock_irqsave(&keyboard.lock, flags);
     atomic_set(&keyboard.is_listening, 1);
@@ -72,6 +74,7 @@ ssize_t keyboard_read(void *buffer, size_t count) {
     spin_lock_irqsave(&keyboard.lock, flags);
     size_t result = keyboard.dst - keyboard.dst_start;
     spin_unlock_irqrestore(&keyboard.lock, flags);
+    spin_unlock(&keyboard.read_lock);
 
     return result;
 }
