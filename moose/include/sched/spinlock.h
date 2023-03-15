@@ -35,7 +35,7 @@ int spin_is_locked(spinlock_t *spinlock);
         spin_unlock(_spinlock);                                                \
     } while (0)
 
-#define spin_unlock_irqsave(_spinlock, _flags)                                 \
+#define spin_unlock_irqrestore(_spinlock, _flags)                              \
     do {                                                                       \
         irq_restore(_flags);                                                   \
         spin_unlock(_spinlock);                                                \
