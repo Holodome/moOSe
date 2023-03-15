@@ -26,4 +26,4 @@ static inline int irqs_disabled(void) {
         __builtin_unreachable();                                               \
     } while (0)
 #define wait_for_int() hlt()
-#define spinlock_hint() pause()
+#define spinloop_hint() pause()
