@@ -1,5 +1,5 @@
-#include <arch/amd64/ata.h>
-#include <disk.h>
+#include <drivers/disk.h>
+#include <drivers/ata.h>
 #include <errno.h>
 #include <mbr.h>
 

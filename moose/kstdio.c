@@ -1,9 +1,9 @@
+#include <drivers/tty.h>
+#include <ctype.h>
 #include <device.h>
 #include <errno.h>
 #include <kstdio.h>
-#include <tty.h>
 #include <string.h>
-#include <ctype.h>
 
 struct printf_opts {
     size_t width;

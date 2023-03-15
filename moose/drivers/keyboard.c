@@ -1,8 +1,8 @@
+#include <drivers/keyboard.h>
 #include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
-#include <arch/amd64/keyboard.h>
-#include <arch/amd64/vga.h>
 #include <arch/cpu.h>
+#include <drivers/vga.h>
 #include <kstdio.h>
 #include <sched/spinlock.h>
 

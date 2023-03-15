@@ -1,5 +1,5 @@
+#include <drivers/keyboard.h>
 #include <arch/amd64/idt.h>
-#include <arch/amd64/keyboard.h>
 #include <arch/amd64/memmap.h>
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>

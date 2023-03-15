@@ -1,7 +1,7 @@
-#include <disk.h>
+#include <drivers/disk.h>
+#include <arch/jiffies.h>
 #include <errno.h>
 #include <fs/fat.h>
-#include <arch/jiffies.h>
 #include <kstdio.h>
 #include <shell.h>
 #include <string.h>

@@ -4,11 +4,11 @@ D := moose
 OS_IMG := $(D)/moose.img
 
 KERNEL_LINK := $(D)/arch/amd64/kernel.ld.out
-KERNEL_OBJS := $(D)/arch/amd64/kstart.o $(D)/kstdio.o $(D)/arch/amd64/vga.o \
+KERNEL_OBJS := $(D)/arch/amd64/kstart.o $(D)/kstdio.o $(D)/drivers/vga.o \
 	$(D)/arch/amd64/kmain.o $(D)/arch/amd64/memmap.o $(D)/arch/amd64/isr.o \
-	$(D)/arch/amd64/idt.o $(D)/arch/amd64/ata.o $(D)/fs/fat.o \
-	$(D)/arch/amd64/keyboard.o $(D)/disk.o $(D)/mm/physmem.o \
-	$(D)/disk.o $(D)/arch/amd64/rtc.o $(D)/tty.o \
+	$(D)/arch/amd64/idt.o $(D)/drivers/ata.o $(D)/fs/fat.o \
+	$(D)/drivers/keyboard.o $(D)/drivers/disk.o $(D)/mm/physmem.o \
+	$(D)/arch/amd64/rtc.o $(D)/drivers/tty.o \
 	$(D)/mm/kmalloc.o $(D)/device.o $(D)/errno.o $(D)/arch/amd64/virtmem.o \
 	$(D)/mm/vmalloc.o $(D)/arch/amd64/cpu.o $(D)/panic.o \
 	$(D)/kthread.o $(D)/shell.o $(D)/arch/amd64/asm.o $(D)/idle.o \
