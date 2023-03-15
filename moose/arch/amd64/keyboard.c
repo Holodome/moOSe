@@ -56,7 +56,7 @@ ssize_t keyboard_read(void *buffer, size_t count) {
     dst_end = dst + count;
 
     while (is_listening)
-        spinlock_hint();
+        spinloop_hint();
 
     return dst - dst_start;
 }
