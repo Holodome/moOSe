@@ -20,3 +20,11 @@ static inline int irqs_disabled(void) {
     } while (0)
 
 static inline void io_wait(void) { port_out32(0x80, 0); }
+#define halt_cpu()                                                             \
+    do {                                                                       \
+        cli();                                                                 \
+        hlt();                                                                 \
+        __builtin_unreachable();                                               \
+    } while (0)
+#define wait_for_int() hlt()
+#define spinloop_hint() pause()
