@@ -6,7 +6,6 @@
 #define ETH_PAYLOAD_MAX_SIZE 1500
 #define ETH_PAYLOAD_MIN_SIZE 46
 
-#define ETH_TYPE_IPV4     0x0800
-#define ETH_TYPE_ARP      0x0806
-#define ETH_TYPE_IPV6     0x86DD
-
+#define ETH_TYPE_IPV4 0x0800
+#define ETH_TYPE_ARP 0x0806
+#define ETH_TYPE_IPV6 0x86DD

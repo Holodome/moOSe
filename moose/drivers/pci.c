@@ -1,6 +1,6 @@
 #include <arch/amd64/asm.h>
 #include <arch/amd64/cpu.h>
-#include <pci.h>
+#include <drivers/pci.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
 #include <mm/resource.h>

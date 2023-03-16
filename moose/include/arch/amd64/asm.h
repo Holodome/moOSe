@@ -12,6 +12,7 @@ __attribute__((noreturn)) static inline void hlt(void) {
 static inline void cli(void) { asm volatile("cli" : : : "memory"); }
 static inline void sti(void) { asm volatile("sti" : : : "memory"); }
 static inline void pause(void) { asm volatile("pause"); }
+static inline void nop(void) { asm volatile("nop"); }
 
 static inline u64 read_cr0(void) {
     u64 result;
@@ -88,39 +89,36 @@ static inline void port_out32(u32 port, u32 data) {
 }
 
 static inline void port_in8a(u16 port, u8 *array, u64 count) {
-    asm volatile("rep; insb"
-                 : "+D"(array), "+c"(count)
-                 : "d"(port) : "memory");
+    asm volatile("rep; insb" : "+D"(array), "+c"(count) : "d"(port) : "memory");
 }
 
 static inline void port_in16a(u16 port, u16 *array, u64 count) {
-    asm volatile("rep; insw"
-                 : "+D"(array), "+c"(count)
-                 : "d"(port) : "memory");
+    asm volatile("rep; insw" : "+D"(array), "+c"(count) : "d"(port) : "memory");
 }
 
 static inline void port_in32a(u16 port, u32 *array, u64 count) {
-    asm volatile("rep; insd"
-                 : "+D"(array), "+c"(count)
-                 : "d"(port) : "memory");
+    asm volatile("rep; insd" : "+D"(array), "+c"(count) : "d"(port) : "memory");
 }
 
 static inline void port_out8a(u16 port, u8 *array, u64 count) {
     asm volatile("rep; outsb"
                  : "+S"(array), "+c"(count)
-                 : "d"(port) : "memory");
+                 : "d"(port)
+                 : "memory");
 }
 
 static inline void port_out16a(u16 port, u16 *array, u64 count) {
     asm volatile("rep; outsw"
                  : "+S"(array), "+c"(count)
-                 : "d"(port) : "memory");
+                 : "d"(port)
+                 : "memory");
 }
 
 static inline void port_out32a(u32 port, u32 *array, u64 count) {
     asm volatile("rep; outsd"
                  : "+S"(array), "+c"(count)
-                 : "d"(port) : "memory");
+                 : "d"(port)
+                 : "memory");
 }
 
 static inline u8 cmos_read(u8 idx) {

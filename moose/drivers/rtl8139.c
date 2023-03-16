@@ -1,11 +1,12 @@
+#include <drivers/rtl8139.h>
+#include <drivers/pci.h>
 #include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
-#include <net/rtl8139.h>
 #include <net/common.h>
-#include <mm/kmalloc.h>
+#include <net/inet.h>
+#include <endian.h>
 #include <kstdio.h>
 #include <param.h>
-#include <pci.h>
 
 #define RTL_REG_MAC0            0x0
 #define RTL_REG_MAR0	        0x08
@@ -32,17 +33,17 @@
 #define MIN_FRAME_SIZE (ETH_FRAME_MIN_SIZE - 4)
 
 static struct {
-    u32 ioaddr;
+    u32 io_addr;
     u8 mac_addr[6];
     struct pci_device *dev;
-    char rx_buffer[RX_BUFFER_SIZE] __attribute__((aligned(32)));
-    char tx_buffer[TX_BUFFER_SIZE] __attribute__((aligned(32)));
+    u8 rx_buffer[RX_BUFFER_SIZE] __attribute__((aligned(32)));
+    u8 tx_buffer[TX_BUFFER_SIZE] __attribute__((aligned(32)));
     u8 tx_index;
 } rtl8139;
 
 static void rtl8139_handler(struct registers_state *regs
                             __attribute__((unused))) {
-    u16 isr = port_in16(rtl8139.ioaddr + RTL_REG_INT_STATUS);
+    u16 isr = port_in16(rtl8139.io_addr + RTL_REG_INT_STATUS);
 
     if (isr & RTL_RER || isr & RTL_TER) {
         kprintf("int error\n");
@@ -52,32 +53,28 @@ static void rtl8139_handler(struct registers_state *regs
         kprintf("int sent\n");
     }
 
-    port_out16(rtl8139.ioaddr + RTL_REG_INT_STATUS, 0x5);
+    port_out16(rtl8139.io_addr + RTL_REG_INT_STATUS, 0x5);
 }
 
-void debug_print_mac_addr(void) {
-    kprintf("MAC: %01x:%01x:%01x:%01x:%01x:%01x\n",
-            rtl8139.mac_addr[0], rtl8139.mac_addr[1],
-            rtl8139.mac_addr[2], rtl8139.mac_addr[3],
-            rtl8139.mac_addr[4], rtl8139.mac_addr[5]);
+static void read_mac_addr(u8 *mac_addr) {
+    u32 mac1 = port_in32(rtl8139.io_addr + RTL_REG_MAC0);
+    u32 mac2 = port_in32(rtl8139.io_addr + RTL_REG_MAC0 + 4);
+
+    mac_addr[0] = mac1 >> 0;
+    mac_addr[1] = mac1 >> 8;
+    mac_addr[2] = mac1 >> 16;
+    mac_addr[3] = mac1 >> 24;
+    mac_addr[4] = mac2 >> 0;
+    mac_addr[5] = mac2 >> 8;
 }
 
-static void read_mac_addr(void) {
-    u32 mac1 = port_in32(rtl8139.ioaddr + RTL_REG_MAC0);
-    u32 mac2 = port_in32(rtl8139.ioaddr + RTL_REG_MAC0 + 4);
+int init_rtl8139(u8 *mac_addr) {
+    if (mac_addr == NULL)
+        return -1;
 
-    rtl8139.mac_addr[0] = mac1 >> 0;
-    rtl8139.mac_addr[1] = mac1 >> 8;
-    rtl8139.mac_addr[2] = mac1 >> 16;
-    rtl8139.mac_addr[3] = mac1 >> 24;
-    rtl8139.mac_addr[4] = mac2 >> 0;
-    rtl8139.mac_addr[5] = mac2 >> 8;
-}
-
-int init_rtl8139(void) {
     struct pci_device *dev = get_pci_device(RTL8139_VENDOR_ID, RTL8139_DEVICE_ID);
     if (dev == NULL) {
-        kprintf("rtl8139 is not connected\n");
+        kprintf("rtl8139 is not connected to pci bus\n");
         return -1;
     }
 
@@ -86,17 +83,18 @@ int init_rtl8139(void) {
         return -1;
     }
 
+    // io port resource
     struct resource *res = dev->resources[0];
     if (res == NULL)
         return -1;
 
-    u32 ioaddr = res->base;
+    u32 io_addr = res->base;
 
-    rtl8139.ioaddr = ioaddr;
+    rtl8139.io_addr = io_addr;
     rtl8139.dev = dev;
     rtl8139.tx_index = 0;
 
-    read_mac_addr();
+    read_mac_addr(mac_addr);
 
     // pci bus mastering
     u32 command = read_pci_config_u16(dev->bdf, PCI_COMMAND);
@@ -104,28 +102,28 @@ int init_rtl8139(void) {
     write_pci_config_u16(dev->bdf, PCI_COMMAND, command);
 
     // power on device
-    port_out8(ioaddr + RTL_REG_CONFIG1, 0x0);
+    port_out8(io_addr + RTL_REG_CONFIG1, 0x0);
 
     // soft reset
-    port_out8(ioaddr + RTL_REG_CMD, 0x10);
-    while((port_in8(ioaddr + RTL_REG_CMD) & 0x10) != 0)
+    port_out8(io_addr + RTL_REG_CMD, 0x10);
+    while((port_in8(io_addr + RTL_REG_CMD) & 0x10) != 0)
         ;
 
     // set rx buffer
-    port_out32(ioaddr + RTL_REG_RX_BUFFER, ADDR_TO_PHYS((u64)rtl8139.rx_buffer));
+    port_out32(io_addr + RTL_REG_RX_BUFFER, ADDR_TO_PHYS((u64)rtl8139.rx_buffer));
 
     // enable rx and tx interrupts (bit 0 and 2)
-    port_out16(ioaddr + RTL_REG_INT_MASK, RTL_ROK | RTL_TOK);
+    port_out16(io_addr + RTL_REG_INT_MASK, RTL_ROK | RTL_TOK);
 
     // rx buffer config (AB+AM+APM+AAP), nowrap
-    port_out8(ioaddr + RTL_REG_RX_CONFIG, 0xf);
+    port_out32(io_addr + RTL_REG_RX_CONFIG, 0xf);
 
     // disable loopback
-    u32 tx_config = port_in32(ioaddr + RTL_REG_TX_CONFIG);
+    u32 tx_config = port_in32(io_addr + RTL_REG_TX_CONFIG);
     tx_config &= ~((1 << 17) | (1 << 18));
-    port_out32(ioaddr + RTL_REG_TX_CONFIG, tx_config);
+    port_out32(io_addr + RTL_REG_TX_CONFIG, tx_config);
 
-    port_out8(ioaddr + RTL_REG_CMD, 0x0c);
+    port_out8(io_addr + RTL_REG_CMD, 0x0c);
 
     u8 isr = dev->interrupt_line;
     register_isr(isr, rtl8139_handler);
@@ -138,7 +136,7 @@ void rtl8139_send(u8 *dst_mac, u16 eth_type, void *payload, u16 size) {
 
     memcpy(header->dst_mac, dst_mac, sizeof(header->dst_mac));
     memcpy(header->src_mac, rtl8139.mac_addr, sizeof(header->src_mac));
-    header->eth_type = eth_type;
+    header->eth_type = htobe16(eth_type);
 
     memcpy(rtl8139.tx_buffer + sizeof(*header), payload, size);
 
@@ -149,11 +147,13 @@ void rtl8139_send(u8 *dst_mac, u16 eth_type, void *payload, u16 size) {
         frame_size = MIN_FRAME_SIZE;
     }
 
+    debug_print_frame_hexdump(rtl8139.tx_buffer, frame_size);
+
     u8 tx_offset = sizeof(u32) * rtl8139.tx_index++;
-    port_out32(rtl8139.ioaddr + RTL_REG_TX_ADDR + tx_offset,
+    port_out32(rtl8139.io_addr + RTL_REG_TX_ADDR + tx_offset,
                ADDR_TO_PHYS((u64)rtl8139.tx_buffer));
 
-    u16 tx_status = rtl8139.ioaddr + TRL_REG_TX_STATUS + tx_offset;
+    u16 tx_status = rtl8139.io_addr + TRL_REG_TX_STATUS + tx_offset;
     port_out32(tx_status, frame_size);
 
     if(rtl8139.tx_index > 3)

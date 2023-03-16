@@ -1,7 +1,7 @@
 #include <net/ip.h>
 #include <net/arp.h>
 #include <net/common.h>
-#include <net/rtl8139.h>
+#include <drivers/rtl8139.h>
 #include <endian.h>
 #include <mm/kmem.h>
 
@@ -26,6 +26,10 @@ static u16 checksum(void *data, size_t size) {
 }
 
 void ipv4_send(u8 *ipaddr, u8 protocol, void *payload, u16 size) {
+    u8 dst_mac[6];
+    if (arp_get_mac(ipaddr, dst_mac))
+        return;
+
     u8 frame[ETH_PAYLOAD_MAX_SIZE];
 
     struct ipv4_header *header = (struct ipv4_header *)frame;
@@ -33,7 +37,7 @@ void ipv4_send(u8 *ipaddr, u8 protocol, void *payload, u16 size) {
     header->version = 4;
     header->dscp = 0;
     header->ecn = 0;
-    header->total_len = bswap16(sizeof(struct ipv4_header) + size);
+    header->total_len = htobe16(sizeof(struct ipv4_header) + size);
     header->id = 0;
     header->ttl = 64;
     header->protocol = protocol;
@@ -43,8 +47,6 @@ void ipv4_send(u8 *ipaddr, u8 protocol, void *payload, u16 size) {
     header->checksum = checksum(header, sizeof(struct ipv4_header));
 
     memcpy(frame + sizeof(struct ipv4_header), payload, size);
-
-    u8 dst_mac[6];
 
     rtl8139_send(dst_mac, ETH_TYPE_IPV4, frame, size);
 }

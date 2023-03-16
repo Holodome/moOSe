@@ -10,10 +10,7 @@
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
-#include <net/rtl8139.h>
-#include <net/common.h>
 #include <types.h>
-#include <pci.h>
 
 static void zero_bss(void) {
     extern volatile u64 *__bss_start;
@@ -63,20 +60,6 @@ __attribute__((noreturn)) void kmain(void) {
         kprintf("failed to initialize virtual memory\n");
         halt_cpu();
     }
-
-    init_pci();
-    struct pci_bus *bus = get_root_bus();
-    debug_print_bus(bus);
-
-    if (init_rtl8139()) {
-        kprintf("failed to initialize rtl8139\n");
-        halt_cpu();
-    }
-    debug_print_mac_addr();
-
-    u8 mac[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
-    char *message = "Hello world";
-    rtl8139_send(mac, ETH_TYPE_IPV4, message, strlen(message));
 
     init_rtc();
 

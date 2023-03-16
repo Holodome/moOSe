@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <list.h>
+#include <types.h>
 
 struct resource {
     u64 base;

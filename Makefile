@@ -40,7 +40,7 @@ qemu: all
 	-m 4g \
 	-monitor stdio \
 	-device pci-bridge,id=bridge1,bus=pci.0,chassis_nr=4 \
-	-device rtl8139,netdev=moose0,bus=pci.0,mac=11:22:33:44:55:66 -netdev user,id=moose0 \
+	-device rtl8139,netdev=moose0,bus=pci.0 -netdev user,id=moose0 \
 	-hda $(TARGET_IMG)
 
 qemu-debug: all
