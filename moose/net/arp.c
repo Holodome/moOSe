@@ -4,7 +4,6 @@
 #include <net/common.h>
 #include <net/inet.h>
 #include <net/eth.h>
-#include <drivers/rtl8139.h>
 #include <arch/amd64/asm.h>
 #include <arch/jiffies.h>
 #include <mm/kmalloc.h>
@@ -24,11 +23,11 @@ static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
     list_for_each_entry(entry, &arp_cache, list) {
         if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
             memcpy(entry->mac_addr, mac_addr, 6);
-            return 1;
+            return 0;
         }
     }
 
-    return 0;
+    return 1;
 }
 
 __attribute__((unused))
@@ -49,14 +48,15 @@ static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
 }
 
 int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
-    if (arp_cache_get(ip_addr, mac_addr))
+    if (arp_cache_get(ip_addr, mac_addr) == 0)
         return 0;
 
     arp_send_request(ip_addr);
 
     int found = 0;
-    size_t end = get_jiffies64() + 60;
-    while (!found && get_jiffies() < end)
+    // 1 minute timeout
+    u64 end = jiffies64_to_msecs(get_jiffies64()) + 60 * 1000;
+    while (!found && jiffies64_to_msecs(get_jiffies64()) < end)
         found = arp_cache_get(ip_addr, mac_addr);
 
     if (found)
@@ -81,4 +81,22 @@ void arp_send_request(u8 *ip_addr) {
 
     send_eth_frame(broadcast_mac_addr, ETH_TYPE_ARP,
                  frame, sizeof(struct arp_header));
+}
+
+void arp_send_reply(void *frame) {
+    struct arp_header *header = (struct arp_header *)frame;
+
+    u8 reply_frame[sizeof(struct arp_header)];
+    memcpy(reply_frame, frame, sizeof(*reply_frame));
+
+    struct arp_header *reply_header = (struct arp_header *)reply_frame;
+    memcpy(reply_header->src_mac, header->dst_mac, 6);
+    memcpy(reply_header->dst_mac, nic.mac_addr, 6);
+    memcpy(reply_header->src_ip, header->dst_ip, 4);
+    memcpy(reply_header->dst_ip, header->src_ip, 4);
+
+    reply_header->operation = htobe16(ARP_REPLY);
+
+    send_eth_frame(reply_header->dst_mac, ETH_TYPE_ARP,
+                   reply_frame, sizeof(struct arp_header));
 }
