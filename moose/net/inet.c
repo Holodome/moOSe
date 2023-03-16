@@ -2,6 +2,9 @@
 #include <kstdio.h>
 #include <drivers/rtl8139.h>
 #include <mm/kmem.h>
+#include <endian.h>
+#include <net/common.h>
+#include <net/eth.h>
 
 struct nic nic;
 static u8 nic_ip_addr[4] = {10, 0, 2, 15};
@@ -14,6 +17,8 @@ int init_inet(void) {
 
     memcpy(nic.ip_addr, nic_ip_addr, 4);
     debug_print_mac_addr(nic.mac_addr);
+
+    nic.send_frame = rtl8139_send;
 
     return 0;
 }

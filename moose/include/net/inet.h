@@ -5,6 +5,7 @@
 struct nic {
     u8 mac_addr[6];
     u8 ip_addr[4];
+    void (*send_frame)(void *frame, u16 size);
 };
 
 extern struct nic nic;

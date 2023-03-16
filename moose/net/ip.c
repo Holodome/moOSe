@@ -1,7 +1,7 @@
 #include <net/ip.h>
 #include <net/arp.h>
+#include <net/eth.h>
 #include <net/common.h>
-#include <drivers/rtl8139.h>
 #include <endian.h>
 #include <mm/kmem.h>
 
@@ -48,5 +48,5 @@ void ipv4_send(u8 *ipaddr, u8 protocol, void *payload, u16 size) {
 
     memcpy(frame + sizeof(struct ipv4_header), payload, size);
 
-    rtl8139_send(dst_mac, ETH_TYPE_IPV4, frame, size);
+    send_eth_frame(dst_mac, ETH_TYPE_IPV4, frame, size);
 }

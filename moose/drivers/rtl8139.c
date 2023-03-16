@@ -29,9 +29,6 @@
 // 1522 - 4 bytes for crc
 #define TX_BUFFER_SIZE (ETH_FRAME_MAX_SIZE - 4)
 
-// 64 bytes - 4 bytes for crc
-#define MIN_FRAME_SIZE (ETH_FRAME_MIN_SIZE - 4)
-
 static struct {
     u32 io_addr;
     u8 mac_addr[6];
@@ -131,30 +128,15 @@ int init_rtl8139(u8 *mac_addr) {
     return 0;
 }
 
-void rtl8139_send(u8 *dst_mac, u16 eth_type, void *payload, u16 size) {
-    struct eth_header *header = (struct eth_header*)rtl8139.tx_buffer;
-
-    memcpy(header->dst_mac, dst_mac, sizeof(header->dst_mac));
-    memcpy(header->src_mac, rtl8139.mac_addr, sizeof(header->src_mac));
-    header->eth_type = htobe16(eth_type);
-
-    memcpy(rtl8139.tx_buffer + sizeof(*header), payload, size);
-
-    u16 frame_size = sizeof(*header) + size;
-    // pad frame with zeros, to be at least mininum size
-    if (frame_size < MIN_FRAME_SIZE) {
-        memset(rtl8139.tx_buffer + frame_size, 0, MIN_FRAME_SIZE - frame_size);
-        frame_size = MIN_FRAME_SIZE;
-    }
-
-    debug_print_frame_hexdump(rtl8139.tx_buffer, frame_size);
+void rtl8139_send(void *frame, u16 size) {
+    memcpy(rtl8139.tx_buffer, frame, size);
 
     u8 tx_offset = sizeof(u32) * rtl8139.tx_index++;
     port_out32(rtl8139.io_addr + RTL_REG_TX_ADDR + tx_offset,
                ADDR_TO_PHYS((u64)rtl8139.tx_buffer));
 
     u16 tx_status = rtl8139.io_addr + TRL_REG_TX_STATUS + tx_offset;
-    port_out32(tx_status, frame_size);
+    port_out32(tx_status, size);
 
     if(rtl8139.tx_index > 3)
         rtl8139.tx_index = 0;
