@@ -23,6 +23,17 @@ int init_inet(void) {
     return 0;
 }
 
+void handle_frame(void *frame, u16 size) {
+    struct eth_header *header = (struct eth_header *)frame;
+    header->eth_type = be16toh(header->eth_type);
+
+    if (header->eth_type == ETH_TYPE_ARP) {
+
+    } else if (header->eth_type == ETH_TYPE_IPV4) {
+
+    }
+}
+
 void debug_print_mac_addr(u8 *mac_addr) {
     kprintf("MAC: %01x:%01x:%01x:%01x:%01x:%01x\n",
             mac_addr[0], mac_addr[1],

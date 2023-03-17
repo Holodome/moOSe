@@ -6,6 +6,7 @@
 #include <arch/cpu.h>
 #include <drivers/pci.h>
 #include <net/inet.h>
+#include <net/arp.h>
 
 __attribute__((noreturn)) void other_task(void) {
     for (;;)
@@ -25,6 +26,12 @@ void idle_task(void) {
 
     if (init_inet()) {
         kprintf("failed to initialize inet system\n");
+        halt_cpu();
+    }
+
+    u8 mac_addr[6];
+    if (arp_get_mac(gateway_ip_addr, mac_addr)) {
+        kprintf("can't find mac for this ip address\n");
         halt_cpu();
     }
 

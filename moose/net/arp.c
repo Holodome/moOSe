@@ -1,12 +1,11 @@
 #include <net/arp.h>
-#include <mm/kmem.h>
-#include <endian.h>
 #include <net/common.h>
 #include <net/inet.h>
 #include <net/eth.h>
-#include <arch/amd64/asm.h>
 #include <arch/jiffies.h>
 #include <mm/kmalloc.h>
+#include <mm/kmem.h>
+#include <endian.h>
 #include <kstdio.h>
 #include <list.h>
 
@@ -55,9 +54,9 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
 
     int found = 0;
     // 1 minute timeout
-    u64 end = jiffies64_to_msecs(get_jiffies64()) + 60 * 1000;
+    u64 end = jiffies64_to_msecs(get_jiffies64()) + 2 * 1000;
     while (!found && jiffies64_to_msecs(get_jiffies64()) < end)
-        found = arp_cache_get(ip_addr, mac_addr);
+        found = (arp_cache_get(ip_addr, mac_addr) == 0);
 
     if (found)
         return 0;
