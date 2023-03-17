@@ -3,6 +3,7 @@
 #include <drivers/rtl8139.h>
 #include <mm/kmem.h>
 #include <endian.h>
+#include <net/netdaemon.h>
 #include <net/common.h>
 #include <net/eth.h>
 
@@ -20,18 +21,10 @@ int init_inet(void) {
 
     nic.send_frame = rtl8139_send;
 
+    if (init_net_daemon())
+        return -1;
+
     return 0;
-}
-
-void handle_frame(void *frame, u16 size) {
-    struct eth_header *header = (struct eth_header *)frame;
-    header->eth_type = be16toh(header->eth_type);
-
-    if (header->eth_type == ETH_TYPE_ARP) {
-
-    } else if (header->eth_type == ETH_TYPE_IPV4) {
-
-    }
 }
 
 void debug_print_mac_addr(u8 *mac_addr) {

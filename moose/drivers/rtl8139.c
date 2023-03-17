@@ -2,6 +2,7 @@
 #include <drivers/pci.h>
 #include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
+#include <net/netdaemon.h>
 #include <net/common.h>
 #include <net/inet.h>
 #include <endian.h>
@@ -162,8 +163,11 @@ void rtl8139_receive(void) {
             memcpy(frame, rx_ptr, frame_size);
         }
 
-        debug_print_frame_hexdump(frame, frame_size);
-        handle_frame(frame, frame_size);
+        debug_print_frame_hexdump(frame + 4, frame_size - 4);
+        // frame without rtl buffer len (4 bytes)
+        net_daemon_add_frame(frame + 4, frame_size - 4);
+
+        kprintf("size = %d\n", frame_size);
 
         rtl8139.rx_offset = (rtl8139.rx_offset + frame_size + 4 + 3) & ~0x3;
         rtl8139.rx_offset %= RX_BUFFER_SIZE;

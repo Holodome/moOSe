@@ -22,3 +22,5 @@ extern u8 rtl8139_ipaddr[];
 extern u8 gateway_ipaddr[];
 
 void ipv4_send(u8 *ipaddr, u8 protocol, void *payload, u16 size);
+void ipv4_receive_frame(void *frame, u16 size);
+void ipv6_receive_frame(void *frame, u16 size);

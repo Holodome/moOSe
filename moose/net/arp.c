@@ -78,8 +78,8 @@ void arp_send_request(u8 *ip_addr) {
     memset(header->dst_mac, 0, 6);
     memcpy(header->dst_ip, ip_addr, 4);
 
-    send_eth_frame(broadcast_mac_addr, ETH_TYPE_ARP,
-                 frame, sizeof(struct arp_header));
+    eth_send_frame(broadcast_mac_addr, ETH_TYPE_ARP,
+                   frame, sizeof(struct arp_header));
 }
 
 void arp_send_reply(void *frame) {
@@ -96,6 +96,10 @@ void arp_send_reply(void *frame) {
 
     reply_header->operation = htobe16(ARP_REPLY);
 
-    send_eth_frame(reply_header->dst_mac, ETH_TYPE_ARP,
+    eth_send_frame(reply_header->dst_mac, ETH_TYPE_ARP,
                    reply_frame, sizeof(struct arp_header));
+}
+
+void arp_receive_frame(void *frame, u16 size) {
+
 }

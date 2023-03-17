@@ -48,5 +48,13 @@ void ipv4_send(u8 *ipaddr, u8 protocol, void *payload, u16 size) {
 
     memcpy(frame + sizeof(struct ipv4_header), payload, size);
 
-    send_eth_frame(dst_mac, ETH_TYPE_IPV4, frame, size);
+    eth_send_frame(dst_mac, ETH_TYPE_IPV4, frame, size);
+}
+
+void ipv4_receive_frame(void *frame, u16 size) {
+
+}
+
+void ipv6_receive_frame(void *frame, u16 size) {
+
 }
