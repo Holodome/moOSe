@@ -167,8 +167,6 @@ void rtl8139_receive(void) {
         // frame without rtl buffer len (4 bytes)
         net_daemon_add_frame(frame + 4, frame_size - 4);
 
-        kprintf("size = %d\n", frame_size);
-
         rtl8139.rx_offset = (rtl8139.rx_offset + frame_size + 4 + 3) & ~0x3;
         rtl8139.rx_offset %= RX_BUFFER_SIZE;
 

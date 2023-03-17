@@ -5,6 +5,7 @@
 #include <net/common.h>
 #include <mm/kmem.h>
 #include <endian.h>
+#include <kstdio.h>
 
 void eth_send_frame(u8 *dst_mac_addr, u16 eth_type, void *payload, u16 size) {
     u8 frame[ETH_FRAME_MAX_SIZE];

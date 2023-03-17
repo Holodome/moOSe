@@ -21,7 +21,7 @@ static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
     struct cache_entry *entry;
     list_for_each_entry(entry, &arp_cache, list) {
         if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
-            memcpy(entry->mac_addr, mac_addr, 6);
+            memcpy(mac_addr, entry->mac_addr, 6);
             return 0;
         }
     }
@@ -53,9 +53,10 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
 
     int found = 0;
     // 1 minute timeout
-    u64 end = jiffies64_to_msecs(get_jiffies64()) + 2 * 1000;
-    while (!found && jiffies64_to_msecs(get_jiffies64()) < end)
+    u64 end = jiffies64_to_msecs(get_jiffies64()) + 60 * 1000;
+    while (!found && jiffies64_to_msecs(get_jiffies64()) < end) {
         found = (arp_cache_get(ip_addr, mac_addr) == 0);
+    }
 
     if (found)
         return 0;
@@ -107,8 +108,8 @@ void arp_receive_frame(void *frame) {
 
     // hw type must be Ethernet, protocols ipv4, ipv6 only
     if (header->hw_type != ETH_HW_TYPE ||
-        header->protocol_type != ETH_TYPE_IPV4 ||
-        header->protocol_type != ETH_TYPE_IPV6)
+        !(header->protocol_type == ETH_TYPE_IPV4 ||
+        header->protocol_type == ETH_TYPE_IPV6))
         return;
 
     switch (header->operation) {

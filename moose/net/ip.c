@@ -1,12 +1,10 @@
 #include <net/ip.h>
 #include <net/arp.h>
 #include <net/eth.h>
+#include <net/inet.h>
 #include <net/common.h>
 #include <endian.h>
 #include <mm/kmem.h>
-
-u8 rtl8139_ipaddr[] = {10, 0, 2, 15};
-u8 gateway_ipaddr[] = {10, 0, 2, 2};
 
 static u16 checksum(void *data, size_t size) {
     u64 sum = 0;
@@ -25,9 +23,9 @@ static u16 checksum(void *data, size_t size) {
     return ~sum;
 }
 
-void ipv4_send(u8 *ipaddr, u8 protocol, void *payload, u16 size) {
+void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
     u8 dst_mac[6];
-    if (arp_get_mac(ipaddr, dst_mac))
+    if (arp_get_mac(ip_addr, dst_mac))
         return;
 
     u8 frame[ETH_PAYLOAD_MAX_SIZE];
@@ -41,20 +39,22 @@ void ipv4_send(u8 *ipaddr, u8 protocol, void *payload, u16 size) {
     header->id = 0;
     header->ttl = 64;
     header->protocol = protocol;
-    memcpy(header->src_ip, rtl8139_ipaddr, sizeof(rtl8139_ipaddr));
-    memcpy(header->dst_ip, ipaddr, sizeof(ipaddr));
+    memcpy(header->src_ip, nic.ip_addr, 4);
+    memcpy(header->dst_ip, ip_addr, 4);
     header->checksum = 0;
     header->checksum = checksum(header, sizeof(struct ipv4_header));
 
-    memcpy(frame + sizeof(struct ipv4_header), payload, size);
+    memcpy(header + 1, payload, size);
 
     eth_send_frame(dst_mac, ETH_TYPE_IPV4, frame, size);
 }
 
 void ipv4_receive_frame(void *frame, u16 size) {
-
+    frame++;
+    size++;
 }
 
 void ipv6_receive_frame(void *frame, u16 size) {
-
+    frame++;
+    size++;
 }

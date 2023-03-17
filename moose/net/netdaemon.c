@@ -5,6 +5,8 @@
 #include <mm/kmem.h>
 #include <kthread.h>
 #include <endian.h>
+#include <kstdio.h>
+#include <arch/amd64/cpu.h>
 
 #define QUEUE_SIZE 10
 #define BUFFER_SIZE ETH_FRAME_MAX_SIZE
@@ -19,7 +21,7 @@ static struct {
 
     struct queue_entry *head;
     struct queue_entry *tail;
-    u16 count;
+    volatile u16 count;
 } daemon_queue;
 
 __attribute__((noreturn)) static void net_daemon_task(void) {

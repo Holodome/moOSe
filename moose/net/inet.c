@@ -28,7 +28,7 @@ int init_inet(void) {
 }
 
 void debug_print_mac_addr(u8 *mac_addr) {
-    kprintf("MAC: %01x:%01x:%01x:%01x:%01x:%01x\n",
+    kprintf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
             mac_addr[0], mac_addr[1],
             mac_addr[2], mac_addr[3],
             mac_addr[4], mac_addr[5]);
