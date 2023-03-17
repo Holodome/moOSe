@@ -29,7 +29,6 @@ static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
     return 1;
 }
 
-__attribute__((unused))
 static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
     struct cache_entry *entry;
     list_for_each_entry(entry, &arp_cache, list) {
@@ -100,6 +99,27 @@ void arp_send_reply(void *frame) {
                    reply_frame, sizeof(struct arp_header));
 }
 
-void arp_receive_frame(void *frame, u16 size) {
+void arp_receive_frame(void *frame) {
+    struct arp_header *header = (struct arp_header *)frame;
+    header->hw_type = be16toh(header->hw_type);
+    header->protocol_type = be16toh(header->protocol_type);
+    header->operation = be16toh(header->operation);
 
+    // hw type must be Ethernet, protocols ipv4, ipv6 only
+    if (header->hw_type != ETH_HW_TYPE ||
+        header->protocol_type != ETH_TYPE_IPV4 ||
+        header->protocol_type != ETH_TYPE_IPV6)
+        return;
+
+    switch (header->operation) {
+    case ARP_REQUEST:
+        if (memcmp(header->dst_ip, nic.ip_addr, 4) == 0) {
+            arp_cache_add(header->src_ip, header->src_mac);
+            arp_send_reply(frame);
+        }
+        break;
+    case ARP_REPLY:
+        arp_cache_add(header->src_ip, header->src_mac);
+        break;
+    }
 }

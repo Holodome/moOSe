@@ -36,7 +36,7 @@ void eth_receive_frame(void *frame, u16 size) {
 
     switch (header->eth_type) {
     case ETH_TYPE_ARP:
-        arp_receive_frame(payload, payload_size); break;
+        arp_receive_frame(payload); break;
     case ETH_TYPE_IPV4:
         ipv4_receive_frame(payload, payload_size); break;
     case ETH_TYPE_IPV6:

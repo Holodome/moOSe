@@ -21,5 +21,5 @@ struct arp_header {
 
 void arp_send_request(u8 *ip_addr);
 void arp_send_reply(void *frame);
-void arp_receive_frame(void *frame, u16 size);
+void arp_receive_frame(void *frame);
 int arp_get_mac(u8 *ip_addr, u8 *mac_addr);
