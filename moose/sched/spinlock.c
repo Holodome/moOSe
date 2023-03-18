@@ -11,7 +11,7 @@ void spin_lock(spinlock_t *spinlock) {
     atomic_cmpxchg_acquire(&spinlock->atomic, 0, 1);
 }
 
-void spin_unlock(spinlock_t *spinlock) { atomic_set(&spinlock->atomic, 0); }
+void spin_unlock(spinlock_t *spinlock) { atomic_set_release(&spinlock->atomic, 0); }
 
 int spin_is_locked(spinlock_t *spinlock) {
     return atomic_read(&spinlock->atomic);

@@ -5,6 +5,7 @@
 #include <net/netdaemon.h>
 #include <net/common.h>
 #include <net/inet.h>
+#include <sched/spinlock.h>
 #include <endian.h>
 #include <kstdio.h>
 #include <param.h>
@@ -58,7 +59,6 @@ static void rtl8139_receive(void) {
             memcpy(frame, rx_ptr, frame_size);
         }
 
-        debug_print_frame_hexdump(frame + 4, frame_size - 4);
         // frame without rtl buffer len (4 bytes)
         net_daemon_add_frame(frame + 4, frame_size - 4);
 
@@ -164,7 +164,12 @@ int init_rtl8139(u8 *mac_addr) {
     return 0;
 }
 
+static spinlock_t lock = SPIN_LOCK_INIT();
+
 void rtl8139_send(void *frame, u16 size) {
+    u64 flags;
+    while (!spin_trylock_irqsave(&lock, flags));
+
     memcpy(rtl8139.tx_buffer, frame, size);
 
     u8 tx_offset = sizeof(u32) * rtl8139.tx_index++;
@@ -175,4 +180,6 @@ void rtl8139_send(void *frame, u16 size) {
 
     u16 tx_status = rtl8139.io_addr + TRL_REG_TX_STATUS + tx_offset;
     port_out32(tx_status, size);
+
+    spin_unlock_irqsave(&lock, flags);
 }

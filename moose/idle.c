@@ -29,7 +29,7 @@ void idle_task(void) {
         halt_cpu();
     }
 
-    u8 mac_addr[6];
+    u8 mac_addr[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
     if (arp_get_mac(gateway_ip_addr, mac_addr)) {
         kprintf("can't find mac for this ip address\n");
         halt_cpu();

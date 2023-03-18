@@ -1,5 +1,6 @@
 #include <net/netdaemon.h>
 #include <net/common.h>
+#include <net/inet.h>
 #include <net/eth.h>
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
@@ -7,6 +8,7 @@
 #include <endian.h>
 #include <kstdio.h>
 #include <arch/amd64/cpu.h>
+#include <sched/spinlock.h>
 
 #define QUEUE_SIZE 10
 #define BUFFER_SIZE ETH_FRAME_MAX_SIZE
@@ -24,11 +26,14 @@ static struct {
     volatile u16 count;
 } daemon_queue;
 
+static spinlock_t lock = SPIN_LOCK_INIT();
+
 __attribute__((noreturn)) static void net_daemon_task(void) {
     for (;;) {
         while (daemon_queue.count) {
             struct queue_entry *entry = daemon_queue.head;
 
+            debug_print_frame_hexdump(entry->buffer, entry->size);
             eth_receive_frame(entry->buffer, entry->size);
 
             if (daemon_queue.head + 1 >= daemon_queue.entries + QUEUE_SIZE)
@@ -67,6 +72,9 @@ void free_net_daemon(void) {
 }
 
 int net_daemon_add_frame(void *frame, u16 size) {
+    u64 flags;
+    while (!spin_trylock_irqsave(&lock, flags));
+
     // queue is full
     if (daemon_queue.head == daemon_queue.tail && daemon_queue.count != 0)
         return -1;
@@ -79,6 +87,8 @@ int net_daemon_add_frame(void *frame, u16 size) {
         daemon_queue.tail = daemon_queue.entries;
     else daemon_queue.tail++;
     daemon_queue.count++;
+
+    spin_unlock_irqsave(&lock, flags);
 
     return 0;
 }
