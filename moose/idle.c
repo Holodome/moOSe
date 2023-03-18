@@ -34,7 +34,6 @@ void idle_task(void) {
         kprintf("can't find mac for this ip address\n");
         halt_cpu();
     }
-    kprintf("found\n");
     debug_print_mac_addr(mac_addr);
 
     launch_task(other_task);

@@ -43,17 +43,47 @@ static struct {
     u16 rx_offset;
 } rtl8139;
 
+static void rtl8139_receive(void) {
+    static u8 frame[ETH_FRAME_MAX_SIZE];
+    // check that rx buffer is not empty
+    while ((port_in8(rtl8139.io_addr + RTL_REG_CMD) & 0x1) != 1) {
+        u8 *rx_ptr = rtl8139.rx_buffer + rtl8139.rx_offset;
+        u16 frame_size = *((u16 *)(rx_ptr + 2));
+
+        if (rx_ptr + frame_size >= rtl8139.rx_buffer + RX_BUFFER_SIZE) {
+            u16 part_size = (rtl8139.rx_buffer + RX_BUFFER_SIZE) - rx_ptr;
+            memcpy(frame, rx_ptr, part_size);
+            memcpy(frame + part_size, rtl8139.rx_buffer, frame_size - part_size);
+        } else {
+            memcpy(frame, rx_ptr, frame_size);
+        }
+
+        debug_print_frame_hexdump(frame + 4, frame_size - 4);
+        // frame without rtl buffer len (4 bytes)
+        net_daemon_add_frame(frame + 4, frame_size - 4);
+
+        rtl8139.rx_offset = (rtl8139.rx_offset + frame_size + 4 + 3) & ~0x3;
+        rtl8139.rx_offset %= RX_BUFFER_SIZE;
+
+        port_out16(rtl8139.io_addr + RTL_REG_CAPR, rtl8139.rx_offset - 0x10);
+    }
+}
+
 static void rtl8139_handler(struct registers_state *regs
                             __attribute__((unused))) {
     u16 isr = port_in16(rtl8139.io_addr + RTL_REG_INT_STATUS);
 
     if (isr & RTL_RER || isr & RTL_TER) {
         kprintf("int error\n");
-    } else if (isr & RTL_ROK) {
+    }
+
+    if (isr & RTL_TOK) {
+        kprintf("int sent\n");
+    }
+
+    if (isr & RTL_ROK) {
         kprintf("int recieved\n");
         rtl8139_receive();
-    } else if (isr & RTL_TOK) {
-        kprintf("int sent\n");
     }
 
     port_out16(rtl8139.io_addr + RTL_REG_INT_STATUS, RTL_TOK | RTL_ROK);
@@ -141,35 +171,8 @@ void rtl8139_send(void *frame, u16 size) {
     port_out32(rtl8139.io_addr + RTL_REG_TX_ADDR + tx_offset,
                ADDR_TO_PHYS((u64)rtl8139.tx_buffer));
 
+    rtl8139.tx_index &= 0x3;
+
     u16 tx_status = rtl8139.io_addr + TRL_REG_TX_STATUS + tx_offset;
     port_out32(tx_status, size);
-
-    if(rtl8139.tx_index > 3)
-        rtl8139.tx_index = 0;
-}
-
-void rtl8139_receive(void) {
-    static u8 frame[ETH_FRAME_MAX_SIZE];
-    // check that rx buffer is not empty
-    while ((port_in8(rtl8139.io_addr + RTL_REG_CMD) & 0x1) != 1) {
-        u8 *rx_ptr = rtl8139.rx_buffer + rtl8139.rx_offset;
-        u16 frame_size = *((u16 *)(rx_ptr + 2));
-
-        if (rx_ptr + frame_size >= rtl8139.rx_buffer + RX_BUFFER_SIZE) {
-            u16 part_size = (rtl8139.rx_buffer + RX_BUFFER_SIZE) - rx_ptr;
-            memcpy(frame, rx_ptr, part_size);
-            memcpy(frame + part_size, rtl8139.rx_buffer, frame_size - part_size);
-        } else {
-            memcpy(frame, rx_ptr, frame_size);
-        }
-
-        debug_print_frame_hexdump(frame + 4, frame_size - 4);
-        // frame without rtl buffer len (4 bytes)
-        net_daemon_add_frame(frame + 4, frame_size - 4);
-
-        rtl8139.rx_offset = (rtl8139.rx_offset + frame_size + 4 + 3) & ~0x3;
-        rtl8139.rx_offset %= RX_BUFFER_SIZE;
-
-        port_out16(rtl8139.io_addr + RTL_REG_CAPR, rtl8139.rx_offset - 0x10);
-    }
 }
