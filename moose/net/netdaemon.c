@@ -5,9 +5,7 @@
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <kthread.h>
-#include <endian.h>
 #include <kstdio.h>
-#include <arch/amd64/cpu.h>
 #include <sched/spinlock.h>
 
 #define QUEUE_SIZE 10
@@ -72,8 +70,7 @@ void free_net_daemon(void) {
 }
 
 int net_daemon_add_frame(void *frame, u16 size) {
-    u64 flags;
-    while (!spin_trylock_irqsave(&lock, flags));
+    while (!spin_trylock(&lock));
 
     // queue is full
     if (daemon_queue.head == daemon_queue.tail && daemon_queue.count != 0)
@@ -88,7 +85,7 @@ int net_daemon_add_frame(void *frame, u16 size) {
     else daemon_queue.tail++;
     daemon_queue.count++;
 
-    spin_unlock_irqsave(&lock, flags);
+    spin_unlock(&lock);
 
     return 0;
 }

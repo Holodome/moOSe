@@ -19,65 +19,62 @@ struct cache_entry {
 };
 
 static spinlock_t lock = SPIN_LOCK_INIT();
-static spinlock_t access_lock = SPIN_LOCK_INIT();
 
 static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
-//    u64 flags;
-    while (!spin_trylock(&lock));
+    u64 flags;
+    while (!spin_trylock_irqsave(&lock, flags));
 
     struct cache_entry *entry;
     list_for_each_entry(entry, &arp_cache, list) {
         if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
             memcpy(mac_addr, entry->mac_addr, 6);
+            spin_unlock_irqsave(&lock, flags);
             return 0;
         }
     }
-    spin_unlock(&lock);
+    spin_unlock_irqsave(&lock, flags);
 
-    return 1;
+    return -1;
 }
 
 static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
-//    u64 flags;
-    while (!spin_trylock(&lock));
+    u64 flags;
+    while (!spin_trylock_irqsave(&lock, flags));
 
     struct cache_entry *entry;
     list_for_each_entry(entry, &arp_cache, list) {
-        if (memcmp(entry->ip_addr, ip_addr, 4) == 0)
+        if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
+            spin_unlock_irqsave(&lock, flags);
             return;
+        }
     }
 
     entry = kmalloc(sizeof(*entry));
-    if (entry == NULL)
+    if (entry == NULL) {
+        spin_unlock_irqsave(&lock, flags);
         return;
+    }
 
     memcpy(entry->ip_addr, ip_addr, 4);
     memcpy(entry->mac_addr, mac_addr, 6);
     list_add(&entry->list, &arp_cache);
-    spin_unlock(&lock);
+    spin_unlock_irqsave(&lock, flags);
 }
 
 int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
     if (arp_cache_get(ip_addr, mac_addr) == 0)
         return 0;
 
-    //u64 flags;
-    while (!spin_trylock(&access_lock));
-
     arp_send_request(ip_addr);
 
     int found = 0;
     // 1 minute timeout
-    u64 end = jiffies64_to_msecs(get_jiffies64()) + 2 * 1000;
+    u64 end = jiffies64_to_msecs(get_jiffies64()) + 5 * 1000;
     while (!found && jiffies64_to_msecs(get_jiffies64()) < end) {
         found = (arp_cache_get(ip_addr, mac_addr) == 0);
-        for (size_t i = 0; i < 1000000; i++) nop();
     }
 
-    spin_unlock(&access_lock);
-
-    if (found)
-        return 0;
+    if (found) return 0;
 
     return -1;
 }

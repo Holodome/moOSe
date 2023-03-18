@@ -4,9 +4,8 @@
 #include <arch/amd64/idt.h>
 #include <net/netdaemon.h>
 #include <net/common.h>
-#include <net/inet.h>
+#include <net/eth.h>
 #include <sched/spinlock.h>
-#include <endian.h>
 #include <kstdio.h>
 #include <param.h>
 
@@ -60,7 +59,8 @@ static void rtl8139_receive(void) {
         }
 
         // frame without rtl buffer len (4 bytes)
-        net_daemon_add_frame(frame + 4, frame_size - 4);
+        eth_receive_frame(frame + 4, frame_size - 4);
+//        net_daemon_add_frame(frame + 4, frame_size - 4);
 
         rtl8139.rx_offset = (rtl8139.rx_offset + frame_size + 4 + 3) & ~0x3;
         rtl8139.rx_offset %= RX_BUFFER_SIZE;
