@@ -7,6 +7,7 @@
 #include <drivers/pci.h>
 #include <net/inet.h>
 #include <net/arp.h>
+#include <net/ip.h>
 
 __attribute__((noreturn)) void other_task(void) {
     for (;;)
@@ -35,6 +36,14 @@ void idle_task(void) {
         halt_cpu();
     }
     debug_print_mac_addr(mac_addr);
+
+    u8 ip_addr[] = {192, 168, 1, 66};
+    char *message = "Hello world!";
+    for (;;) {
+        ipv4_send_frame(ip_addr, 0x6, message, strlen(message));
+        for (size_t i = 0; i < 1000000000; i++)
+            nop();
+    }
 
     launch_task(other_task);
 

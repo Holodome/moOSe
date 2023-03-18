@@ -24,6 +24,8 @@ void eth_send_frame(u8 *dst_mac_addr, u16 eth_type, void *payload, u16 size) {
         frame_size = sizeof(*header) + ETH_PAYLOAD_MIN_SIZE;
     }
 
+    debug_print_frame_hexdump(frame, frame_size);
+
     nic.send_frame(frame, frame_size);
 }
 

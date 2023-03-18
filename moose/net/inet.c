@@ -2,16 +2,18 @@
 #include <kstdio.h>
 #include <drivers/rtl8139.h>
 #include <mm/kmem.h>
-#include <endian.h>
 #include <net/netdaemon.h>
 #include <net/common.h>
 #include <net/eth.h>
 #include <net/arp.h>
 
 struct nic nic;
-static u8 nic_ip_addr[4] = {10, 0, 2, 15};
-u8 gateway_ip_addr[4] = {10, 0, 2, 2};
-u8 broadcast_mac_addr[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+
+static u8 nic_ip_addr[4] =  {10, 0, 2, 15};
+u8 gateway_ip_addr[4] =     {10, 0, 2, 2};
+u8 local_net_ip_addr[4] =   {10, 0, 2, 0};
+u8 local_net_mask[4] =      {255, 255, 255, 0};
+u8 broadcast_mac_addr[6] =  {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 int init_inet(void) {
     if (init_rtl8139(nic.mac_addr))

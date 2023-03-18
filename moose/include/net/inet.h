@@ -11,6 +11,8 @@ struct nic {
 extern struct nic nic;
 
 extern u8 gateway_ip_addr[4];
+extern u8 local_net_mask[4];
+extern u8 local_net_ip_addr[4];
 extern u8 broadcast_mac_addr[6];
 
 int init_inet(void);

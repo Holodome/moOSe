@@ -23,12 +23,26 @@ static u16 checksum(void *data, size_t size) {
     return ~sum;
 }
 
+static int is_local_ip_addr(u8 *ip_addr) {
+    u8 temp[4];
+    memcpy(temp, ip_addr, 4);
+    for (u8 i = 0; i < 4; i++)
+        temp[i] &= local_net_mask[i];
+
+    return memcmp(ip_addr, local_net_ip_addr, 4) == 0;
+}
+
 void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
     u8 dst_mac[6];
-    if (arp_get_mac(ip_addr, dst_mac))
-        return;
+    int found;
+    if (is_local_ip_addr(ip_addr)) {
+        found = (arp_get_mac(ip_addr, dst_mac) == 0);
+    } else {
+        found = (arp_get_mac(gateway_ip_addr, dst_mac) == 0);
+    }
+    if (!found) return;
 
-    u8 frame[ETH_PAYLOAD_MAX_SIZE];
+    static u8 frame[ETH_PAYLOAD_MAX_SIZE];
 
     struct ipv4_header *header = (struct ipv4_header *)frame;
     header->ihl = 5;
@@ -45,8 +59,9 @@ void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
     header->checksum = checksum(header, sizeof(struct ipv4_header));
 
     memcpy(header + 1, payload, size);
+    u16 frame_size = size + sizeof(struct ipv4_header);
 
-    eth_send_frame(dst_mac, ETH_TYPE_IPV4, frame, size);
+    eth_send_frame(dst_mac, ETH_TYPE_IPV4, frame, frame_size);
 }
 
 void ipv4_receive_frame(void *frame, u16 size) {
