@@ -7,6 +7,7 @@
 #include <kstdio.h>
 #include <mm/kmalloc.h>
 
+#define EXT2_DIRECT_BLOCKS 12
 #define EXT2_SB_OFFSET 1024
 #define EXT2_BGD_OFFSET 2048
 
@@ -194,40 +195,39 @@ int ext2_mount(struct superblock *sb) {
     fs->inodes_per_block = fs->block_size / sizeof(struct ext2_inode);
     fs->group_inode_bitmap_size = BITS_TO_BITMAP(fs->sb.s_inodes_per_group);
     fs->group_inode_bitmap_size = BITS_TO_BITMAP(fs->sb.s_blocks_per_group);
+    fs->blocks_per_inderect_block = fs->block_size / sizeof(u32);
+    fs->first_2lev_inderect_block = 12 + fs->blocks_per_inderect_block;
+    fs->first_3lev_inderect_block =
+        fs->first_2lev_inderect_block +
+        fs->blocks_per_inderect_block * fs->blocks_per_inderect_block;
 
     read_inode(sb, &fs->root_inode, EXT2_ROOT_INO);
 
     return rc;
 }
 
-static int read_in_block(struct ext2_inode *inode, struct superblock *sb,
-                         off_t *at, void *buf, size_t *count) {
+// TODO: Report unallocated blocks (out of bounds)
+// TODO: Support implicitly allocated block (filled with 0s)
+static blkcnt_t ext2_get_disk_blk(struct ext2_inode *inode,
+                                  struct superblock *sb, blkcnt_t blk) {
     struct ext2_fs *ext2 = sb->private;
-    off_t cursor = *at;
-    off_t cursor_in_block = cursor % sb->blk_sz;
-    off_t current_block = cursor / sb->blk_sz;
-    u32 to_read = __block_end(sb, cursor) - cursor;
-    if (to_read > *count) to_read = *count - cursor;
+    blkcnt_t result;
 
-    if (current_block < 12) {
-        blkcnt_t block = inode->i_block[current_block];
-        assert(block);
-        off_t phys_offset = block * sb->blk_sz;
-        blk_read(sb->dev, phys_offset + cursor_in_block, buf, to_read);
-    } else if (current_block < ext2->first_2lev_inderect_block) {
+    if (blk < EXT2_DIRECT_BLOCKS) {
+        result = inode->i_block[blk];
+    } else if (blk < ext2->first_2lev_inderect_block) {
         off_t table_offset = inode->i_block[12] * sb->blk_sz;
-        blkcnt_t a = current_block - 12;
+        blkcnt_t l1_idx = blk - EXT2_DIRECT_BLOCKS;
         u32 block;
-        blk_read(sb->dev, table_offset + sizeof(u32) * a, &block,
+        blk_read(sb->dev, table_offset + l1_idx * sizeof(u32), &block,
                  sizeof(block));
 
-        off_t phys_offset = block * sb->blk_sz;
-        blk_read(sb->dev, phys_offset + cursor_in_block, buf, to_read);
-    } else if (current_block < ext2->first_3lev_inderect_block) {
+        result = block;
+    } else if (blk < ext2->first_3lev_inderect_block) {
         off_t l1_table_offset = inode->i_block[13] * sb->blk_sz;
-        blkcnt_t a = current_block - ext2->first_2lev_inderect_block;
-        blkcnt_t l1_idx = a / ext2->blocks_per_inderect_block;
-        blkcnt_t l2_idx = a % ext2->blocks_per_inderect_block;
+        blk -= ext2->first_2lev_inderect_block;
+        blkcnt_t l1_idx = blk / ext2->blocks_per_inderect_block;
+        blkcnt_t l2_idx = blk % ext2->blocks_per_inderect_block;
 
         u32 l1;
         blk_read(sb->dev, l1_table_offset + l1_idx * sizeof(u32), &l1,
@@ -237,17 +237,16 @@ static int read_in_block(struct ext2_inode *inode, struct superblock *sb,
         blk_read(sb->dev, l2_table_offset + l2_idx * sizeof(u32), &l2,
                  sizeof(l2));
 
-        off_t phys_offset = l2 * sb->blk_sz;
-        blk_read(sb->dev, phys_offset + cursor_in_block, buf, to_read);
+        result = l2;
     } else {
         off_t l1_table_offset = inode->i_block[14] * sb->blk_sz;
-        blkcnt_t a = current_block - ext2->first_3lev_inderect_block;
-        blkcnt_t l1_idx = a / (ext2->blocks_per_inderect_block *
-                               ext2->blocks_per_inderect_block);
-        a = a %
-            (ext2->blocks_per_inderect_block * ext2->blocks_per_inderect_block);
-        blkcnt_t l2_idx = a / ext2->blocks_per_inderect_block;
-        blkcnt_t l3_idx = a % ext2->blocks_per_inderect_block;
+        blk -= ext2->first_3lev_inderect_block;
+        blkcnt_t l1_idx = blk / (ext2->blocks_per_inderect_block *
+                                 ext2->blocks_per_inderect_block);
+        blk %=
+            ext2->blocks_per_inderect_block * ext2->blocks_per_inderect_block;
+        blkcnt_t l2_idx = blk / ext2->blocks_per_inderect_block;
+        blkcnt_t l3_idx = blk % ext2->blocks_per_inderect_block;
 
         u32 l1;
         blk_read(sb->dev, l1_table_offset + l1_idx * sizeof(u32), &l1,
@@ -261,26 +260,56 @@ static int read_in_block(struct ext2_inode *inode, struct superblock *sb,
         blk_read(sb->dev, l3_table_offset + l3_idx * sizeof(u32), &l3,
                  sizeof(l3));
 
-        off_t phys_offset = l3 << sb->blk_sz_bits;
-        blk_read(sb->dev, phys_offset + cursor_in_block, buf, to_read);
+        result = l3;
     }
 
-    *at += to_read;
-    *count += to_read;
+    return result;
+}
 
-    return 0;
+static size_t ext2_read_in_block(struct ext2_inode *inode,
+                                 struct superblock *sb, off_t cursor, void *buf,
+                                 size_t count) {
+    off_t cursor_in_block = cursor % sb->blk_sz;
+    off_t current_block = cursor / sb->blk_sz;
+    size_t to_read = __block_end(sb, cursor) - cursor;
+    if (to_read > count) to_read = count - cursor;
+
+    off_t phys_offset =
+        ext2_get_disk_blk(inode, sb, current_block) * sb->blk_sz;
+    blk_read(sb->dev, phys_offset + cursor_in_block, buf, to_read);
+    return to_read;
+}
+
+static size_t ext2_write_in_block(struct ext2_inode *inode,
+                                  struct superblock *sb, off_t cursor,
+                                  const void *buf, size_t count) {
+    off_t cursor_in_block = cursor % sb->blk_sz;
+    off_t current_block = cursor / sb->blk_sz;
+    size_t to_write = __block_end(sb, cursor) - cursor;
+    if (to_write > count) to_write = count - cursor;
+
+    off_t phys_offset =
+        ext2_get_disk_blk(inode, sb, current_block) * sb->blk_sz;
+    blk_write(sb->dev, phys_offset + cursor_in_block, buf, to_write);
+    return to_write;
 }
 
 ssize_t ext2_read(struct file *filp, void *buf, size_t count) {
     struct inode *inode = filp->dentry->inode;
     struct superblock *sb = inode->sb;
+    struct ext2_inode *ei = inode->private;
 
-    struct ext2_inode *einode = inode->private;
-    expects(inode != NULL);
+    // TODO: Check file size
 
-    off_t cursor = filp->offset;
+    char *cursor = buf;
+    while (count) {
+        size_t read = ext2_read_in_block(ei, sb, filp->offset, cursor, count);
+        cursor += read;
+        filp->offset += read;
+        count -= read;
+    }
 
-    //
+    return cursor - (char *)buf;
 }
 
 ssize_t ext2_write(struct file *, const void *, size_t);
