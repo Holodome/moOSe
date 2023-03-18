@@ -16,7 +16,7 @@ void spin_lock(spinlock_t *spinlock) {
 
 void spin_unlock(spinlock_t *spinlock) {
     assert(spin_is_locked(spinlock));
-    atomic_set(&spinlock->atomic, 0);
+    atomic_set_release(&spinlock->atomic, 0);
 }
 
 int spin_is_locked(spinlock_t *spinlock) {
