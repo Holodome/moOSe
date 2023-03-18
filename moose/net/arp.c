@@ -10,55 +10,69 @@
 #include <kstdio.h>
 #include <list.h>
 
-LIST_HEAD(arp_cache);
-
-struct cache_entry {
+struct arp_cache_entry {
     u8 ip_addr[4];
     u8 mac_addr[6];
     struct list_head list;
 };
 
-static spinlock_t lock = SPIN_LOCK_INIT();
+struct arp_cache {
+    struct list_head entries;
+    spinlock_t lock;
+};
+
+static struct arp_cache *cache;
+
+int init_arp_cache(void) {
+    cache = kmalloc(sizeof(*cache));
+    if (cache == NULL)
+        return -1;
+
+    init_list_head(&cache->entries);
+    spin_lock_init(&cache->lock);
+
+    return 0;
+}
 
 static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
     u64 flags;
-    while (!spin_trylock_irqsave(&lock, flags));
+    while (!spin_trylock_irqsave(&cache->lock, flags));
 
-    struct cache_entry *entry;
-    list_for_each_entry(entry, &arp_cache, list) {
+    struct arp_cache_entry *entry;
+    list_for_each_entry(entry, &cache->entries, list) {
         if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
             memcpy(mac_addr, entry->mac_addr, 6);
-            spin_unlock_irqsave(&lock, flags);
+            spin_unlock_irqsave(&cache->lock, flags);
             return 0;
         }
     }
-    spin_unlock_irqsave(&lock, flags);
+    spin_unlock_irqsave(&cache->lock, flags);
 
     return -1;
 }
 
 static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
     u64 flags;
-    while (!spin_trylock_irqsave(&lock, flags));
+    while (!spin_trylock_irqsave(&cache->lock, flags));
 
-    struct cache_entry *entry;
-    list_for_each_entry(entry, &arp_cache, list) {
+    struct arp_cache_entry *entry;
+    list_for_each_entry(entry, &cache->entries, list) {
         if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
-            spin_unlock_irqsave(&lock, flags);
+            spin_unlock_irqsave(&cache->lock, flags);
             return;
         }
     }
 
     entry = kmalloc(sizeof(*entry));
     if (entry == NULL) {
-        spin_unlock_irqsave(&lock, flags);
+        spin_unlock_irqsave(&cache->lock, flags);
         return;
     }
 
     memcpy(entry->ip_addr, ip_addr, 4);
     memcpy(entry->mac_addr, mac_addr, 6);
-    list_add(&entry->list, &arp_cache);
-    spin_unlock_irqsave(&lock, flags);
+    list_add(&entry->list, &cache->entries);
+    spin_unlock_irqsave(&cache->lock, flags);
 }
 
 int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {

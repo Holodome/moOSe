@@ -6,6 +6,7 @@
 #include <net/netdaemon.h>
 #include <net/common.h>
 #include <net/eth.h>
+#include <net/arp.h>
 
 struct nic nic;
 static u8 nic_ip_addr[4] = {10, 0, 2, 15};
@@ -20,6 +21,9 @@ int init_inet(void) {
     debug_print_mac_addr(nic.mac_addr);
 
     nic.send_frame = rtl8139_send;
+
+    if (init_arp_cache())
+        return -1;
 
     if (init_net_daemon())
         return -1;

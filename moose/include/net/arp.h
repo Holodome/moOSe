@@ -19,6 +19,7 @@ struct arp_header {
     u8 dst_ip[4];
 } __attribute((packed));
 
+int init_arp_cache(void);
 void arp_send_request(u8 *ip_addr);
 void arp_send_reply(void *frame);
 void arp_receive_frame(void *frame);
