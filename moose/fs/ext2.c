@@ -11,6 +11,24 @@
 #define EXT2_SB_OFFSET 1024
 #define EXT2_BGD_OFFSET 2048
 
+static void sync_superblock(struct superblock *);
+
+#define ext2_error(_sb, _fmt, ...)                                             \
+    ext2_error_(_sb, __PRETTY_FUNCTION__, _fmt, ##__VA_ARGS__)
+static void ext2_error_(struct superblock *sb, const char *func_name,
+                        const char *fmt, ...) {
+    struct ext2_fs *ext2 = sb->private;
+    ext2->sb.s_state |= EXT2_ERROR_FS;
+    sync_superblock(sb);
+
+    va_list args;
+    va_start(args, fmt);
+    kprintf("ext2 error in %s: ", func_name);
+    kvprintf(fmt, args);
+    kputc('\n');
+    va_end(args);
+}
+
 static void calc_block_group(const struct ext2_fs *fs, blkcnt_t block,
                              u32 *group, u32 *in_group) {
     *group = block / fs->sb.s_blocks_per_group;
@@ -29,7 +47,7 @@ static off_t calc_inode_phys_offset(const struct ext2_fs *fs, ino_t ino) {
     u32 ino_group;
     blkcnt_t ino_in_group;
     calc_ino_group(fs, ino, &ino_group, &ino_in_group);
-    assert(ino_group < fs->bgds_count);
+    expects(ino_group < fs->bgds_count);
     u32 ino_table = fs->bgds[ino_group].bg_inode_table;
     u64 ino_offset = ino_in_group * sizeof(struct ext2_inode);
     return ino_table * fs->block_size + ino_offset;
@@ -37,16 +55,16 @@ static off_t calc_inode_phys_offset(const struct ext2_fs *fs, ino_t ino) {
 
 static void read_inode(struct superblock *fs, struct ext2_inode *inode,
                        ino_t ino) {
+    expects(ino);
     struct ext2_fs *ext2 = fs->private;
-    assert(ino);
     off_t inode_offset = calc_inode_phys_offset(ext2, ino);
     blk_read(fs->dev, inode_offset, inode, sizeof(*inode));
 }
 
 static void write_inode(struct superblock *fs, const struct ext2_inode *inode,
                         ino_t ino) {
+    expects(ino);
     struct ext2_fs *ext2 = fs->private;
-    assert(ino);
     off_t inode_offset = calc_inode_phys_offset(ext2, ino);
     blk_write(fs->dev, inode_offset, inode, sizeof(*inode));
 }
@@ -61,9 +79,8 @@ static void sync_superblock(struct superblock *fs) {
 }
 
 // note: need to provide is_dir because ext2 block group tracks directory count
-static ssize_t alloc_ino(struct superblock *fs, int is_dir) {
-    struct ext2_fs *ext2 = fs->private;
-    struct ext2_sb *sb = &ext2->sb;
+static ssize_t alloc_ino(struct superblock *sb, int is_dir) {
+    struct ext2_fs *ext2 = sb->private;
 
     size_t bgdi;
     struct ext2_group_desc *desc = NULL;
@@ -77,41 +94,51 @@ static ssize_t alloc_ino(struct superblock *fs, int is_dir) {
     if (desc == NULL) return -ENOSPC;
 
     u64 bitmap[ext2->group_inode_bitmap_size];
-    blk_read(fs->dev, desc->bg_inode_bitmap * ext2->block_size, bitmap,
+    blk_read(sb->dev, desc->bg_inode_bitmap * ext2->block_size, bitmap,
              sizeof(bitmap));
 
-    u64 found = bitmap_first_clear(bitmap, sb->s_inodes_per_group);
-    assert(found);
+    u64 found = bitmap_first_clear(bitmap, ext2->sb.s_inodes_per_group);
+    if (!found) ext2_error(sb, "corrupted inode bitmap");
 
-    assert(desc->bg_free_inodes_count);
-    --desc->bg_free_inodes_count;
-    assert(sb->s_free_inode_count);
-    --sb->s_free_inode_count;
+    if (desc->bg_free_inodes_count)
+        --desc->bg_free_inodes_count;
+    else
+        ext2_error(sb, "currupted block group free inode count");
+
+    if (ext2->sb.s_free_inode_count)
+        --ext2->sb.s_free_inode_count;
+    else
+        ext2_error(sb, "corrupted superblock free inode count");
+
     desc->bg_used_dirs_count += !!is_dir;
     set_bit(found, bitmap);
 
-    blk_write(fs->dev, desc->bg_inode_bitmap * ext2->block_size, bitmap,
+    blk_write(sb->dev, desc->bg_inode_bitmap * ext2->block_size, bitmap,
               sizeof(bitmap));
-    sync_superblock(fs);
+    sync_superblock(sb);
 
-    return bgdi * sb->s_inodes_per_group + found;
+    return bgdi * ext2->sb.s_inodes_per_group + found;
 }
 
 static void free_ino(struct superblock *sb, ino_t ino, int is_dir) {
     struct ext2_fs *ext2 = sb->private;
     u32 ino_group, ino_in_group;
     calc_ino_group(ext2, ino, &ino_group, &ino_in_group);
-    assert(ino_group < ext2->bgds_count);
+    expects(ino_group < ext2->bgds_count);
+
     struct ext2_group_desc *group = ext2->bgds + ino_group;
     u64 bitmap[ext2->group_inode_bitmap_size];
     blk_read(sb->dev, group->bg_inode_bitmap * ext2->block_size, bitmap,
              sizeof(bitmap));
 
-    assert(test_bit(ino_in_group, bitmap));
+    if (!test_bit(ino_in_group, bitmap))
+        ext2_error(sb, "corrupted inode bitmap");
 
     clear_bit(ino_in_group, bitmap);
     ++group->bg_free_inodes_count;
-    assert(!is_dir || group->bg_used_dirs_count);
+    if (is_dir && !group->bg_used_dirs_count)
+        ext2_error(sb, "corrupted block group used dir count");
+
     group->bg_used_dirs_count -= is_dir;
     ++ext2->sb.s_free_inode_count;
 
@@ -121,11 +148,11 @@ static void free_ino(struct superblock *sb, ino_t ino, int is_dir) {
 }
 
 static ssize_t alloc_block(struct superblock *sb) {
-    struct ext2_fs *fs = sb->private;
+    struct ext2_fs *ext2 = sb->private;
     size_t bgdi;
     struct ext2_group_desc *desc = NULL;
-    for (bgdi = 0; bgdi < fs->bgds_count && !desc; ++bgdi) {
-        struct ext2_group_desc *test = fs->bgds + bgdi;
+    for (bgdi = 0; bgdi < ext2->bgds_count && !desc; ++bgdi) {
+        struct ext2_group_desc *test = ext2->bgds + bgdi;
         if (!test->bg_free_blocks_count) continue;
 
         desc = test;
@@ -133,37 +160,45 @@ static ssize_t alloc_block(struct superblock *sb) {
 
     if (desc == NULL) return -ENOSPC;
 
-    u64 bitmap[fs->group_block_bitmap_size];
-    blk_read(sb->dev, desc->bg_block_bitmap * fs->block_size, bitmap,
+    u64 bitmap[ext2->group_block_bitmap_size];
+    blk_read(sb->dev, desc->bg_block_bitmap * ext2->block_size, bitmap,
              sizeof(bitmap));
 
-    u64 found = bitmap_first_clear(bitmap, fs->sb.s_blocks_per_group);
-    assert(found);
+    u64 found = bitmap_first_clear(bitmap, ext2->sb.s_blocks_per_group);
+    if (!found) ext2_error(sb, "corrupted block bitmap");
 
-    assert(desc->bg_free_blocks_count);
-    --desc->bg_free_blocks_count;
-    assert(fs->sb.s_free_block_count);
-    --fs->sb.s_free_block_count;
+    if (desc->bg_free_blocks_count)
+        --desc->bg_free_blocks_count;
+    else
+        ext2_error(sb, "currupted block group free block count");
+
+    if (ext2->sb.s_free_block_count)
+        --ext2->sb.s_free_block_count;
+    else
+        ext2_error(sb, "corrupted superblock free block count");
+
     set_bit(found, bitmap);
 
-    blk_write(sb->dev, desc->bg_block_bitmap * fs->block_size, bitmap,
+    blk_write(sb->dev, desc->bg_block_bitmap * ext2->block_size, bitmap,
               sizeof(bitmap));
     sync_superblock(sb);
 
-    return bgdi * fs->sb.s_blocks_per_group + found - 1;
+    return bgdi * ext2->sb.s_blocks_per_group + found - 1;
 }
 
 static void free_block(struct superblock *sb, blkcnt_t block) {
     struct ext2_fs *fs = sb->private;
     u32 block_group, block_in_group;
     calc_block_group(fs, block, &block_group, &block_in_group);
-    assert(block_group < fs->bgds_count);
+
+    expects(block_group < fs->bgds_count);
     struct ext2_group_desc *group = fs->bgds + block_group;
     u64 bitmap[fs->group_block_bitmap_size];
     blk_read(sb->dev, group->bg_block_bitmap * fs->block_size, bitmap,
              sizeof(bitmap));
 
-    assert(test_bit(block_in_group, bitmap));
+    if (!test_bit(block_in_group, bitmap))
+        ext2_error(sb, "corrupted block bitmap");
 
     clear_bit(block_in_group, bitmap);
     ++group->bg_free_blocks_count;
@@ -300,7 +335,6 @@ ssize_t ext2_read(struct file *filp, void *buf, size_t count) {
     struct ext2_inode *ei = inode->private;
 
     // TODO: Check file size
-
     char *cursor = buf;
     while (count) {
         size_t read = ext2_read_in_block(ei, sb, filp->offset, cursor, count);
@@ -312,7 +346,23 @@ ssize_t ext2_read(struct file *filp, void *buf, size_t count) {
     return cursor - (char *)buf;
 }
 
-ssize_t ext2_write(struct file *, const void *, size_t);
+ssize_t ext2_write(struct file *filp, const void *buf, size_t count) {
+    struct inode *inode = filp->dentry->inode;
+    struct superblock *sb = inode->sb;
+    struct ext2_inode *ei = inode->private;
+
+    // TODO: Check file size
+    const char *cursor = buf;
+    while (count) {
+        size_t wrote = ext2_write_in_block(ei, sb, filp->offset, cursor, count);
+        cursor += wrote;
+        filp->offset += wrote;
+        count -= wrote;
+    }
+
+    return cursor - (char *)buf;
+}
+
 int ext2_open(struct inode *, struct file *);
 int ext2_release(struct inode *, struct file *);
 int ext2_readdir(struct file *, struct dentry *);
