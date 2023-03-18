@@ -33,7 +33,7 @@ struct superblock {
 
     void *private;
     struct sb_ops *ops;
-    struct device *dev;
+    struct blk_device *dev;
 
     struct list_head inode_list;
     struct list_head file_list;

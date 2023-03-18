@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <fs/vfs.h>
+#include <types.h>
 
 struct device;
 
@@ -12,6 +12,9 @@ struct blk_device {
     int (*read_block)(struct device *dev, size_t idx, void *buf);
     int (*write_block)(struct device *dev, size_t idx, const void *buf);
 };
+
+void blk_read(struct blk_device *dev, size_t at, void *buf, size_t size);
+void blk_write(struct blk_device *dev, size_t at, const void *buf, size_t size);
 
 struct file_operations {
     off_t (*lseek)(struct device *dev, off_t off, int whence);

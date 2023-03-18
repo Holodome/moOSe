@@ -146,5 +146,10 @@ struct ext2_fs {
     u32 inodes_per_block;
     u32 group_inode_bitmap_size;
     u32 group_block_bitmap_size;
+
+    u32 blocks_per_inderect_block;
+    u32 first_1lev_inderect_block;
+    u32 first_2lev_inderect_block;
+    u32 first_3lev_inderect_block;
 };
 
