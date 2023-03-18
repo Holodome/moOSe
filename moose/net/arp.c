@@ -18,14 +18,12 @@ struct cache_entry {
     struct list_head list;
 };
 
-static spinlock_t spinlock_get = SPIN_LOCK_INIT();
+static spinlock_t spinlock = SPIN_LOCK_INIT();
 
 static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
     u64 flags;
-    while (!spin_trylock(&spinlock_get))
-        kprintf("try get");
+    while (!spin_trylock_irqsave(&spinlock, flags));
 
-    spin_lock_irqsave(&spinlock_get, flags);
     struct cache_entry *entry;
     list_for_each_entry(entry, &arp_cache, list) {
         if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
@@ -33,19 +31,16 @@ static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
             return 0;
         }
     }
-    spin_unlock_irqsave(&spinlock_get, flags);
+    spin_unlock_irqsave(&spinlock, flags);
 
     return 1;
 }
 
-static spinlock_t spinlock_add = SPIN_LOCK_INIT();
-
 static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
     u64 flags;
-    while (!spin_trylock(&spinlock_add))
-        kprintf("try add");
+    while (!spin_trylock_irqsave(&spinlock, flags));
 
-    spin_lock_irqsave(&spinlock_add, flags);
+    spin_lock_irqsave(&spinlock, flags);
     struct cache_entry *entry;
     list_for_each_entry(entry, &arp_cache, list) {
         if (memcmp(entry->ip_addr, ip_addr, 4) == 0)
@@ -59,7 +54,7 @@ static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
     memcpy(entry->ip_addr, ip_addr, 4);
     memcpy(entry->mac_addr, mac_addr, 6);
     list_add(&entry->list, &arp_cache);
-    spin_unlock_irqsave(&spinlock_add, flags);
+    spin_unlock_irqsave(&spinlock, flags);
 }
 
 int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
