@@ -42,15 +42,12 @@ void eth_receive_frame(void *frame, u16 size) {
     header->eth_type = be16toh(header->eth_type);
     void *payload = header + 1;
 
-    // "- 4" is crc 4 bytes at the end of frame
-    u16 payload_size = size - sizeof(struct eth_header) - 4;
-
     switch (header->eth_type) {
     case ETH_TYPE_ARP:
         arp_receive_frame(payload); break;
     case ETH_TYPE_IPV4:
-        ipv4_receive_frame(payload, payload_size); break;
+        ipv4_receive_frame(payload); break;
     case ETH_TYPE_IPV6:
-        ipv6_receive_frame(payload, payload_size); break;
+        ipv6_receive_frame(payload); break;
     }
 }

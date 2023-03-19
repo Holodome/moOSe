@@ -2,15 +2,29 @@
 
 #include <types.h>
 
+#define VERSION_BITS 4
+#define IHL_BITS 4
+#define DSCP_BITS 6
+#define ECN_BITS 2
+#define FLAGS_BITS 3
+#define FRAGMENT_BITS 13
+
+#define IPV4_VERSION 4
+#define IPV6_VERSION 6
+
+#define IP_PROTOCOL_ICMP 1
+#define IP_PROTOCOL_TCP 6
+#define IP_PROTOCOL_UDP 17
+
 struct ipv4_header {
-    u8 ihl : 4;
-    u8 version : 4;
-    u8 dscp : 6;
-    u8 ecn : 2;
+    // 4 bit ihl, 4 bit version
+    u8 version_ihl;
+    // 6 bit dscp, 2 bit ecn
+    u8 dscp_ecn;
     u16 total_len;
     u16 id;
-    u16 flags : 3;
-    u16 fragment_offset : 13;
+    // 3 bit flags, 13 bit fragment_offset
+    u16 flags_fragment;
     u8 ttl;
     u8 protocol;
     u16 checksum;
@@ -18,6 +32,6 @@ struct ipv4_header {
     u8 dst_ip[4];
 } __attribute__((packed));
 
-void ipv4_send_frame(u8 *ipaddr, u8 protocol, void *payload, u16 size);
-void ipv4_receive_frame(void *frame, u16 size);
-void ipv6_receive_frame(void *frame, u16 size);
+void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size);
+void ipv4_receive_frame(void *frame);
+void ipv6_receive_frame(void *frame);

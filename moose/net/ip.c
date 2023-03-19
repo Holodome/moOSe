@@ -52,12 +52,12 @@ void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
     if (!found) return;
 
     u8 frame[ETH_PAYLOAD_MAX_SIZE];
+    memset(frame, 0, sizeof(struct ipv4_header));
 
     struct ipv4_header *header = (struct ipv4_header *)frame;
-    header->ihl = 5;
-    header->version = 4;
-    header->dscp = 0;
-    header->ecn = 0;
+    header->version_ihl |= 4;
+    header->version_ihl |= (5 << IHL_BITS);
+    header->dscp_ecn = 0;
     header->total_len = htobe16(sizeof(struct ipv4_header) + size);
     header->id = 0;
     header->ttl = 64;
@@ -73,10 +73,24 @@ void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
     eth_send_frame(dst_mac, ETH_TYPE_IPV4, frame, frame_size);
 }
 
-void ipv4_receive_frame(__attribute__((unused)) void *frame,
-                        __attribute__((unused)) u16 size) {
+void ipv4_receive_frame(void *frame) {
+    struct ipv4_header *header = (struct ipv4_header *)frame;
+    header->total_len = be16toh(header->total_len);
+    header->id = be16toh(header->id);
+    header->flags_fragment = be16toh(header->flags_fragment);
+    u8 version = header->version_ihl & 0xf;
+    u8 ihl = header->version_ihl >> IHL_BITS;
+
+    if (version == IPV4_VERSION) {
+        void *payload = frame + ihl * 4;
+
+        switch (header->protocol) {
+        case IP_PROTOCOL_ICMP: break;
+        case IP_PROTOCOL_TCP: break;
+        case IP_PROTOCOL_UDP: break;
+        }
+    }
 }
 
-void ipv6_receive_frame(__attribute__((unused)) void *frame,
-                        __attribute__((unused)) u16 size) {
+void ipv6_receive_frame(__attribute__((unused)) void *frame) {
 }
