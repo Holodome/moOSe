@@ -6,9 +6,10 @@
 #include <mm/kmem.h>
 #include <kthread.h>
 #include <assert.h>
+#include <kstdio.h>
 #include <sched/spinlock.h>
 
-#define QUEUE_SIZE 10
+#define QUEUE_SIZE 5
 #define BUFFER_SIZE ETH_FRAME_MAX_SIZE
 
 struct queue_entry {
@@ -76,8 +77,10 @@ int net_daemon_add_frame(void *frame, u16 size) {
     spin_lock(&lock);
 
     // queue is full
-    if (daemon_queue.head == daemon_queue.tail && daemon_queue.count != 0)
+    if (daemon_queue.head == daemon_queue.tail && daemon_queue.count != 0) {
+        spin_unlock(&lock);
         return -1;
+    }
 
     struct queue_entry *entry = daemon_queue.tail;
     memcpy(entry->buffer, frame, size);

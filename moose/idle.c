@@ -37,8 +37,16 @@ void idle_task(void) {
     }
     debug_print_mac_addr(mac_addr);
 
-    char *message = "Hello world!\n";
-    ipv4_send_frame(gateway_ip_addr, 1, message, strlen(message));
+    if (arp_get_mac(dns_ip_addr, mac_addr)) {
+        kprintf("can't find mac for this ip address\n");
+        halt_cpu();
+    }
+    debug_print_mac_addr(mac_addr);
+
+    kprintf("sdfsf");
+
+//    char *message = "Hello world!\n";
+//    ipv4_send_frame(gateway_ip_addr, 1, message, strlen(message));
 
     launch_task(other_task);
 

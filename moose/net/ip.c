@@ -2,29 +2,11 @@
 #include <net/arp.h>
 #include <net/eth.h>
 #include <net/inet.h>
+#include <net/icmp.h>
 #include <net/common.h>
 #include <endian.h>
 #include <assert.h>
 #include <mm/kmem.h>
-
-static u16 checksum(void *data, size_t size) {
-    expects(data != NULL);
-
-    u64 sum = 0;
-
-    while(size > 1)  {
-        sum += *(u16 *)data++;
-        size -= 2;
-    }
-
-    if (size > 0)
-        sum += *(u8 *)data;
-
-    while (sum >> 16)
-        sum = (sum & 0xffff) + (sum >> 16);
-
-    return ~sum;
-}
 
 static int is_local_ip_addr(u8 *ip_addr) {
     expects(ip_addr != NULL);
@@ -83,9 +65,12 @@ void ipv4_receive_frame(void *frame) {
 
     if (version == IPV4_VERSION) {
         void *payload = frame + ihl * 4;
+        u16 payload_size = header->total_len - sizeof(*header);
 
         switch (header->protocol) {
-        case IP_PROTOCOL_ICMP: break;
+        case IP_PROTOCOL_ICMP:
+            icmp_receive_frame(header->src_ip, payload, payload_size);
+            break;
         case IP_PROTOCOL_TCP: break;
         case IP_PROTOCOL_UDP: break;
         }
