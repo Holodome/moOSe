@@ -212,11 +212,12 @@ __attribute__((used)) static void free_block(struct superblock *sb,
     sync_superblock(sb);
 }
 
-static struct ext2_inode *ext2_get_raw_inode(struct superblock *sb, ino_t ino) {
+static int ext2_get_raw_inode(struct superblock *sb, ino_t ino,
+                              struct ext2_inode *ei) {
     struct ext2_fs *ext2 = sb->private;
     if (ino == EXT2_ROOT_INO || ino < EXT2_FIRST_INO) {
         ext2_error(sb, "invalid ino %lu\n", (unsigned long)ino);
-        return ERR_PTR(-EINVAL);
+        return -EINVAL;
     }
 
     u32 ino_group, ino_in_group;
@@ -226,43 +227,67 @@ static struct ext2_inode *ext2_get_raw_inode(struct superblock *sb, ino_t ino) {
 
     off_t inode_offset = (bgd->bg_inode_table << sb->blk_sz_bits) +
                          ino_in_group * sizeof(struct ext2_inode);
-    struct ext2_inode *inode = kmalloc(sizeof(*inode));
-    if (!inode) {
-        ext2_error(sb, "inode ino=%lu allocation failed\n", (unsigned long)ino);
-        return ERR_PTR(-ENOMEM);
-    }
 
-    blk_read(sb->dev, inode_offset, inode, sizeof(*inode));
-    return inode;
+    blk_read(sb->dev, inode_offset, ei, sizeof(*ei));
+    return 0;
 }
 
 static struct inode *ext2_iget(struct superblock *sb, ino_t ino) {
-    struct ext2_inode *ei = ext2_get_raw_inode(sb, ino);
-    if (IS_PTR_ERR(ei)) return ERR_PTR_RECAST(ei);
+    struct ext2_inode ei;
+    int result = ext2_get_raw_inode(sb, ino, &ei);
+    if (result) return ERR_PTR(result);
 
     struct inode *inode = alloc_inode();
-    if (!inode) {
-        kfree(ei);
-        return ERR_PTR(-ENOMEM);
-    }
+    if (!inode) return ERR_PTR(-ENOMEM);
 
     inode->ino = ino;
-    inode->mode = ei->i_mode;
-    inode->uid = ei->i_uid;
-    inode->gid = ei->i_gid;
-    inode->size = ei->i_size;
-    inode->nlink = ei->i_links_count;
-    inode->block_count = ei->i_blocks;
-    inode->atime = ext2_to_timespect(ei->i_atime);
-    inode->mtime = ext2_to_timespect(ei->i_mtime);
-    inode->ctime = ext2_to_timespect(ei->i_ctime);
+    inode->mode = ei.i_mode;
+    inode->uid = ei.i_uid;
+    inode->gid = ei.i_gid;
+    inode->size = ei.i_size;
+    inode->nlink = ei.i_links_count;
+    inode->block_count = ei.i_blocks;
+    inode->atime = ext2_to_timespect(ei.i_atime);
+    inode->mtime = ext2_to_timespect(ei.i_mtime);
+    inode->ctime = ext2_to_timespect(ei.i_ctime);
 
-    inode->private = ei;
     inode->ops = &inode_ops;
     inode->file_ops = &file_ops;
     inode->sb = sb;
 
     return inode;
+}
+
+static int ext2_write_inode(struct inode *inode) {
+    struct superblock *sb = inode->sb;
+    struct ext2_fs *ext2 = sb->private;
+
+    ino_t ino = inode->ino;
+    u32 ino_group, ino_in_group;
+    calc_ino_group(ext2, ino, &ino_group, &ino_in_group);
+    expects(ino_group < ext2->bgds_count);
+    struct ext2_group_desc *bgd = ext2->bgds + ino_group;
+
+    off_t inode_offset = (bgd->bg_inode_table << sb->blk_sz_bits) +
+                         ino_in_group * sizeof(struct ext2_inode);
+    struct ext2_inode ei = {0};
+    int result = ext2_get_raw_inode(sb, ino, &ei);
+    if (result) return result;
+
+    ei.i_mode = inode->mode;
+    ei.i_uid = inode->uid;
+    ei.i_gid = inode->gid;
+    ei.i_size = inode->size;
+    ei.i_links_count = inode->nlink;
+    ei.i_blocks = inode->block_count;
+    ei.i_atime = inode->atime.tv_sec;
+    ei.i_mtime = inode->mtime.tv_sec;
+    ei.i_ctime = inode->ctime.tv_sec;
+    // NOTE: We assume that other inode fields (i_block particullary) are always
+    // synced
+    blk_write(sb->dev, inode_offset, &ei, sizeof(ei));
+
+    return 0;
 }
 
 static int ext2_do_mount(struct superblock *sb) {
