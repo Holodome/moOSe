@@ -1,5 +1,6 @@
 #pragma once
 
+#include <arch/refcount.h>
 #include <fs/posix.h>
 #include <list.h>
 #include <types.h>
@@ -26,6 +27,8 @@ struct sb_ops {
 };
 
 struct superblock {
+    refcount_t refcnt;
+
     u32 blk_sz;
     u32 blk_sz_bits;
 
@@ -44,6 +47,8 @@ struct inode_ops {
 };
 
 struct inode {
+    refcount_t refcnt;
+
     ino_t ino;
     mode_t mode;
     uid_t uid;
@@ -74,6 +79,7 @@ struct file_ops {
 };
 
 struct file {
+    refcount_t refcnt;
     off_t offset;
 
     void *private;
@@ -84,6 +90,8 @@ struct file {
 };
 
 struct dentry {
+    refcount_t refcnt;
+
     struct inode *inode;
     struct dentry *parent;
     const char *name;
