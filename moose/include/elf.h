@@ -20,7 +20,7 @@ struct elf64_hdr {
     u16 shentsize;
     u16 shnum;
     u16 shstrndx;
-} __attribute__((packed));
+} __packed;
 
 static_assert(sizeof(struct elf64_hdr) == 0x40);
 
@@ -34,7 +34,7 @@ struct elf64_phdr {
     u64 filesz;
     u64 memsz;
     u64 align;
-} __attribute__((packed));
+} __packed;
 
 static_assert(sizeof(struct elf64_phdr) == 0x38);
 
@@ -50,6 +50,6 @@ struct elf64_shdr {
     u32 info;
     u64 addralign;
     u64 entsize;
-} __attribute__((packed));
+} __packed;
 
 static_assert(sizeof(struct elf64_shdr) == 0x40);

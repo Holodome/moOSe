@@ -4,8 +4,8 @@
 // (usize sized types) and it makes no difference
 #include "../../../drivers/ata.c"
 #include "../../../drivers/disk.c"
-#include "../ctype.c"
 #include "../blk_device.c"
+#include "../ctype.c"
 #include "../drivers/tty.c"
 #include "../drivers/vga.c"
 #include "../errno.c"
@@ -21,7 +21,7 @@ int kprintf(const char *fmt, ...) {
     print(fmt);
     return 0;
 }
-void *vsbrk(intptr_t inc __attribute__((unused))) { return NULL; }
+void *vsbrk(intptr_t inc __unused) { return NULL; }
 int __udivmoddi4() { return 0; }
 
 int load_kernel(void) {

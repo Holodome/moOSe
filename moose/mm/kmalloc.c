@@ -1,10 +1,9 @@
 #include <assert.h>
 #include <bitops.h>
-#include <param.h>
+#include <list.h>
 #include <mm/kmalloc.h>
 #include <mm/vmalloc.h>
-#include <string.h>
-#include <list.h>
+#include <param.h>
 #include <string.h>
 
 #define INITIAL_HEAP_SIZE (1 << 14)
@@ -14,7 +13,7 @@ struct mem_block {
     size_t size;
     int used;
     struct list_head list;
-} __attribute__((aligned(ALIGNMENT)));
+} __aligned(ALIGNMENT);
 
 struct subheap {
     void *memory;
@@ -22,7 +21,7 @@ struct subheap {
 
     struct list_head blocks;
     struct list_head list;
-} __attribute__((aligned(ALIGNMENT)));
+} __aligned(ALIGNMENT);
 
 static LIST_HEAD(subheaps);
 
@@ -67,8 +66,7 @@ static struct mem_block *find_best_block(size_t size) {
     struct subheap *heap;
     list_for_each_entry(heap, &subheaps, list) {
         struct mem_block *block = subheap_find_best_block(heap, size);
-        if (block)
-            return block;
+        if (block) return block;
     }
 
     return NULL;
@@ -78,8 +76,7 @@ static struct subheap *add_new_subheap(size_t min_size) {
     min_size += sizeof(struct mem_block) + sizeof(struct subheap);
     size_t size = align_po2(min_size, PAGE_SIZE);
     void *new_memory = vsbrk(size);
-    if (!new_memory)
-        return NULL;
+    if (!new_memory) return NULL;
 
     struct subheap *subheap = new_memory;
     subheap->memory = subheap + 1;
@@ -90,8 +87,7 @@ static struct subheap *add_new_subheap(size_t min_size) {
 }
 
 void *kmalloc(size_t size) {
-    if (size == 0)
-        return NULL;
+    if (size == 0) return NULL;
 
     size = align_po2(size, ALIGNMENT);
     struct mem_block *node = find_best_block(size);
@@ -106,8 +102,7 @@ void *kmalloc(size_t size) {
     assert(size != 0);
 
     // OOM
-    if (!node)
-        return NULL;
+    if (!node) return NULL;
 
     void *result = node + 1;
     if (node->size > size + sizeof(struct mem_block)) {
@@ -143,8 +138,7 @@ static struct subheap *find_block_heap(struct mem_block *block) {
 }
 
 void kfree(void *mem) {
-    if (mem == NULL)
-        return;
+    if (mem == NULL) return;
 
     struct mem_block *block = (struct mem_block *)mem - 1;
     block->used = 0;

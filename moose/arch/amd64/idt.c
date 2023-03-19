@@ -17,7 +17,7 @@
 
 #define EXCEPTION_PAGE_FAULT 0xe
 
-static struct idt_entry idt[256] __attribute__((aligned(16)));
+static struct idt_entry idt[256] __aligned(16);
 static isr_t *isrs[48];
 
 static void set_idt_entry(u8 n, u64 isr_addr) {
@@ -38,8 +38,7 @@ static void load_idt(void) {
     asm volatile("lidt %0\n" : : "m"(idt_reg));
 }
 
-__attribute__((used)) static void
-print_registers(const struct registers_state *r) {
+__used static void print_registers(const struct registers_state *r) {
     kprintf("exception_code: %u, isr: %u\n", (unsigned)r->exception_code,
             (unsigned)r->isr_number);
     kprintf("rdi: %#018llx rsi: %#018llx rbp: %#018llx\n", r->rdi, r->rsi,

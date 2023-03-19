@@ -1,3 +1,3 @@
 #pragma once
 
-__attribute__((noreturn)) void idle_task(void);
+__noreturn void idle_task(void);

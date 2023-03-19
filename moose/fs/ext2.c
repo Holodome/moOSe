@@ -23,7 +23,7 @@ static ssize_t ext2_read(struct file *filp, void *buf, size_t count);
 static void ext2_release_sb(struct superblock *sb);
 static struct dentry *ext2_inode_lookup(struct inode *inode,
                                         struct dentry *dentry);
-static void ext2_free_inode(struct inode *inode);
+static void ext2_free_inode(struct inode *inode __unused) {}
 static const struct sb_ops sb_ops = {.release_sb = ext2_release_sb};
 static const struct inode_ops inode_ops = {.free = ext2_free_inode,
                                            .lookup = ext2_inode_lookup};
@@ -48,7 +48,7 @@ static void ext2_error_(struct superblock *sb, const char *func_name,
     va_end(args);
 }
 
-static struct ktimespec ext2_to_timespect(u32 raw) {
+static struct ktimespec ext2_to_timespec(u32 raw) {
     struct ktimespec timespec;
     timespec.tv_sec = raw;
     timespec.tv_nsec = 0;
@@ -78,9 +78,9 @@ static void sync_superblock(struct superblock *fs) {
     blk_write(fs->dev, EXT2_SB_OFFSET, &ext2->sb, sizeof(ext2->sb));
 }
 
-// note: need to provide is_dir because ext2 block group tracks directory count
-__attribute__((used)) static ssize_t alloc_ino(struct superblock *sb,
-                                               int is_dir) {
+// note: need to provide is_dir because ext2 block group tracks directory
+// count
+static ssize_t alloc_ino(struct superblock *sb, int is_dir) {
     struct ext2_fs *ext2 = sb->private;
 
     size_t bgdi;
@@ -121,8 +121,7 @@ __attribute__((used)) static ssize_t alloc_ino(struct superblock *sb,
     return bgdi * ext2->sb.s_inodes_per_group + found;
 }
 
-__attribute__((used)) static void free_ino(struct superblock *sb, ino_t ino,
-                                           int is_dir) {
+static void free_ino(struct superblock *sb, ino_t ino, int is_dir) {
     struct ext2_fs *ext2 = sb->private;
     u32 ino_group, ino_in_group;
     calc_ino_group(ext2, ino, &ino_group, &ino_in_group);
@@ -149,7 +148,7 @@ __attribute__((used)) static void free_ino(struct superblock *sb, ino_t ino,
     sync_superblock(sb);
 }
 
-__attribute__((used)) static ssize_t alloc_block(struct superblock *sb) {
+static ssize_t alloc_block(struct superblock *sb) {
     struct ext2_fs *ext2 = sb->private;
     size_t bgdi;
     struct ext2_group_desc *desc = NULL;
@@ -188,8 +187,7 @@ __attribute__((used)) static ssize_t alloc_block(struct superblock *sb) {
     return bgdi * ext2->sb.s_blocks_per_group + found - 1;
 }
 
-__attribute__((used)) static void free_block(struct superblock *sb,
-                                             blkcnt_t block) {
+static void free_block(struct superblock *sb, blkcnt_t block) {
     struct ext2_fs *fs = sb->private;
     u32 block_group, block_in_group;
     calc_block_group(fs, block, &block_group, &block_in_group);
@@ -247,9 +245,9 @@ static struct inode *ext2_iget(struct superblock *sb, ino_t ino) {
     inode->size = ei.i_size;
     inode->nlink = ei.i_links_count;
     inode->block_count = ei.i_blocks;
-    inode->atime = ext2_to_timespect(ei.i_atime);
-    inode->mtime = ext2_to_timespect(ei.i_mtime);
-    inode->ctime = ext2_to_timespect(ei.i_ctime);
+    inode->atime = ext2_to_timespec(ei.i_atime);
+    inode->mtime = ext2_to_timespec(ei.i_mtime);
+    inode->ctime = ext2_to_timespec(ei.i_ctime);
 
     inode->ops = &inode_ops;
     inode->file_ops = &file_ops;
@@ -283,8 +281,8 @@ static int ext2_write_inode(struct inode *inode) {
     ei.i_atime = inode->atime.tv_sec;
     ei.i_mtime = inode->mtime.tv_sec;
     ei.i_ctime = inode->ctime.tv_sec;
-    // NOTE: We assume that other inode fields (i_block particullary) are always
-    // synced
+    // NOTE: We assume that other inode fields (i_block particullary) are
+    // always synced
     blk_write(sb->dev, inode_offset, &ei, sizeof(ei));
 
     return 0;
