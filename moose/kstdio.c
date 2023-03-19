@@ -1,5 +1,4 @@
 #include <ctype.h>
-#include <device.h>
 #include <drivers/tty.h>
 #include <kstdio.h>
 #include <string.h>

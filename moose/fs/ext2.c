@@ -2,7 +2,7 @@
 
 #include <assert.h>
 #include <bitops.h>
-#include <device.h>
+#include <blk_device.h>
 #include <fs/vfs_impl.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>

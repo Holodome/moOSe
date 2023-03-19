@@ -5,7 +5,7 @@
 #include "../../../drivers/ata.c"
 #include "../../../drivers/disk.c"
 #include "../ctype.c"
-#include "../device.c"
+#include "../blk_device.c"
 #include "../drivers/tty.c"
 #include "../drivers/vga.c"
 #include "../errno.c"

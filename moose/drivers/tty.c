@@ -1,4 +1,3 @@
-#include <device.h>
 #include <drivers/keyboard.h>
 #include <drivers/vga.h>
 

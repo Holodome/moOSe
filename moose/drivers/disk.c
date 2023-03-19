@@ -1,7 +1,7 @@
 #include <drivers/ata.h>
 #include <drivers/disk.h>
 #include <mbr.h>
-#include <device.h>
+#include <blk_device.h>
 
 static struct blk_device disk_dev_;
 struct blk_device *disk_dev = &disk_dev_;

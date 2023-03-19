@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <ctype.h>
-#include <device.h>
+#include <blk_device.h>
 #include <endian.h>
 #include <fs/fat.h>
 #include <string.h>

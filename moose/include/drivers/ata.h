@@ -1,6 +1,5 @@
 #pragma once
 
-#include <device.h>
 #include <types.h>
 
 enum ata_dev_kind {
