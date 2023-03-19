@@ -142,7 +142,6 @@ struct ext2_fs {
 
     struct ext2_inode root_inode;
 
-    u32 block_size;
     u32 inodes_per_block;
     u32 group_inode_bitmap_size;
     u32 group_block_bitmap_size;
@@ -152,4 +151,4 @@ struct ext2_fs {
     u32 first_3lev_inderect_block;
 };
 
-struct superblock *ext2_mount(struct blk_device *);
+int ext2_mount(struct superblock *sb);

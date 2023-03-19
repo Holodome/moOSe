@@ -3,8 +3,12 @@
 #include <fs/vfs.h>
 #include <types.h>
 
+#define BLK_DEVICE_NAME_LEN 32
+
 struct blk_device {
-    size_t block_size;
+    char name[BLK_DEVICE_NAME_LEN];
+    blkcnt_t capacity;
+    blcksize_t block_size;
     u8 block_size_log;
 
     void *private;

@@ -83,3 +83,30 @@ void init_dentry(struct dentry *entry, struct inode *inode) {
     entry->inode = inode;
 }
 
+struct superblock *vfs_mount(struct blk_device *dev,
+                             int (*mount)(struct superblock *)) {
+    struct superblock *sb = kzalloc(sizeof(*sb));
+    if (!sb) return ERR_PTR(-ENOMEM);
+
+    sb->dev = dev;
+    init_list_head(&sb->inode_list);
+    init_list_head(&sb->file_list);
+    refcount_set(&sb->refcnt, 1);
+
+    int result = mount(sb);
+    if (result < 0) {
+        kfree(sb);
+        return ERR_PTR(result);
+    }
+
+    expects(sb->ops.alloc_inode);
+    expects(sb->ops.destroy_inode);
+    expects(sb->ops.release_sb);
+
+    return 0;
+}
+
+void vfs_umount(struct superblock *sb) {
+    expects(refcount_read(&sb->refcnt) == 0);
+    sb->ops.release_sb(sb);
+}

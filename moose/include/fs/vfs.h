@@ -13,13 +13,13 @@ struct blk_device;
 
 struct filesystem {
     const char *name;
-    struct superblock *(*mount)(struct blk_device *);
+    int (*mount)(struct superblock *sb);
 };
 
 int register_filesystem(struct filesystem *fs);
 
 struct sb_ops {
-    void (*release_sb)(const void *private);
+    void (*release_sb)(struct superblock *sb);
     struct inode (*alloc_inode)(struct superblock *sb);
     void (*destroy_inode)(struct inode *inode);
 };
@@ -33,7 +33,7 @@ struct superblock {
     struct dentry *root;
 
     void *private;
-    struct sb_ops *ops;
+    struct sb_ops ops;
     struct blk_device *dev;
 
     struct list_head inode_list;
@@ -98,6 +98,10 @@ struct dentry {
     struct list_head subdir_list;
     struct list_head inode_list;
 };
+
+struct superblock *vfs_mount(struct blk_device *dev,
+                             int (*mount)(struct superblock *));
+void vfs_umount(struct superblock *sb);
 
 struct file *get_empty_filp(void);
 void fill_kstat(struct inode *inode, struct kstat *stat);
