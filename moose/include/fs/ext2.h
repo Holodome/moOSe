@@ -152,3 +152,4 @@ struct ext2_fs {
     u32 first_3lev_inderect_block;
 };
 
+struct superblock *ext2_mount(struct blk_device *);

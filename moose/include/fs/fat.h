@@ -17,7 +17,7 @@ enum fatfs_file_type { FATFS_FILE_REG, FATFS_FILE_DIR };
 #define PFATFS_FATTR_HID 0x8
 
 struct fatfs {
-    struct device *dev;
+    struct blk_device *dev;
     enum fatfs_kind kind;
 
     union {

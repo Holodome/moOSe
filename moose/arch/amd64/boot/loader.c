@@ -4,29 +4,33 @@
 // (usize sized types) and it makes no difference
 #include "../../../drivers/ata.c"
 #include "../../../drivers/disk.c"
+#include "../ctype.c"
 #include "../device.c"
+#include "../drivers/tty.c"
+#include "../drivers/vga.c"
 #include "../errno.c"
 #include "../fs/fat.c"
 #include "../mm/kmalloc.c"
 #include "../string.c"
-#include "../ctype.c"
 
 #include <mbr.h>
 
 extern void print(const char *s);
 void __panic(void) { __builtin_unreachable(); }
-int kprintf(const char *fmt __attribute__((unused)), ...) { return 0; }
+int kprintf(const char *fmt, ...) {
+    print(fmt);
+    return 0;
+}
 void *vsbrk(intptr_t inc __attribute__((unused))) { return NULL; }
+int __udivmoddi4() { return 0; }
 
 int load_kernel(void) {
     init_kmalloc();
-    int result = init_disk();
-    if (result)
-        return result;
+    init_disk();
 
     struct fatfs fs = {.dev = disk_part_dev};
 
-    result = fatfs_mount(&fs);
+    int result = fatfs_mount(&fs);
     if (result != 0) {
         print("failed to mount");
         return result;

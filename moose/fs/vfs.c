@@ -3,6 +3,13 @@
 #include <assert.h>
 #include <mm/kmalloc.h>
 
+static struct filesystem *filesystem;
+
+int register_filesystem(struct filesystem *fs) {
+    filesystem = fs;
+    return 0;
+}
+
 void fill_kstat(struct inode *inode, struct kstat *stat) {
     stat->st_dev = 0;
     stat->st_ino = inode->ino;

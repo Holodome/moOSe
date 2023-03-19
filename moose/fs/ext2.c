@@ -212,7 +212,7 @@ __attribute__((used)) static void free_block(struct superblock *sb,
     sync_superblock(sb);
 }
 
-int ext2_mount(struct superblock *sb) {
+__attribute__((used)) static int ext2_do_mount(struct superblock *sb) {
     struct ext2_fs *fs = sb->private;
     int rc = 0;
 

@@ -9,19 +9,17 @@ struct superblock;
 struct inode;
 struct file;
 struct dentry;
+struct blk_device;
 
 struct filesystem {
     const char *name;
-    struct dentry *(*mount)(struct filesystem *);
-    void (*kill_sb)(struct superblock *);
-
-    struct list_head list;
+    struct superblock *(*mount)(struct blk_device *);
 };
 
 int register_filesystem(struct filesystem *fs);
-int unregister_filesystem(struct filesystem *fs);
 
 struct sb_ops {
+    void (*release_sb)(const void *private);
     struct inode (*alloc_inode)(struct superblock *sb);
     void (*destroy_inode)(struct inode *inode);
 };
