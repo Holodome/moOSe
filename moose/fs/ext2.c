@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <bitops.h>
 #include <blk_device.h>
+#include <endian.h>
 #include <fs/vfs_impl.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
@@ -62,36 +63,10 @@ static void calc_block_group(const struct ext2_fs *fs, blkcnt_t block,
 
 static void calc_ino_group(const struct ext2_fs *fs, ino_t ino, u32 *group,
                            u32 *in_group) {
-    assert(ino);
+    expects(ino);
     --ino;
     *group = ino / fs->sb.s_inodes_per_group;
     *in_group = ino % fs->sb.s_inodes_per_group;
-}
-
-static off_t calc_inode_phys_offset(const struct ext2_fs *fs, ino_t ino) {
-    u32 ino_group;
-    blkcnt_t ino_in_group;
-    calc_ino_group(fs, ino, &ino_group, &ino_in_group);
-    expects(ino_group < fs->bgds_count);
-    u32 ino_table = fs->bgds[ino_group].bg_inode_table;
-    u64 ino_offset = ino_in_group * sizeof(struct ext2_inode);
-    return (ino_table << fs->sb.s_log_block_size) + ino_offset;
-}
-
-static void read_inode(struct superblock *fs, struct ext2_inode *inode,
-                       ino_t ino) {
-    expects(ino);
-    struct ext2_fs *ext2 = fs->private;
-    off_t inode_offset = calc_inode_phys_offset(ext2, ino);
-    blk_read(fs->dev, inode_offset, inode, sizeof(*inode));
-}
-
-__attribute__((used)) static void
-write_inode(struct superblock *fs, const struct ext2_inode *inode, ino_t ino) {
-    expects(ino);
-    struct ext2_fs *ext2 = fs->private;
-    off_t inode_offset = calc_inode_phys_offset(ext2, ino);
-    blk_write(fs->dev, inode_offset, inode, sizeof(*inode));
 }
 
 static void read_superblock(struct superblock *fs, struct ext2_sb *sb) {
@@ -136,7 +111,7 @@ __attribute__((used)) static ssize_t alloc_ino(struct superblock *sb,
     else
         ext2_error(sb, "corrupted superblock free inode count");
 
-    desc->bg_used_dirs_count += !!is_dir;
+    if (is_dir) --desc->bg_used_dirs_count;
     set_bit(found, bitmap);
 
     blk_write(sb->dev, desc->bg_inode_bitmap << sb->blk_sz_bits, bitmap,
@@ -305,17 +280,16 @@ static int ext2_do_mount(struct superblock *sb) {
     ext2->bgds_count = bgds_count;
     ext2->bgds = bgds;
 
+    u32 inodes_per_group = ext2->sb.s_inodes_per_group;
     u32 blk_sz = 1 << ext2->sb.s_log_block_size;
     ext2->inodes_per_block = blk_sz / sizeof(struct ext2_inode);
-    ext2->group_inode_bitmap_size = BITS_TO_BITMAP(ext2->sb.s_inodes_per_group);
-    ext2->group_inode_bitmap_size = BITS_TO_BITMAP(ext2->sb.s_blocks_per_group);
+    ext2->group_inode_bitmap_size = BITS_TO_BITMAP(inodes_per_group);
+    ext2->group_inode_bitmap_size = BITS_TO_BITMAP(inodes_per_group);
     ext2->blocks_per_inderect_block = blk_sz / sizeof(u32);
     ext2->first_2lev_inderect_block = 12 + ext2->blocks_per_inderect_block;
     ext2->first_3lev_inderect_block =
         ext2->first_2lev_inderect_block +
         ext2->blocks_per_inderect_block * ext2->blocks_per_inderect_block;
-
-    read_inode(sb, &ext2->root_inode, EXT2_ROOT_INO);
 
     return 0;
 }

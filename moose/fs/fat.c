@@ -1,6 +1,6 @@
 #include <assert.h>
-#include <ctype.h>
 #include <blk_device.h>
+#include <ctype.h>
 #include <endian.h>
 #include <fs/fat.h>
 #include <string.h>
@@ -242,14 +242,20 @@ static int parse_bpb(struct fatfs *fs) {
     u8 bytes[25];
     blk_read(fs->dev, 11, bytes, sizeof(bytes));
 
-    u16 byts_per_sec = read_le16(bytes);
+    u16 byts_per_sec;
+    memcpy(&byts_per_sec, bytes, sizeof(byts_per_sec));
     u8 sec_per_clus = bytes[2];
-    u16 rsvd_sec_cnt = read_le16(bytes + 3);
+    u16 rsvd_sec_cnt;
+    memcpy(&rsvd_sec_cnt, bytes + 3, sizeof(rsvd_sec_cnt));
     u8 num_fats = bytes[5];
-    u16 root_ent_cnt = read_le16(bytes + 6);
-    u16 tot_sec16 = read_le16(bytes + 8);
-    u16 fatsz16 = read_le16(bytes + 11);
-    u32 tot_sec32 = read_le32(bytes + 21);
+    u16 root_ent_cnt;
+    memcpy(&root_ent_cnt, bytes + 6, sizeof(root_ent_cnt));
+    u16 tot_sec16;
+    memcpy(&tot_sec16, bytes + 8, sizeof(tot_sec16));
+    u16 fatsz16;
+    memcpy(&fatsz16, bytes + 11, sizeof(fatsz16));
+    u32 tot_sec32;
+    memcpy(&tot_sec32, bytes + 21, sizeof(tot_sec32));
 
     // prevent divide by zero
     if (byts_per_sec == 0) return -EINVAL;
@@ -268,8 +274,9 @@ static int parse_bpb(struct fatfs *fs) {
         u8 bytes[12];
         blk_read(fs->dev, 11 + 25, bytes, sizeof(bytes));
 
-        u32 fatsz32 = read_le32(bytes);
-        root_clus = read_le32(bytes + 8);
+        u32 fatsz32;
+        memcpy(&fatsz32, bytes, sizeof(fatsz32));
+        memcpy(&root_clus, bytes + 8, sizeof(root_clus));
 
         fatsz = fatsz32;
         tot_sec = tot_sec32;
@@ -316,7 +323,8 @@ static u32 get_fat(struct fatfs *fs, u32 cluster) {
         fat_off += cluster + (cluster >> 1);
         blk_read(fs->dev, fat_off, bytes, sizeof(u16));
 
-        u16 packed = read_le16(bytes);
+        u16 packed;
+        memcpy(&packed, bytes, sizeof(packed));
         if ((cluster & 1) != 0)
             fat = packed >> 4;
         else
@@ -333,7 +341,7 @@ static u32 get_fat(struct fatfs *fs, u32 cluster) {
         fat_off += cluster * sizeof(u16);
         blk_read(fs->dev, fat_off, bytes, sizeof(u16));
 
-        fat = read_le16(bytes);
+        memcpy(&fat, bytes, sizeof(u16));
         if (fat == PFATFS_FAT16_FREE)
             fat = PFATFS_FAT_FREE;
         else if (fat == PFATFS_FAT16_BAD)
@@ -345,7 +353,7 @@ static u32 get_fat(struct fatfs *fs, u32 cluster) {
         fat_off += cluster * sizeof(u32);
         blk_read(fs->dev, fat_off, bytes, sizeof(u32));
 
-        fat = read_le32(bytes);
+        memcpy(&fat, bytes, sizeof(u32));
         break;
     }
 
@@ -368,12 +376,13 @@ static void set_fat(struct fatfs *fs, u32 cluster, u32 fat) {
         else if (fat >= PFATFS_FAT_EOF)
             fat = PFATFS_FAT12_EOF;
 
-        u16 old_packed = read_le16(bytes);
+        u16 old_packed;
+        memcpy(&old_packed, bytes, sizeof(old_packed));
         if ((cluster & 1) != 0)
             fat = (old_packed & 0x000F) | (fat << 4);
         else
             fat = (old_packed & 0xF000) | fat;
-        write_le16(bytes, fat);
+        memcpy(bytes, &fat, sizeof(u16));
         blk_write(fs->dev, fat_off, bytes, sizeof(u16));
     } break;
     case PFATFS_FAT16:
@@ -385,12 +394,12 @@ static void set_fat(struct fatfs *fs, u32 cluster, u32 fat) {
             fat = PFATFS_FAT16_BAD;
         else if (fat >= PFATFS_FAT_EOF)
             fat = PFATFS_FAT16_EOF;
-        write_le16(bytes, fat);
+        memcpy(bytes, &fat, sizeof(u16));
         blk_write(fs->dev, fat_off, bytes, sizeof(u16));
         break;
     case PFATFS_FAT32:
         fat_off += cluster * sizeof(u32);
-        write_le32(bytes, fat);
+        memcpy(bytes, &fat, sizeof(u32));
         blk_write(fs->dev, fat_off, bytes, sizeof(u32));
         break;
     }
@@ -421,14 +430,14 @@ static void read_dirent(struct fatfs *fs, u32 loc, struct dirent *dirent) {
     memcpy(dirent->name, bytes, sizeof(dirent->name));
     dirent->attr = bytes[11];
     dirent->crt_time_tenth = bytes[13];
-    dirent->crt_time = read_le16(bytes + 14);
-    dirent->crt_date = read_le16(bytes + 16);
-    dirent->lst_acc_date = read_le16(bytes + 18);
+    dirent->crt_time = *(u16 *)(bytes + 14);
+    dirent->crt_date = *(u16 *)(bytes + 16);
+    dirent->lst_acc_date = *(u16 *)(bytes + 18);
     dirent->fst_clus =
-        ((u32)read_le16(bytes + 20) << 16) | read_le16(bytes + 26);
-    dirent->wrt_time = read_le16(bytes + 22);
-    dirent->wrt_date = read_le16(bytes + 24);
-    dirent->file_size = read_le32(bytes + 28);
+        ((u32) * (u16 *)(bytes + 20) << 16) | *(u16 *)(bytes + 26);
+    dirent->wrt_time = *(u16 *)(bytes + 22);
+    dirent->wrt_date = *(u16 *)(bytes + 24);
+    dirent->file_size = *(u16 *)(bytes + 28);
 }
 
 static void write_dirent(struct fatfs *fs, u32 loc,
@@ -438,13 +447,13 @@ static void write_dirent(struct fatfs *fs, u32 loc,
     bytes[11] = dirent->attr;
     bytes[12] = 0;
     bytes[13] = dirent->crt_time_tenth;
-    write_le16(bytes + 16, dirent->crt_time);
-    write_le16(bytes + 18, dirent->crt_date);
-    write_le16(bytes + 20, dirent->fst_clus >> 16);
-    write_le16(bytes + 22, dirent->wrt_time);
-    write_le16(bytes + 24, dirent->wrt_date);
-    write_le16(bytes + 26, dirent->fst_clus & 0xFFFF);
-    write_le32(bytes + 28, dirent->file_size);
+    *(u16 *)(bytes + 16) = dirent->crt_time;
+    *(u16 *)(bytes + 18) = dirent->crt_date;
+    *(u16 *)(bytes + 20) = dirent->fst_clus >> 16;
+    *(u16 *)(bytes + 22) = dirent->wrt_time;
+    *(u16 *)(bytes + 24) = dirent->wrt_date;
+    *(u16 *)(bytes + 26) = dirent->fst_clus & 0xFFFF;
+    *(u32 *)(bytes + 28) = dirent->file_size;
 
     blk_write(fs->dev, loc, bytes, sizeof(bytes));
 }
