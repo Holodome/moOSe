@@ -11,12 +11,23 @@
 #define EXT2_SB_OFFSET 1024
 #define EXT2_BGD_OFFSET 2048
 
-void ext2_release_sb(struct superblock *sb);
-struct inode ext2_alloc_inode(struct superblock *sb);
-void ext2_destroy_inode(struct inode *inode);
-static const struct sb_ops sb_ops = {.release_sb = ext2_release_sb,
-                                     .alloc_inode = ext2_alloc_inode,
-                                     .destroy_inode = ext2_destroy_inode};
+// The first few entries of the inode tables are reserved. In revision 0 there
+// are 11 entries reserved while in revision 1 (EXT2_DYNAMIC_REV) and later the
+// number of reserved inodes entries is specified in the s_first_ino of the
+// superblock structure
+#define EXT2_FIRST_INO 11
+
+static ssize_t ext2_write(struct file *filp, const void *buf, size_t count);
+static ssize_t ext2_read(struct file *filp, void *buf, size_t count);
+static void ext2_release_sb(struct superblock *sb);
+static struct dentry *ext2_inode_lookup(struct inode *inode,
+                                        struct dentry *dentry);
+static void ext2_free_inode(struct inode *inode);
+static const struct sb_ops sb_ops = {.release_sb = ext2_release_sb};
+static const struct inode_ops inode_ops = {.free = ext2_free_inode,
+                                           .lookup = ext2_inode_lookup};
+static const struct file_ops file_ops = {
+    .lseek = generic_lseek, .read = ext2_read, .write = ext2_write};
 
 static void sync_superblock(struct superblock *);
 
@@ -34,6 +45,13 @@ static void ext2_error_(struct superblock *sb, const char *func_name,
     kvprintf(fmt, args);
     kputc('\n');
     va_end(args);
+}
+
+static struct ktimespec ext2_to_timespect(u32 raw) {
+    struct ktimespec timespec;
+    timespec.tv_sec = raw;
+    timespec.tv_nsec = 0;
+    return timespec;
 }
 
 static void calc_block_group(const struct ext2_fs *fs, blkcnt_t block,
@@ -219,7 +237,60 @@ __attribute__((used)) static void free_block(struct superblock *sb,
     sync_superblock(sb);
 }
 
-__attribute__((used)) static int ext2_do_mount(struct superblock *sb) {
+static struct ext2_inode *ext2_get_raw_inode(struct superblock *sb, ino_t ino) {
+    struct ext2_fs *ext2 = sb->private;
+    if (ino == EXT2_ROOT_INO || ino < EXT2_FIRST_INO) {
+        ext2_error(sb, "invalid ino %lu\n", (unsigned long)ino);
+        return ERR_PTR(-EINVAL);
+    }
+
+    u32 ino_group, ino_in_group;
+    calc_ino_group(ext2, ino, &ino_group, &ino_in_group);
+    expects(ino_group < ext2->bgds_count);
+    struct ext2_group_desc *bgd = ext2->bgds + ino_group;
+
+    off_t inode_offset = (bgd->bg_inode_table << sb->blk_sz_bits) +
+                         ino_in_group * sizeof(struct ext2_inode);
+    struct ext2_inode *inode = kmalloc(sizeof(*inode));
+    if (!inode) {
+        ext2_error(sb, "inode ino=%lu allocation failed\n", (unsigned long)ino);
+        return ERR_PTR(-ENOMEM);
+    }
+
+    blk_read(sb->dev, inode_offset, inode, sizeof(*inode));
+    return inode;
+}
+
+static struct inode *ext2_iget(struct superblock *sb, ino_t ino) {
+    struct ext2_inode *ei = ext2_get_raw_inode(sb, ino);
+    if (IS_PTR_ERR(ei)) return ERR_PTR_RECAST(ei);
+
+    struct inode *inode = alloc_inode();
+    if (!inode) {
+        kfree(ei);
+        return ERR_PTR(-ENOMEM);
+    }
+
+    inode->ino = ino;
+    inode->mode = ei->i_mode;
+    inode->uid = ei->i_uid;
+    inode->gid = ei->i_gid;
+    inode->size = ei->i_size;
+    inode->nlink = ei->i_links_count;
+    inode->block_count = ei->i_blocks;
+    inode->atime = ext2_to_timespect(ei->i_atime);
+    inode->mtime = ext2_to_timespect(ei->i_mtime);
+    inode->ctime = ext2_to_timespect(ei->i_ctime);
+
+    inode->private = ei;
+    inode->ops = &inode_ops;
+    inode->file_ops = &file_ops;
+    inode->sb = sb;
+
+    return inode;
+}
+
+static int ext2_do_mount(struct superblock *sb) {
     struct ext2_fs *ext2 = sb->private;
     read_superblock(sb, &ext2->sb);
 
@@ -397,10 +468,8 @@ int ext2_mount(struct superblock *sb) {
     return 0;
 }
 
-void ext2_release_sb(struct superblock *sb) {
+static void ext2_release_sb(struct superblock *sb) {
     struct ext2_fs *ext2 = sb->private;
     kfree(ext2->bgds);
 }
 
-const struct file_ops ops = {
-    .lseek = generic_lseek, .read = ext2_read, .write = ext2_write};

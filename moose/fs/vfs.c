@@ -99,8 +99,6 @@ struct superblock *vfs_mount(struct blk_device *dev,
         return ERR_PTR(result);
     }
 
-    expects(sb->ops.alloc_inode);
-    expects(sb->ops.destroy_inode);
     expects(sb->ops.release_sb);
 
     return 0;
@@ -109,4 +107,29 @@ struct superblock *vfs_mount(struct blk_device *dev,
 void vfs_umount(struct superblock *sb) {
     expects(refcount_read(&sb->refcnt) == 0);
     sb->ops.release_sb(sb);
+}
+
+struct inode *alloc_inode(void) {
+    struct inode *inode = kzalloc(sizeof(*inode));
+    if (!inode) return NULL;
+
+    refcount_set(&inode->refcnt, 1);
+    init_list_head(&inode->sb_list);
+    init_list_head(&inode->dentry_list);
+
+    return inode;
+}
+
+void free_inode(struct inode *inode) {
+    expects(refcount_read(&inode->refcnt) == 0);
+    inode->ops->free(inode);
+    expects(list_is_empty(&inode->sb_list));
+    expects(list_is_empty(&inode->dentry_list));
+    release_sb(inode->sb);
+}
+
+void release_inode(struct inode *inode) {
+    expects(list_is_empty(&inode->sb_list));
+    expects(list_is_empty(&inode->dentry_list));
+    if (refcount_dec_and_test(&inode->refcnt)) free_inode(inode);
 }

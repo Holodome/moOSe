@@ -112,10 +112,11 @@ enum {
 #define IS_PTR_ERR(_ptr)                                                       \
     __unlikely((uintptr_t)(void *)(_ptr) >= (uintptr_t)(-MAX_ERRNO))
 #define IS_PTR_ERR_OR_NULL(_ptr) (__unlikely(!(_ptr)) || IS_PTR_ERR(_ptr))
-static __always_inline __nodiscard void *ERR_PTR(int err) {
+#define ERR_PTR_RECAST(_ptr) ERR_PTR(PTR_ERR(_ptr))
+static __forceinline __nodiscard void *ERR_PTR(int err) {
     return (void *)(uintptr_t)err;
 }
-static __always_inline __nodiscard int PTR_ERR(const void *ptr) {
+static __forceinline __nodiscard int PTR_ERR(const void *ptr) {
     return (int)(uintptr_t)ptr;
 }
 

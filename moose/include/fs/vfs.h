@@ -20,8 +20,6 @@ int register_filesystem(struct filesystem *fs);
 
 struct sb_ops {
     void (*release_sb)(struct superblock *sb);
-    struct inode (*alloc_inode)(struct superblock *sb);
-    void (*destroy_inode)(struct inode *inode);
 };
 
 struct superblock {
@@ -42,6 +40,7 @@ struct superblock {
 
 struct inode_ops {
     struct dentry *(*lookup)(struct inode *inode, struct dentry *dentry);
+    void (*free)(struct inode *inode);
 };
 
 struct inode {
@@ -59,8 +58,8 @@ struct inode {
     struct ktimespec ctime;
 
     void *private;
-    struct inode_ops *ops;
-    struct file_ops *file_ops;
+    const struct inode_ops *ops;
+    const struct file_ops *file_ops;
     struct superblock *sb;
 
     struct list_head sb_list;
@@ -110,3 +109,7 @@ int generic_file_open(struct inode *inode, struct file *filp);
 
 void init_dentry(struct dentry *entry, struct inode *inode);
 struct dentry *create_dentry(struct dentry *parent, const char *str);
+struct inode *alloc_inode(void);
+void free_inode(struct inode *inode);
+void release_sb(struct superblock *sb);
+void release_inode(struct inode *inode);

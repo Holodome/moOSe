@@ -14,6 +14,6 @@
 #define STRINGIFY_(_x) #_x
 #define STRINGIFY(_x) STRINGIFY_(_x)
 
-#define __always_inline inline __attribute__((always_inline))
+#define __forceinline inline __attribute__((always_inline))
 #define __nodiscard __attribute__((warn_unused_result))
-#define __unlikely(_x) __builtin_assume(_x, 0)
+#define __unlikely(_x) __builtin_expect(_x, 0)
