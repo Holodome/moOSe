@@ -91,4 +91,3 @@ static __forceinline void be64dec(u64 *be) { *be = htobe64(be64toh(*be) - 1); }
 static __forceinline void be16inc(u16 *be) { *be = htobe16(be16toh(*be) + 1); }
 static __forceinline void be32inc(u32 *be) { *be = htobe32(be32toh(*be) + 1); }
 static __forceinline void be64inc(u64 *be) { *be = htobe64(be64toh(*be) + 1); }
-

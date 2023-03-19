@@ -22,4 +22,3 @@ __noreturn void ___panic(void);
                 __PRETTY_FUNCTION__);                                          \
         ___panic();                                                            \
     } while (0)
-

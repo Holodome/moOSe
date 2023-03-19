@@ -39,8 +39,7 @@ static inline void list_remove(struct list_head *it) {
     next->prev = prev;
 }
 
-static __forceinline __nodiscard int
-list_is_empty(const struct list_head *it) {
+static __forceinline __nodiscard int list_is_empty(const struct list_head *it) {
     return it->next == it->prev;
 }
 

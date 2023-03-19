@@ -253,4 +253,3 @@ struct kstat {
 #define O_NONBLOCK 0000400
 #define O_RSYNC O_SYNC // We do not implement O_RSYNC!
 #define O_SYNC 00010000
-
