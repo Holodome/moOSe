@@ -212,6 +212,8 @@ int enable_pci_device(struct pci_device *device) {
 
 static struct pci_device *find_pci_device(struct pci_bus *bus, u16 vendor_id,
                                           u16 device_id) {
+    expects(bus != NULL);
+
     struct pci_device *device;
     list_for_each_entry(device, &bus->devices, list) {
         if (device->vendor == vendor_id && device->device == device_id) {
@@ -231,9 +233,7 @@ static struct pci_device *find_pci_device(struct pci_bus *bus, u16 vendor_id,
 }
 
 struct pci_device *get_pci_device(u16 vendor, u16 device) {
-    if (root_bus == NULL)
-        return NULL;
-
+    expects(root_bus != NULL);
     return find_pci_device(root_bus, vendor, device);
 }
 
@@ -245,9 +245,7 @@ static void debug_print_device(struct pci_device *device) {
 }
 
 void debug_print_bus(struct pci_bus *bus) {
-    if (bus == NULL)
-        return;
-
+    expects(bus != NULL);
     kprintf("BUS: bus=%d\n", bus->index);
 
     struct pci_device *device;

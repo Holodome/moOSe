@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <kthread.h>
+#include <types.h>
 
 int init_net_daemon(void);
 void free_net_daemon(void);

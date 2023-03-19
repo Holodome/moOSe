@@ -5,7 +5,7 @@
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <kthread.h>
-#include <kstdio.h>
+#include <assert.h>
 #include <sched/spinlock.h>
 
 #define QUEUE_SIZE 10
@@ -23,8 +23,6 @@ static struct {
     struct queue_entry *tail;
     volatile u16 count;
 } daemon_queue;
-
-static spinlock_t lock = SPIN_LOCK_INIT();
 
 __attribute__((noreturn)) static void net_daemon_task(void) {
     for (;;) {
@@ -69,8 +67,13 @@ void free_net_daemon(void) {
         kfree(daemon_queue.entries[i].buffer);
 }
 
+static spinlock_t lock = SPIN_LOCK_INIT();
+
 int net_daemon_add_frame(void *frame, u16 size) {
-    while (!spin_trylock(&lock));
+    expects(frame != NULL);
+    expects(size <= ETH_FRAME_MAX_SIZE);
+
+    spin_lock(&lock);
 
     // queue is full
     if (daemon_queue.head == daemon_queue.tail && daemon_queue.count != 0)

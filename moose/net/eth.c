@@ -5,9 +5,14 @@
 #include <net/common.h>
 #include <mm/kmem.h>
 #include <endian.h>
+#include <assert.h>
 #include <kstdio.h>
 
 void eth_send_frame(u8 *dst_mac_addr, u16 eth_type, void *payload, u16 size) {
+    expects(dst_mac_addr != NULL);
+    expects(payload != NULL);
+    expects(size <= ETH_PAYLOAD_MAX_SIZE);
+
     u8 frame[ETH_FRAME_MAX_SIZE];
     struct eth_header *header = (struct eth_header*)frame;
 
@@ -30,6 +35,9 @@ void eth_send_frame(u8 *dst_mac_addr, u16 eth_type, void *payload, u16 size) {
 }
 
 void eth_receive_frame(void *frame, u16 size) {
+    expects(frame != NULL);
+    expects(size <= ETH_FRAME_MAX_SIZE);
+
     struct eth_header *header = (struct eth_header *)frame;
     header->eth_type = be16toh(header->eth_type);
     void *payload = header + 1;

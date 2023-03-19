@@ -7,8 +7,11 @@
 #include <mm/kmem.h>
 #include <sched/spinlock.h>
 #include <endian.h>
+#include <assert.h>
 #include <kstdio.h>
 #include <list.h>
+
+#define ARP_TIMEOUT_MSECS 15000
 
 struct arp_cache_entry {
     u8 ip_addr[4];
@@ -35,6 +38,9 @@ int init_arp_cache(void) {
 }
 
 static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
+    expects(ip_addr != NULL);
+    expects(mac_addr != NULL);
+
     u64 flags;
     spin_lock_irqsave(&cache->lock, flags);
 
@@ -52,28 +58,35 @@ static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
 }
 
 static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
+    expects(ip_addr != NULL);
+    expects(mac_addr != NULL);
+
     u64 flags;
     spin_lock_irqsave(&cache->lock, flags);
 
     struct arp_cache_entry *entry;
     list_for_each_entry(entry, &cache->entries, list) {
-        if (memcmp(entry->ip_addr, ip_addr, 4) == 0)
-            goto error;
+        if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
+            spin_unlock_irqrestore(&cache->lock, flags);
+            return;
+        }
     }
 
     entry = kmalloc(sizeof(*entry));
-    if (entry == NULL)
-        goto error;
+    if (entry == NULL) {
+        spin_unlock_irqrestore(&cache->lock, flags);
+        return;
+    }
 
     memcpy(entry->ip_addr, ip_addr, 4);
     memcpy(entry->mac_addr, mac_addr, 6);
     list_add(&entry->list, &cache->entries);
-
-error:
-    spin_unlock_irqrestore(&cache->lock, flags);
 }
 
 int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
+    expects(ip_addr != NULL);
+    expects(mac_addr != NULL);
+
     if (arp_cache_get(ip_addr, mac_addr) == 0)
         return 0;
 
@@ -81,7 +94,7 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
 
     int found = 0;
     memcpy(mac_addr, broadcast_mac_addr, 6);
-    u64 end = jiffies64_to_msecs(get_jiffies64()) + 5 * 1000;
+    u64 end = jiffies64_to_msecs(get_jiffies64()) + ARP_TIMEOUT_MSECS;
     while ((!found || memcmp(mac_addr, broadcast_mac_addr, 6) == 0) &&
            jiffies64_to_msecs(get_jiffies64()) < end) {
         found = (arp_cache_get(ip_addr, mac_addr) == 0);
@@ -93,6 +106,8 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
 }
 
 void arp_send_request(u8 *ip_addr) {
+    expects(ip_addr != NULL);
+
     u8 frame[sizeof(struct arp_header)];
 
     struct arp_header *header = (struct arp_header *)frame;
@@ -111,6 +126,8 @@ void arp_send_request(u8 *ip_addr) {
 }
 
 void arp_send_reply(void *frame) {
+    expects(frame != NULL);
+
     struct arp_header *header = (struct arp_header *)frame;
 
     u8 reply_frame[sizeof(struct arp_header)];
@@ -129,6 +146,8 @@ void arp_send_reply(void *frame) {
 }
 
 void arp_receive_frame(void *frame) {
+    expects(frame != NULL);
+
     struct arp_header *header = (struct arp_header *)frame;
     header->hw_type = be16toh(header->hw_type);
     header->protocol_type = be16toh(header->protocol_type);

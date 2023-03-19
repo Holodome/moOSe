@@ -1,10 +1,9 @@
 #include <net/inet.h>
 #include <kstdio.h>
+#include <assert.h>
 #include <drivers/rtl8139.h>
 #include <mm/kmem.h>
 #include <net/netdaemon.h>
-#include <net/common.h>
-#include <net/eth.h>
 #include <net/arp.h>
 
 struct nic nic;
@@ -34,6 +33,7 @@ int init_inet(void) {
 }
 
 void debug_print_mac_addr(u8 *mac_addr) {
+    expects(mac_addr != NULL);
     kprintf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
             mac_addr[0], mac_addr[1],
             mac_addr[2], mac_addr[3],
@@ -41,6 +41,7 @@ void debug_print_mac_addr(u8 *mac_addr) {
 }
 
 void debug_print_frame_hexdump(u8 *frame, size_t size) {
+    expects(frame != NULL);
     size_t dump_lines = size / 16;
     if (size % 16 != 0)
         dump_lines++;

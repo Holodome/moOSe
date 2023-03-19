@@ -4,9 +4,12 @@
 #include <net/inet.h>
 #include <net/common.h>
 #include <endian.h>
+#include <assert.h>
 #include <mm/kmem.h>
 
 static u16 checksum(void *data, size_t size) {
+    expects(data != NULL);
+
     u64 sum = 0;
 
     while(size > 1)  {
@@ -24,6 +27,8 @@ static u16 checksum(void *data, size_t size) {
 }
 
 static int is_local_ip_addr(u8 *ip_addr) {
+    expects(ip_addr != NULL);
+
     u8 temp[4];
     memcpy(temp, ip_addr, 4);
     for (u8 i = 0; i < 4; i++)
@@ -33,6 +38,10 @@ static int is_local_ip_addr(u8 *ip_addr) {
 }
 
 void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
+    expects(ip_addr != NULL);
+    expects(payload != NULL);
+    expects(size <= ETH_PAYLOAD_MAX_SIZE);
+
     u8 dst_mac[6];
     int found;
     if (is_local_ip_addr(ip_addr)) {
