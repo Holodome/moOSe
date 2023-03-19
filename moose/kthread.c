@@ -1,9 +1,6 @@
 #include <arch/cpu.h>
-#include <assert.h>
-#include <kstdio.h>
 #include <kthread.h>
 #include <mm/kmalloc.h>
-#include <param.h>
 
 extern void bootstrap_task(u64 rsp, u64 rip);
 

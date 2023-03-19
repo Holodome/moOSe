@@ -1,6 +1,5 @@
 #include <arch/amd64/virtmem.h>
 #include <param.h>
-#include <kstdio.h>
 #include <types.h>
 #include <mm/vmalloc.h>
 #include <bitops.h>

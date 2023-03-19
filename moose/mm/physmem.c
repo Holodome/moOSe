@@ -1,5 +1,4 @@
 #include <mm/kmalloc.h>
-#include <kstdio.h>
 #include <mm/physmem.h>
 #include <param.h>
 #include <bitops.h>

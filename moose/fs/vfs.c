@@ -57,7 +57,7 @@ struct dentry *create_dentry(struct dentry *parent, const char *str) {
 
     struct dentry *entry = kzalloc(sizeof(*entry));
     if (!entry) return NULL;
-    entry->name = strdup(str);
+    entry->name = kstrdup(str);
     if (!entry->name) goto err_dentry;
 
     init_list_head(&entry->dir_list);

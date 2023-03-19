@@ -1,8 +1,6 @@
-#include <disk.h>
-#include <idle.h>
+#include <drivers/disk.h>
 #include <arch/cpu.h>
-#include <kstdio.h>
-#include <kthread.h>
+#include <idle.h>
 #include <shell.h>
 
 void idle_task(void) {

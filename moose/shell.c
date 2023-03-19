@@ -1,6 +1,6 @@
-#include <disk.h>
-#include <fs/fat.h>
+#include <drivers/disk.h>
 #include <arch/jiffies.h>
+#include <fs/fat.h>
 #include <kstdio.h>
 #include <shell.h>
 #include <string.h>

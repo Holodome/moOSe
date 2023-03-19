@@ -1,7 +1,6 @@
 #include <arch/amd64/asm.h>
 #include <arch/cpu.h>
 #include <kstdio.h>
-#include <kthread.h>
 
 struct registers {
     u64 rdi;

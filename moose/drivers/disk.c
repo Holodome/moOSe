@@ -1,6 +1,5 @@
-#include <arch/amd64/ata.h>
-#include <disk.h>
-#include <fs/fat.h>
+#include <drivers/disk.h>
+#include <drivers/ata.h>
 #include <mbr.h>
 
 static struct device disk_dev_;

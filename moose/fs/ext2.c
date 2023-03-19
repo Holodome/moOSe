@@ -61,8 +61,8 @@ static void read_inode(struct superblock *fs, struct ext2_inode *inode,
     blk_read(fs->dev, inode_offset, inode, sizeof(*inode));
 }
 
-static void write_inode(struct superblock *fs, const struct ext2_inode *inode,
-                        ino_t ino) {
+__attribute__((used)) static void
+write_inode(struct superblock *fs, const struct ext2_inode *inode, ino_t ino) {
     expects(ino);
     struct ext2_fs *ext2 = fs->private;
     off_t inode_offset = calc_inode_phys_offset(ext2, ino);
@@ -79,7 +79,8 @@ static void sync_superblock(struct superblock *fs) {
 }
 
 // note: need to provide is_dir because ext2 block group tracks directory count
-static ssize_t alloc_ino(struct superblock *sb, int is_dir) {
+__attribute__((used)) static ssize_t alloc_ino(struct superblock *sb,
+                                               int is_dir) {
     struct ext2_fs *ext2 = sb->private;
 
     size_t bgdi;
@@ -120,7 +121,8 @@ static ssize_t alloc_ino(struct superblock *sb, int is_dir) {
     return bgdi * ext2->sb.s_inodes_per_group + found;
 }
 
-static void free_ino(struct superblock *sb, ino_t ino, int is_dir) {
+__attribute__((used)) static void free_ino(struct superblock *sb, ino_t ino,
+                                           int is_dir) {
     struct ext2_fs *ext2 = sb->private;
     u32 ino_group, ino_in_group;
     calc_ino_group(ext2, ino, &ino_group, &ino_in_group);
@@ -147,7 +149,7 @@ static void free_ino(struct superblock *sb, ino_t ino, int is_dir) {
     sync_superblock(sb);
 }
 
-static ssize_t alloc_block(struct superblock *sb) {
+__attribute__((used)) static ssize_t alloc_block(struct superblock *sb) {
     struct ext2_fs *ext2 = sb->private;
     size_t bgdi;
     struct ext2_group_desc *desc = NULL;
@@ -186,7 +188,8 @@ static ssize_t alloc_block(struct superblock *sb) {
     return bgdi * ext2->sb.s_blocks_per_group + found - 1;
 }
 
-static void free_block(struct superblock *sb, blkcnt_t block) {
+__attribute__((used)) static void free_block(struct superblock *sb,
+                                             blkcnt_t block) {
     struct ext2_fs *fs = sb->private;
     u32 block_group, block_in_group;
     calc_block_group(fs, block, &block_group, &block_in_group);
@@ -367,9 +370,5 @@ int ext2_open(struct inode *, struct file *);
 int ext2_release(struct inode *, struct file *);
 int ext2_readdir(struct file *, struct dentry *);
 
-const struct file_ops ops = {.lseek = generic_lseek,
-                             .read = ext2_read,
-                             .write = ext2_write,
-                             .open = ext2_open,
-                             .release = ext2_release,
-                             .readdir = ext2_readdir};
+const struct file_ops ops = {
+    .lseek = generic_lseek, .read = ext2_read, .write = ext2_write};

@@ -1,4 +1,3 @@
-#include <tty.h>
 #include <arch/amd64/asm.h>
 #include <param.h>
 

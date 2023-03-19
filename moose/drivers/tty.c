@@ -1,7 +1,6 @@
-#include <arch/amd64/keyboard.h>
-#include <arch/amd64/vga.h>
 #include <device.h>
-#include <tty.h>
+#include <drivers/keyboard.h>
+#include <drivers/vga.h>
 
 static ssize_t tty_read(struct device *device __attribute__((unused)),
                         void *buffer, size_t count) {

@@ -162,10 +162,9 @@ void isr_handler(struct registers_state *regs) {
     if (no < 32) {
         if (no == EXCEPTION_PAGE_FAULT) {
             kprintf("address: %#018llx\n", read_cr2());
-        } else {
-            _panic("exception %s(%u): %u\n", get_exception_name(no), no,
-                   (unsigned)regs->exception_code);
         }
+        _panic("exception %s(%u): %u\n", get_exception_name(no), no,
+               (unsigned)regs->exception_code);
     } else {
         isr_t *isr = isrs[no];
         if (isr != NULL) isr(regs);
