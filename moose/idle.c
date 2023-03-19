@@ -37,13 +37,8 @@ void idle_task(void) {
     }
     debug_print_mac_addr(mac_addr);
 
-    u8 ip_addr[] = {192, 168, 1, 66};
-    char *message = "Hello world!";
-    for (;;) {
-        ipv4_send_frame(ip_addr, 0x6, message, strlen(message));
-        for (size_t i = 0; i < 1000000000; i++)
-            nop();
-    }
+    char *message = "Hello world!\n";
+    ipv4_send_frame(gateway_ip_addr, 1, message, strlen(message));
 
     launch_task(other_task);
 

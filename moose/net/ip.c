@@ -42,7 +42,7 @@ void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
     }
     if (!found) return;
 
-    static u8 frame[ETH_PAYLOAD_MAX_SIZE];
+    u8 frame[ETH_PAYLOAD_MAX_SIZE];
 
     struct ipv4_header *header = (struct ipv4_header *)frame;
     header->ihl = 5;
@@ -64,12 +64,10 @@ void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
     eth_send_frame(dst_mac, ETH_TYPE_IPV4, frame, frame_size);
 }
 
-void ipv4_receive_frame(void *frame, u16 size) {
-    frame++;
-    size++;
+void ipv4_receive_frame(__attribute__((unused)) void *frame,
+                        __attribute__((unused)) u16 size) {
 }
 
-void ipv6_receive_frame(void *frame, u16 size) {
-    frame++;
-    size++;
+void ipv6_receive_frame(__attribute__((unused)) void *frame,
+                        __attribute__((unused)) u16 size) {
 }

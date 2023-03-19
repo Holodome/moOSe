@@ -36,43 +36,41 @@ int init_arp_cache(void) {
 
 static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
     u64 flags;
-    while (!spin_trylock_irqsave(&cache->lock, flags));
+    spin_lock_irqsave(&cache->lock, flags);
 
     struct arp_cache_entry *entry;
     list_for_each_entry(entry, &cache->entries, list) {
         if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
             memcpy(mac_addr, entry->mac_addr, 6);
-            spin_unlock_irqsave(&cache->lock, flags);
+            spin_unlock_irqrestore(&cache->lock, flags);
             return 0;
         }
     }
-    spin_unlock_irqsave(&cache->lock, flags);
 
+    spin_unlock_irqrestore(&cache->lock, flags);
     return -1;
 }
 
 static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
     u64 flags;
-    while (!spin_trylock_irqsave(&cache->lock, flags));
+    spin_lock_irqsave(&cache->lock, flags);
 
     struct arp_cache_entry *entry;
     list_for_each_entry(entry, &cache->entries, list) {
-        if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
-            spin_unlock_irqsave(&cache->lock, flags);
-            return;
-        }
+        if (memcmp(entry->ip_addr, ip_addr, 4) == 0)
+            goto error;
     }
 
     entry = kmalloc(sizeof(*entry));
-    if (entry == NULL) {
-        spin_unlock_irqsave(&cache->lock, flags);
-        return;
-    }
+    if (entry == NULL)
+        goto error;
 
     memcpy(entry->ip_addr, ip_addr, 4);
     memcpy(entry->mac_addr, mac_addr, 6);
     list_add(&entry->list, &cache->entries);
-    spin_unlock_irqsave(&cache->lock, flags);
+
+error:
+    spin_unlock_irqrestore(&cache->lock, flags);
 }
 
 int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
@@ -82,9 +80,10 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
     arp_send_request(ip_addr);
 
     int found = 0;
-    // 1 minute timeout
+    memcpy(mac_addr, broadcast_mac_addr, 6);
     u64 end = jiffies64_to_msecs(get_jiffies64()) + 5 * 1000;
-    while (!found && jiffies64_to_msecs(get_jiffies64()) < end) {
+    while ((!found || memcmp(mac_addr, broadcast_mac_addr, 6) == 0) &&
+           jiffies64_to_msecs(get_jiffies64()) < end) {
         found = (arp_cache_get(ip_addr, mac_addr) == 0);
     }
 

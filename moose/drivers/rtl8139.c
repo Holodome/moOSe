@@ -59,8 +59,8 @@ static void rtl8139_receive(void) {
         }
 
         // frame without rtl buffer len (4 bytes)
-        eth_receive_frame(frame + 4, frame_size - 4);
-//        net_daemon_add_frame(frame + 4, frame_size - 4);
+//        eth_receive_frame(frame + 4, frame_size - 4);
+        net_daemon_add_frame(frame + 4, frame_size - 4);
 
         rtl8139.rx_offset = (rtl8139.rx_offset + frame_size + 4 + 3) & ~0x3;
         rtl8139.rx_offset %= RX_BUFFER_SIZE;
@@ -168,7 +168,7 @@ static spinlock_t lock = SPIN_LOCK_INIT();
 
 void rtl8139_send(void *frame, u16 size) {
     u64 flags;
-    while (!spin_trylock_irqsave(&lock, flags));
+    spin_lock_irqsave(&lock, flags);
 
     memcpy(rtl8139.tx_buffer, frame, size);
 
@@ -181,5 +181,5 @@ void rtl8139_send(void *frame, u16 size) {
     u16 tx_status = rtl8139.io_addr + TRL_REG_TX_STATUS + tx_offset;
     port_out32(tx_status, size);
 
-    spin_unlock_irqsave(&lock, flags);
+    spin_unlock_irqrestore(&lock, flags);
 }
