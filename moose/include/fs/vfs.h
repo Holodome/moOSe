@@ -11,13 +11,6 @@ struct file;
 struct dentry;
 struct blk_device;
 
-struct filesystem {
-    const char *name;
-    int (*mount)(struct superblock *sb);
-};
-
-int register_filesystem(struct filesystem *fs);
-
 struct sb_ops {
     void (*release_sb)(struct superblock *sb);
 };
@@ -39,7 +32,6 @@ struct superblock {
 };
 
 struct inode_ops {
-    struct dentry *(*lookup)(struct inode *inode, struct dentry *dentry);
     void (*free)(struct inode *inode);
 };
 
@@ -110,6 +102,5 @@ int generic_file_open(struct inode *inode, struct file *filp);
 void init_dentry(struct dentry *entry, struct inode *inode);
 struct dentry *create_dentry(struct dentry *parent, const char *str);
 struct inode *alloc_inode(void);
-void free_inode(struct inode *inode);
 void release_sb(struct superblock *sb);
 void release_inode(struct inode *inode);

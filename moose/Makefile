@@ -32,7 +32,7 @@ $(D)/kernel-boot.elf: $(KERNEL_BOOT_OBJS) | $(KERNEL_BOOT_LINK)
 
 $(D)/kernel.img: $(D)/kernel-boot.bin $(D)/kernel1.bin
 	$(Q)cat $^ > $(D)/kernel.bin
-	$(Q)dd if=/dev/zero of=$@ bs=1K count=720 status=none
+	$(Q)dd if=/dev/zero of=$@ bs=1K count=720 status=none > /dev/null
 	$(Q)mformat -i $@ -f 720
 	$(Q)mcopy -i $@ $(D)/kernel.bin ::
 

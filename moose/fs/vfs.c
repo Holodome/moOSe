@@ -120,16 +120,21 @@ struct inode *alloc_inode(void) {
     return inode;
 }
 
-void free_inode(struct inode *inode) {
-    expects(refcount_read(&inode->refcnt) == 0);
-    inode->ops->free(inode);
-    expects(list_is_empty(&inode->sb_list));
-    expects(list_is_empty(&inode->dentry_list));
-    release_sb(inode->sb);
-}
-
 void release_inode(struct inode *inode) {
     expects(list_is_empty(&inode->sb_list));
     expects(list_is_empty(&inode->dentry_list));
-    if (refcount_dec_and_test(&inode->refcnt)) free_inode(inode);
+    if (refcount_dec_and_test(&inode->refcnt)) {
+        inode->ops->free(inode);
+        release_sb(inode->sb);
+        kfree(inode);
+    }
+}
+
+void release_sb(struct superblock *sb) {
+    expects(list_is_empty(&sb->inode_list));
+    expects(list_is_empty(&sb->file_list));
+    if (refcount_dec_and_test(&sb->refcnt)) {
+        sb->ops.release_sb(sb);
+        kfree(sb);
+    }
 }

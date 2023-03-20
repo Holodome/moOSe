@@ -20,3 +20,4 @@ struct blk_device {
 void blk_read(struct blk_device *dev, size_t at, void *buf, size_t size);
 void blk_write(struct blk_device *dev, size_t at, const void *buf, size_t size);
 int init_blk_device(struct blk_device *dev);
+void print_blk_device(struct blk_device *dev);

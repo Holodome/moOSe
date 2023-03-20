@@ -21,12 +21,9 @@
 static ssize_t ext2_write(struct file *filp, const void *buf, size_t count);
 static ssize_t ext2_read(struct file *filp, void *buf, size_t count);
 static void ext2_release_sb(struct superblock *sb);
-static struct dentry *ext2_inode_lookup(struct inode *inode,
-                                        struct dentry *dentry);
-static void ext2_free_inode(struct inode *inode __unused) {}
+static void ext2_free_inode(struct inode *inode);
 static const struct sb_ops sb_ops = {.release_sb = ext2_release_sb};
-static const struct inode_ops inode_ops = {.free = ext2_free_inode,
-                                           .lookup = ext2_inode_lookup};
+static const struct inode_ops inode_ops = {.free = ext2_free_inode};
 static const struct file_ops file_ops = {
     .lseek = generic_lseek, .read = ext2_read, .write = ext2_write};
 
@@ -80,7 +77,7 @@ static void sync_superblock(struct superblock *fs) {
 
 // note: need to provide is_dir because ext2 block group tracks directory
 // count
-static ssize_t alloc_ino(struct superblock *sb, int is_dir) {
+__used static ssize_t ext2_alloc_ino(struct superblock *sb, int is_dir) {
     struct ext2_fs *ext2 = sb->private;
 
     size_t bgdi;
@@ -121,7 +118,7 @@ static ssize_t alloc_ino(struct superblock *sb, int is_dir) {
     return bgdi * ext2->sb.s_inodes_per_group + found;
 }
 
-static void free_ino(struct superblock *sb, ino_t ino, int is_dir) {
+static void ext2_free_ino(struct superblock *sb, ino_t ino, int is_dir) {
     struct ext2_fs *ext2 = sb->private;
     u32 ino_group, ino_in_group;
     calc_ino_group(ext2, ino, &ino_group, &ino_in_group);
@@ -148,7 +145,7 @@ static void free_ino(struct superblock *sb, ino_t ino, int is_dir) {
     sync_superblock(sb);
 }
 
-static ssize_t alloc_block(struct superblock *sb) {
+__used static ssize_t ext2_alloc_block(struct superblock *sb) {
     struct ext2_fs *ext2 = sb->private;
     size_t bgdi;
     struct ext2_group_desc *desc = NULL;
@@ -187,7 +184,7 @@ static ssize_t alloc_block(struct superblock *sb) {
     return bgdi * ext2->sb.s_blocks_per_group + found - 1;
 }
 
-static void free_block(struct superblock *sb, blkcnt_t block) {
+__used static void ext2_free_block(struct superblock *sb, blkcnt_t block) {
     struct ext2_fs *fs = sb->private;
     u32 block_group, block_in_group;
     calc_block_group(fs, block, &block_group, &block_in_group);
@@ -210,13 +207,9 @@ static void free_block(struct superblock *sb, blkcnt_t block) {
     sync_superblock(sb);
 }
 
-static int ext2_get_raw_inode(struct superblock *sb, ino_t ino,
-                              struct ext2_inode *ei) {
+static void ext2_get_raw_inode(struct superblock *sb, ino_t ino,
+                               struct ext2_inode *ei) {
     struct ext2_fs *ext2 = sb->private;
-    if (ino == EXT2_ROOT_INO || ino < EXT2_FIRST_INO) {
-        ext2_error(sb, "invalid ino %lu\n", (unsigned long)ino);
-        return -EINVAL;
-    }
 
     u32 ino_group, ino_in_group;
     calc_ino_group(ext2, ino, &ino_group, &ino_in_group);
@@ -227,13 +220,11 @@ static int ext2_get_raw_inode(struct superblock *sb, ino_t ino,
                          ino_in_group * sizeof(struct ext2_inode);
 
     blk_read(sb->dev, inode_offset, ei, sizeof(*ei));
-    return 0;
 }
 
-static struct inode *ext2_iget(struct superblock *sb, ino_t ino) {
+__used static struct inode *ext2_iget(struct superblock *sb, ino_t ino) {
     struct ext2_inode ei;
-    int result = ext2_get_raw_inode(sb, ino, &ei);
-    if (result) return ERR_PTR(result);
+    ext2_get_raw_inode(sb, ino, &ei);
 
     struct inode *inode = alloc_inode();
     if (!inode) return ERR_PTR(-ENOMEM);
@@ -256,7 +247,7 @@ static struct inode *ext2_iget(struct superblock *sb, ino_t ino) {
     return inode;
 }
 
-static int ext2_write_inode(struct inode *inode) {
+__used static void ext2_write_inode(struct inode *inode) {
     struct superblock *sb = inode->sb;
     struct ext2_fs *ext2 = sb->private;
 
@@ -269,8 +260,7 @@ static int ext2_write_inode(struct inode *inode) {
     off_t inode_offset = (bgd->bg_inode_table << sb->blk_sz_bits) +
                          ino_in_group * sizeof(struct ext2_inode);
     struct ext2_inode ei = {0};
-    int result = ext2_get_raw_inode(sb, ino, &ei);
-    if (result) return result;
+    ext2_get_raw_inode(sb, ino, &ei);
 
     ei.i_mode = inode->mode;
     ei.i_uid = inode->uid;
@@ -284,8 +274,6 @@ static int ext2_write_inode(struct inode *inode) {
     // NOTE: We assume that other inode fields (i_block particullary) are
     // always synced
     blk_write(sb->dev, inode_offset, &ei, sizeof(ei));
-
-    return 0;
 }
 
 static int ext2_do_mount(struct superblock *sb) {
@@ -470,3 +458,7 @@ static void ext2_release_sb(struct superblock *sb) {
     kfree(ext2->bgds);
 }
 
+static void ext2_free_inode(struct inode *inode) {
+    struct superblock *sb = inode->sb;
+    ext2_free_ino(sb, inode->ino, S_ISDIR(inode->mode));
+}
