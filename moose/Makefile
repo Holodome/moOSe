@@ -19,8 +19,10 @@ KERNEL_BOOT_OBJS := $(D)/arch/amd64/kboot.o $(D)/arch/amd64/long.o
 KERNEL_BOOT_LINK := $(D)/arch/amd64/kernel-boot.ld.out
 
 $(OS_IMG): $(D)/arch/amd64/boot/stage1.bin $(D)/arch/amd64/boot/stage2.bin \
-	$(D)/kernel.img
+	$(D)/kernel.img 
 	$(Q)./scripts/generate_mbr_image.py $^ $@
+
+scripts/ext2.img: 
 
 $(D)/kernel1.elf: $(KERNEL_OBJS) | $(KERNEL_LINK)
 	@echo "LD $@"

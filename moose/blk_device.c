@@ -107,3 +107,8 @@ void blk_write(struct blk_device *dev, size_t at, const void *buf,
     buffered_lseek(dev, at, SEEK_SET);
     buffered_write(dev, buf, size);
 }
+
+void print_blk_device(struct blk_device *dev) {
+    kprintf("blk_dev %s capacity=%lu block_size=%lu\n", dev->name,
+            (long unsigned)dev->capacity, (long unsigned)dev->block_size);
+}

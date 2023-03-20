@@ -14,10 +14,9 @@ void idle_task(void) {
     print_blk_device(disk_part_dev);
     print_blk_device(disk_part1_dev);
     struct superblock *sb = vfs_mount(disk_part1_dev, ext2_mount);
-    struct inode *root_inode = sb->root;
+    struct inode *root_inode = sb->root->inode;
+    print_inode(root_inode);
     (void)sb;
-
-    kprintf("mounted ext2\n");
 
     for (;;) wait_for_int();
 }

@@ -1,8 +1,8 @@
 #include "fs/vfs.h"
 
 #include <assert.h>
-#include <mm/kmalloc.h>
 #include <kstdio.h>
+#include <mm/kmalloc.h>
 
 static struct filesystem *filesystem;
 
@@ -100,7 +100,7 @@ struct superblock *vfs_mount(struct blk_device *dev,
 
     expects(sb->ops.release_sb);
 
-    return 0;
+    return sb;
 }
 
 void vfs_umount(struct superblock *sb) {
@@ -140,6 +140,8 @@ void release_sb(struct superblock *sb) {
 
 void print_inode(const struct inode *inode) {
     kprintf("inode ino=%lu\n", (unsigned long)inode->ino);
-        kpr
-
+    kprintf(" mode=%lu uid=%lu gid=%lu\n", (unsigned long)inode->mode,
+            (unsigned long)inode->uid, (unsigned long)inode->gid);
+    kprintf(" size=%ld nlink=%ld blkcnt=%ld\n", (unsigned long)inode->size,
+            (unsigned long)inode->nlink, (unsigned long)inode->block_count);
 }

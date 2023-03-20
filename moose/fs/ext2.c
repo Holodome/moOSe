@@ -10,7 +10,6 @@
 
 #define EXT2_DIRECT_BLOCKS 12
 #define EXT2_SB_OFFSET 1024
-#define EXT2_BGD_OFFSET 2048
 
 // The first few entries of the inode tables are reserved. In revision 0 there
 // are 11 entries reserved while in revision 1 (EXT2_DYNAMIC_REV) and later the
@@ -28,6 +27,11 @@ static const struct file_ops file_ops = {
     .lseek = generic_lseek, .read = ext2_read, .write = ext2_write};
 
 static void sync_superblock(struct superblock *);
+
+static void print_bgd(const struct ext2_group_desc *d) {
+    kprintf("gd bbit=%u ibit=%u it=%u\n", d->bg_block_bitmap,
+            d->bg_inode_bitmap, d->bg_inode_table);
+}
 
 #define ext2_error(_sb, _fmt, ...)                                             \
     ext2_error_(_sb, __PRETTY_FUNCTION__, _fmt, ##__VA_ARGS__)
@@ -218,6 +222,8 @@ static void ext2_get_raw_inode(struct superblock *sb, ino_t ino,
 
     off_t inode_offset = (bgd->bg_inode_table << sb->blk_sz_bits) +
                          ino_in_group * sizeof(struct ext2_inode);
+    kprintf("inode table=%x\n", bgd->bg_inode_table << sb->blk_sz_bits);
+    kprintf("inode offset=%lx\n", inode_offset);
 
     blk_read(sb->dev, inode_offset, ei, sizeof(*ei));
 }
@@ -279,20 +285,23 @@ __used static void ext2_write_inode(struct inode *inode) {
 static int ext2_do_mount(struct superblock *sb) {
     struct ext2_fs *ext2 = sb->private;
     read_superblock(sb, &ext2->sb);
+    kprintf("inodes per group=%u\n", ext2->sb.s_inodes_per_group);
 
-    size_t bgds_count = sb->dev->capacity / (8 << ext2->sb.s_log_block_size);
+    u32 blk_sz = 1024 << ext2->sb.s_log_block_size;
+    size_t bgds_count = 1;
     expects(bgds_count != 0);
     size_t bgds_size = bgds_count * sizeof(struct ext2_group_desc);
     struct ext2_group_desc *bgds = kmalloc(bgds_size);
     if (!bgds) return -ENOMEM;
 
-    blk_read(sb->dev, EXT2_BGD_OFFSET, bgds, bgds_size);
+    size_t bgds_loc = 1 * blk_sz;
+    blk_read(sb->dev, bgds_loc, bgds, bgds_size);
+    print_bgd(bgds);
 
     ext2->bgds_count = bgds_count;
     ext2->bgds = bgds;
 
     u32 inodes_per_group = ext2->sb.s_inodes_per_group;
-    u32 blk_sz = 1 << ext2->sb.s_log_block_size;
     ext2->inodes_per_block = blk_sz / sizeof(struct ext2_inode);
     ext2->group_inode_bitmap_size = BITS_TO_BITMAP(inodes_per_group);
     ext2->group_inode_bitmap_size = BITS_TO_BITMAP(inodes_per_group);
@@ -427,10 +436,6 @@ ssize_t ext2_write(struct file *filp, const void *buf, size_t count) {
     return cursor - (char *)buf;
 }
 
-int ext2_readdir(struct file *, struct dentry *) {
-
-}
-
 int ext2_mount(struct superblock *sb) {
     expects(sb->dev);
     struct ext2_fs *ext2 = kzalloc(sizeof(*ext2));
@@ -447,7 +452,7 @@ int ext2_mount(struct superblock *sb) {
     }
 
     sb->ops = sb_ops;
-    sb->blk_sz_bits = ext2->sb.s_log_block_size;
+    sb->blk_sz_bits = 10 + ext2->sb.s_log_block_size;
     sb->blk_sz = 1 << sb->blk_sz_bits;
 
     struct inode *root_inode = ext2_iget(sb, EXT2_ROOT_INO);
@@ -457,6 +462,7 @@ int ext2_mount(struct superblock *sb) {
     }
     struct dentry *root = create_dentry(NULL, "/");
     init_dentry(root, root_inode);
+    sb->root = root;
 
     return 0;
 }
