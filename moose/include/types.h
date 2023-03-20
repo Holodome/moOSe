@@ -23,3 +23,13 @@
 #define __noreturn __attribute__((noreturn))
 #define __packed __attribute__((packed))
 #define __printf(_a, _b) __attribute__((format(printf, _a, _b)))
+
+static_assert(sizeof(i8) == 1);
+static_assert(sizeof(u8) == 1);
+static_assert(sizeof(i16) == 2);
+static_assert(sizeof(u16) == 2);
+static_assert(sizeof(i32) == 4);
+static_assert(sizeof(u32) == 4);
+static_assert(sizeof(i64) == 8);
+static_assert(sizeof(u64) == 8);
+

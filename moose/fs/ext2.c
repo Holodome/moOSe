@@ -427,9 +427,9 @@ ssize_t ext2_write(struct file *filp, const void *buf, size_t count) {
     return cursor - (char *)buf;
 }
 
-int ext2_open(struct inode *, struct file *);
-int ext2_release(struct inode *, struct file *);
-int ext2_readdir(struct file *, struct dentry *);
+int ext2_readdir(struct file *, struct dentry *) {
+
+}
 
 int ext2_mount(struct superblock *sb) {
     expects(sb->dev);
@@ -450,12 +450,21 @@ int ext2_mount(struct superblock *sb) {
     sb->blk_sz_bits = ext2->sb.s_log_block_size;
     sb->blk_sz = 1 << sb->blk_sz_bits;
 
+    struct inode *root_inode = ext2_iget(sb, EXT2_ROOT_INO);
+    if (IS_PTR_ERR(root_inode)) {
+        ext2_release_sb(sb);
+        return PTR_ERR(root_inode);
+    }
+    struct dentry *root = create_dentry(NULL, "/");
+    init_dentry(root, root_inode);
+
     return 0;
 }
 
 static void ext2_release_sb(struct superblock *sb) {
     struct ext2_fs *ext2 = sb->private;
     kfree(ext2->bgds);
+    kfree(ext2);
 }
 
 static void ext2_free_inode(struct inode *inode) {

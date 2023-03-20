@@ -13,8 +13,11 @@ void idle_task(void) {
 
     print_blk_device(disk_part_dev);
     print_blk_device(disk_part1_dev);
-    /* struct superblock *sb = vfs_mount(disk_part1_dev, ext2_mount); */
-    /* (void)sb; */
+    struct superblock *sb = vfs_mount(disk_part1_dev, ext2_mount);
+    struct inode *root_inode = sb->root;
+    (void)sb;
+
+    kprintf("mounted ext2\n");
 
     for (;;) wait_for_int();
 }

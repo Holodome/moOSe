@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <mm/kmalloc.h>
+#include <kstdio.h>
 
 static struct filesystem *filesystem;
 
@@ -60,8 +61,6 @@ struct file *get_empty_filp(void) {
 }
 
 struct dentry *create_dentry(struct dentry *parent, const char *str) {
-    expects(parent != NULL);
-
     struct dentry *entry = kzalloc(sizeof(*entry));
     if (!entry) return NULL;
     entry->name = kstrdup(str);
@@ -71,7 +70,7 @@ struct dentry *create_dentry(struct dentry *parent, const char *str) {
     init_list_head(&entry->subdir_list);
     init_list_head(&entry->inode_list);
     entry->parent = parent;
-    list_add(&entry->subdir_list, &parent->subdir_list);
+    if (parent) list_add(&entry->subdir_list, &parent->subdir_list);
 
     return entry;
 err_dentry:
@@ -137,4 +136,10 @@ void release_sb(struct superblock *sb) {
         sb->ops.release_sb(sb);
         kfree(sb);
     }
+}
+
+void print_inode(const struct inode *inode) {
+    kprintf("inode ino=%lu\n", (unsigned long)inode->ino);
+        kpr
+
 }

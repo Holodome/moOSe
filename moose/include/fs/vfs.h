@@ -104,3 +104,5 @@ struct dentry *create_dentry(struct dentry *parent, const char *str);
 struct inode *alloc_inode(void);
 void release_sb(struct superblock *sb);
 void release_inode(struct inode *inode);
+
+void print_inode(const struct inode *inode);
