@@ -31,6 +31,10 @@ TARGET_IMG := moose.img
 
 all: $(TARGET_IMG)
 
+re: 
+	$(MAKE) clean
+	$(MAKE) all
+
 $(TARGET_IMG): moose/moose.img
 	@echo Wrote target to $@
 	$(Q)cp $< $@
