@@ -24,7 +24,7 @@ struct superblock {
     struct dentry *root;
 
     void *private;
-    struct sb_ops ops;
+    const struct sb_ops *ops;
     struct blk_device *dev;
 
     struct list_head inode_list;
@@ -33,6 +33,7 @@ struct superblock {
 
 struct inode_ops {
     void (*free)(struct inode *inode);
+    int (*lookup)(struct inode *inode, struct dentry *dentry);
 };
 
 struct inode {
@@ -62,9 +63,8 @@ struct file_ops {
     off_t (*lseek)(struct file *, off_t, int);
     ssize_t (*read)(struct file *, void *, size_t);
     ssize_t (*write)(struct file *, const void *, size_t);
-    int (*open)(struct inode *, struct file *);
     int (*release)(struct inode *, struct file *);
-    int (*readdir)(struct file *, struct dentry *);
+    struct dentry *(*readdir)(struct file *);
 };
 
 struct file {
@@ -72,7 +72,7 @@ struct file {
     off_t offset;
 
     void *private;
-    struct file_ops *ops;
+    const struct file_ops *ops;
     struct dentry *dentry;
 
     struct list_head list;
@@ -83,7 +83,7 @@ struct dentry {
 
     struct inode *inode;
     struct dentry *parent;
-    const char *name;
+    char *name;
 
     struct list_head dir_list;
     struct list_head subdir_list;
@@ -93,16 +93,21 @@ struct dentry {
 struct superblock *vfs_mount(struct blk_device *dev,
                              int (*mount)(struct superblock *));
 void vfs_umount(struct superblock *sb);
+int vfs_create(struct inode *dir, struct dentry *entry, mode_t mode);
+int vfs_mkdir(struct inode *dir, struct dentry *entry, mode_t mode);
+int vfs_rmdir(struct inode *dir, struct dentry *entry);
+struct dentry *vfs_readdir(struct file *filp);
+struct file *vfs_open_dentry(struct dentry *entry);
 
 struct file *get_empty_filp(void);
 void fill_kstat(struct inode *inode, struct kstat *stat);
 off_t generic_lseek(struct file *filp, off_t offset, int whence);
-int generic_file_open(struct inode *inode, struct file *filp);
 
-void init_dentry(struct dentry *entry, struct inode *inode);
 struct dentry *create_dentry(struct dentry *parent, const char *str);
+struct dentry *create_root_dentry(void);
 struct inode *alloc_inode(void);
 void release_sb(struct superblock *sb);
 void release_inode(struct inode *inode);
+void release_dentry(struct dentry *entry);
 
 void print_inode(const struct inode *inode);

@@ -17,20 +17,38 @@
 // superblock structure
 #define EXT2_FIRST_INO 11
 
-static ssize_t ext2_write(struct file *filp, const void *buf, size_t count);
-static ssize_t ext2_read(struct file *filp, void *buf, size_t count);
+static ssize_t ext2_write(struct file *filp, const void *buf, size_t count) {
+    (void)filp;
+    (void)buf;
+    (void)count;
+    return 0;
+}
+static ssize_t ext2_read(struct file *filp, void *buf, size_t count) {
+    (void)filp;
+    (void)buf;
+    (void)count;
+    return 0;
+}
 static void ext2_release_sb(struct superblock *sb);
 static void ext2_free_inode(struct inode *inode);
+static struct dentry *ext2_readdir(struct file *filp);
 static const struct sb_ops sb_ops = {.release_sb = ext2_release_sb};
 static const struct inode_ops inode_ops = {.free = ext2_free_inode};
-static const struct file_ops file_ops = {
-    .lseek = generic_lseek, .read = ext2_read, .write = ext2_write};
+static const struct file_ops file_ops = {.lseek = generic_lseek,
+                                         .read = ext2_read,
+                                         .write = ext2_write,
+                                         .readdir = ext2_readdir};
 
 static void sync_superblock(struct superblock *);
 
 static void print_bgd(const struct ext2_group_desc *d) {
     kprintf("gd bbit=%u ibit=%u it=%u\n", d->bg_block_bitmap,
             d->bg_inode_bitmap, d->bg_inode_table);
+}
+
+static void print_dentry(const struct ext2_dentry *entry) {
+    kprintf("de ino=%u name_len=%u rec_len=%u\n", entry->inode, entry->name_len,
+            entry->rec_len);
 }
 
 #define ext2_error(_sb, _fmt, ...)                                             \
@@ -222,8 +240,6 @@ static void ext2_get_raw_inode(struct superblock *sb, ino_t ino,
 
     off_t inode_offset = (bgd->bg_inode_table << sb->blk_sz_bits) +
                          ino_in_group * sizeof(struct ext2_inode);
-    kprintf("inode table=%x\n", bgd->bg_inode_table << sb->blk_sz_bits);
-    kprintf("inode offset=%lx\n", inode_offset);
 
     blk_read(sb->dev, inode_offset, ei, sizeof(*ei));
 }
@@ -388,6 +404,7 @@ static size_t ext2_read_in_block(struct ext2_inode *inode,
     return to_read;
 }
 
+#if 0
 static size_t ext2_write_in_block(struct ext2_inode *inode,
                                   struct superblock *sb, off_t cursor,
                                   const void *buf, size_t count) {
@@ -405,7 +422,6 @@ static size_t ext2_write_in_block(struct ext2_inode *inode,
 ssize_t ext2_read(struct file *filp, void *buf, size_t count) {
     struct inode *inode = filp->dentry->inode;
     struct superblock *sb = inode->sb;
-    struct ext2_inode *ei = inode->private;
 
     // TODO: Check file size
     char *cursor = buf;
@@ -435,6 +451,7 @@ ssize_t ext2_write(struct file *filp, const void *buf, size_t count) {
 
     return cursor - (char *)buf;
 }
+#endif
 
 int ext2_mount(struct superblock *sb) {
     expects(sb->dev);
@@ -451,20 +468,62 @@ int ext2_mount(struct superblock *sb) {
         return result;
     }
 
-    sb->ops = sb_ops;
+    sb->ops = &sb_ops;
     sb->blk_sz_bits = 10 + ext2->sb.s_log_block_size;
     sb->blk_sz = 1 << sb->blk_sz_bits;
 
-    struct inode *root_inode = ext2_iget(sb, EXT2_ROOT_INO);
+    struct inode *root_inode = ext2_iget(sb, EXT2_ROOT_INO + 1);
     if (IS_PTR_ERR(root_inode)) {
         ext2_release_sb(sb);
         return PTR_ERR(root_inode);
     }
-    struct dentry *root = create_dentry(NULL, "/");
-    init_dentry(root, root_inode);
+    struct dentry *root = create_root_dentry();
+    if (!root) {
+        release_inode(root_inode);
+        ext2_release_sb(sb);
+        return -ENOMEM;
+    }
+    root->inode = root_inode;
     sb->root = root;
 
     return 0;
+}
+
+static struct dentry *ext2_readdir(struct file *dir) {
+    struct inode *inode = dir->dentry->inode;
+    struct superblock *sb = inode->sb;
+    struct ext2_inode ei;
+    ext2_get_raw_inode(sb, inode->ino, &ei);
+    struct ext2_dentry ed;
+    size_t read = ext2_read_in_block(&ei, sb, dir->offset, &ed, sizeof(ed));
+    assert(read != sizeof(ed)); // Directory does not span block
+    if (ed.inode == 0) return ERR_PTR(-ENOENT);
+    print_dentry(&ed);
+
+    size_t name_len = ed.name_len;
+    if (name_len > EXT2_NAME_LEN) {
+        // TODO: Warn
+        name_len = EXT2_NAME_LEN;
+        kprintf("ext2: name length is wrong %zu\n", name_len);
+    }
+    char name[name_len + 1];
+    read =
+        ext2_read_in_block(&ei, sb, dir->offset + sizeof(ed), &name, name_len);
+    expects(read == name_len);
+    name[name_len] = '\0';
+
+    struct dentry *dentry = create_dentry(dir->dentry, name);
+    if (!dentry) return ERR_PTR(-ENOMEM);
+
+    struct inode *dentry_inode = ext2_iget(sb, ed.inode);
+    if (IS_PTR_ERR(dentry_inode)) {
+        release_dentry(dentry);
+        return ERR_PTR_RECAST(dentry_inode);
+    }
+
+    dir->offset += ed.rec_len;
+
+    return dentry;
 }
 
 static void ext2_release_sb(struct superblock *sb) {

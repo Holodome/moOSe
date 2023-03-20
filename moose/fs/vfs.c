@@ -61,6 +61,8 @@ struct file *get_empty_filp(void) {
 }
 
 struct dentry *create_dentry(struct dentry *parent, const char *str) {
+    expects(parent);
+    expects(str);
     struct dentry *entry = kzalloc(sizeof(*entry));
     if (!entry) return NULL;
     entry->name = kstrdup(str);
@@ -70,12 +72,23 @@ struct dentry *create_dentry(struct dentry *parent, const char *str) {
     init_list_head(&entry->subdir_list);
     init_list_head(&entry->inode_list);
     entry->parent = parent;
-    if (parent) list_add(&entry->subdir_list, &parent->subdir_list);
+    list_add(&entry->subdir_list, &parent->subdir_list);
 
     return entry;
 err_dentry:
     kfree(entry);
     return NULL;
+}
+
+struct dentry *create_root_dentry(void) {
+    struct dentry *entry = kzalloc(sizeof(*entry));
+    if (!entry) return NULL;
+
+    init_list_head(&entry->dir_list);
+    init_list_head(&entry->subdir_list);
+    init_list_head(&entry->inode_list);
+
+    return entry;
 }
 
 void init_dentry(struct dentry *entry, struct inode *inode) {
@@ -98,14 +111,12 @@ struct superblock *vfs_mount(struct blk_device *dev,
         return ERR_PTR(result);
     }
 
-    expects(sb->ops.release_sb);
-
     return sb;
 }
 
 void vfs_umount(struct superblock *sb) {
     expects(refcount_read(&sb->refcnt) == 0);
-    sb->ops.release_sb(sb);
+    sb->ops->release_sb(sb);
 }
 
 struct inode *alloc_inode(void) {
@@ -120,9 +131,8 @@ struct inode *alloc_inode(void) {
 }
 
 void release_inode(struct inode *inode) {
-    expects(list_is_empty(&inode->sb_list));
-    expects(list_is_empty(&inode->dentry_list));
     if (refcount_dec_and_test(&inode->refcnt)) {
+        list_remove(&inode->sb_list);
         inode->ops->free(inode);
         release_sb(inode->sb);
         kfree(inode);
@@ -130,12 +140,34 @@ void release_inode(struct inode *inode) {
 }
 
 void release_sb(struct superblock *sb) {
-    expects(list_is_empty(&sb->inode_list));
-    expects(list_is_empty(&sb->file_list));
     if (refcount_dec_and_test(&sb->refcnt)) {
-        sb->ops.release_sb(sb);
+        sb->ops->release_sb(sb);
         kfree(sb);
     }
+}
+
+void release_dentry(struct dentry *entry) {
+    if (refcount_dec_and_test(&entry->refcnt)) {
+        release_inode(entry->inode);
+        if (entry->parent) release_dentry(entry->parent);
+        kfree(entry->name);
+        kfree(entry);
+    }
+}
+
+struct file *vfs_open_dentry(struct dentry *entry) {
+    struct file *filp = get_empty_filp();
+    if (!filp) return ERR_PTR(-ENOMEM);
+
+    refcount_inc(&entry->refcnt);
+    filp->dentry = entry;
+    filp->ops = entry->inode->file_ops;
+
+    return filp;
+}
+
+struct dentry *vfs_readdir(struct file *filp) {
+    return filp->ops->readdir(filp);
 }
 
 void print_inode(const struct inode *inode) {

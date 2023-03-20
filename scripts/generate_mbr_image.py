@@ -38,5 +38,3 @@ with open(out_name, "wb+") as f:
     f.write(kernel)
     f.seek(ext2_offset * 512)
     f.write(ext2)
-
-print(f"{stage2_size=} {kernel_offset=} {kernel_size=} {ext2_offset=} {ext2_size=}")
