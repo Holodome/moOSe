@@ -29,7 +29,7 @@ void eth_send_frame(u8 *dst_mac_addr, u16 eth_type, void *payload, u16 size) {
         frame_size = sizeof(*header) + ETH_PAYLOAD_MIN_SIZE;
     }
 
-//    debug_print_frame_hexdump(frame, frame_size);
+    debug_print_frame_hexdump(frame, frame_size);
 
     nic.send_frame(frame, frame_size);
 }
@@ -38,7 +38,7 @@ void eth_receive_frame(void *frame, u16 size) {
     expects(frame != NULL);
     expects(size <= ETH_FRAME_MAX_SIZE);
 
-//    debug_print_frame_hexdump(frame, size);
+    debug_print_frame_hexdump(frame, size);
 
     struct eth_header *header = (struct eth_header *)frame;
     header->eth_type = be16toh(header->eth_type);

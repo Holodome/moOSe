@@ -8,6 +8,7 @@
 #include <net/inet.h>
 #include <net/icmp.h>
 #include <net/arp.h>
+#include <net/udp.h>
 #include <net/ip.h>
 #include <net/netdaemon.h>
 
@@ -48,6 +49,8 @@ void idle_task(void) {
     debug_print_mac_addr(mac_addr);
 
     icmp_send_echo_request(dns_ip_addr);
+    char *message = "Hello world!\n";
+    udp_send_frame(gateway_ip_addr, 80, 80, message, strlen(message));
 
     launch_task(other_task);
 

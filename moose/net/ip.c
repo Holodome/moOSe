@@ -1,6 +1,7 @@
 #include <net/ip.h>
 #include <net/arp.h>
 #include <net/eth.h>
+#include <net/udp.h>
 #include <net/inet.h>
 #include <net/icmp.h>
 #include <net/common.h>
@@ -76,7 +77,9 @@ void ipv4_receive_frame(void *frame) {
             icmp_receive_frame(header->src_ip, payload, payload_size);
             break;
         case IP_PROTOCOL_TCP: break;
-        case IP_PROTOCOL_UDP: break;
+        case IP_PROTOCOL_UDP:
+            udp_receive_frame(payload);
+            break;
         }
     }
 }
