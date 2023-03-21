@@ -27,8 +27,8 @@ int init_inet(void) {
     if (init_arp_cache())
         return -1;
 
-    if (init_net_daemon())
-        return -1;
+//    if (init_net_daemon())
+//        return -1;
 
     return 0;
 }

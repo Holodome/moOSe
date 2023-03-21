@@ -9,51 +9,43 @@
 #include <kstdio.h>
 #include <sched/spinlock.h>
 
-#define QUEUE_SIZE 5
+#define QUEUE_SIZE 10
 #define BUFFER_SIZE ETH_FRAME_MAX_SIZE
 
 struct queue_entry {
-    u8 *buffer;
-    u16 size;
+    u8 buffer[BUFFER_SIZE];
+    size_t size;
+    int is_free;
 };
 
-static struct {
+struct daemon_queue {
     struct queue_entry entries[QUEUE_SIZE];
+    spinlock_t lock;
+};
 
-    struct queue_entry *head;
-    struct queue_entry *tail;
-    volatile u16 count;
-} daemon_queue;
+static struct daemon_queue *queue;
 
 __attribute__((noreturn)) static void net_daemon_task(void) {
     for (;;) {
-        while (daemon_queue.count) {
-            struct queue_entry *entry = daemon_queue.head;
-
-            debug_print_frame_hexdump(entry->buffer, entry->size);
-            eth_receive_frame(entry->buffer, entry->size);
-
-            if (daemon_queue.head + 1 >= daemon_queue.entries + QUEUE_SIZE)
-                daemon_queue.head = daemon_queue.entries;
-            else daemon_queue.head++;
-            daemon_queue.count--;
+        for (int i = 0; i < QUEUE_SIZE; i++) {
+            struct queue_entry *entry = &queue->entries[i];
+            if (!entry->is_free) {
+                eth_receive_frame(entry->buffer, entry->size);
+                entry->is_free = 1;
+            }
         }
     }
 }
 
 int init_net_daemon(void) {
-    for (u16 i = 0; i < QUEUE_SIZE; i++) {
-        u8 *buffer = kmalloc(BUFFER_SIZE);
-        if (buffer == NULL)
-            return -1;
+    queue = kmalloc(sizeof(struct daemon_queue));
+    if (queue == NULL)
+        return -1;
 
-        struct queue_entry *entry = &daemon_queue.entries[i];
-        entry->buffer = buffer;
-    }
+    for (int i = 0; i < QUEUE_SIZE; i++)
+        queue->entries[i].is_free = 1;
 
-    daemon_queue.head = daemon_queue.entries;
-    daemon_queue.tail = daemon_queue.entries;
-    daemon_queue.count = 0;
+    spin_lock_init(&queue->lock);
 
     if (launch_task(net_daemon_task)) {
         free_net_daemon();
@@ -64,34 +56,27 @@ int init_net_daemon(void) {
 }
 
 void free_net_daemon(void) {
-    for (u16 i = 0; i < QUEUE_SIZE; i++)
-        kfree(daemon_queue.entries[i].buffer);
+    kfree(queue);
 }
 
-static spinlock_t lock = SPIN_LOCK_INIT();
-
-int net_daemon_add_frame(void *frame, u16 size) {
+int net_daemon_add_frame(void *frame, size_t size) {
     expects(frame != NULL);
     expects(size <= ETH_FRAME_MAX_SIZE);
 
-    spin_lock(&lock);
+    u64 flags;
+    spin_lock_irqsave(&queue->lock, flags);
 
-    // queue is full
-    if (daemon_queue.head == daemon_queue.tail && daemon_queue.count != 0) {
-        spin_unlock(&lock);
-        return -1;
+    for (int i = 0; i < QUEUE_SIZE; i++) {
+        struct queue_entry *entry = &queue->entries[i];
+        if (entry->is_free) {
+            memcpy(entry->buffer, frame, size);
+            entry->size = size;
+            entry->is_free = 0;
+            break;
+        }
     }
 
-    struct queue_entry *entry = daemon_queue.tail;
-    memcpy(entry->buffer, frame, size);
-    entry->size = size;
-
-    if (daemon_queue.tail + 1 >= daemon_queue.entries + QUEUE_SIZE)
-        daemon_queue.tail = daemon_queue.entries;
-    else daemon_queue.tail++;
-    daemon_queue.count++;
-
-    spin_unlock(&lock);
+    spin_unlock_irqrestore(&queue->lock, flags);
 
     return 0;
 }

@@ -5,7 +5,7 @@
 // FIXME: Cleanup this include
 #include <arch/amd64/idt.h>
 
-#define KTHREAD_STACK_SIZE 4096
+#define KTHREAD_STACK_SIZE 8192
 
 struct task {
     struct registers_state regs;

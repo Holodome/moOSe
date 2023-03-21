@@ -16,7 +16,7 @@ static int is_local_ip_addr(u8 *ip_addr) {
     for (u8 i = 0; i < 4; i++)
         temp[i] &= local_net_mask[i];
 
-    return memcmp(ip_addr, local_net_ip_addr, 4) == 0;
+    return memcmp(temp, local_net_ip_addr, 4) == 0;
 }
 
 void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {

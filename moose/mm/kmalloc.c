@@ -149,7 +149,6 @@ void kfree(void *mem) {
     block->used = 0;
     struct subheap *subheap = find_block_heap(block);
     assert(subheap);
-    assert(0);
 
     struct mem_block *left = list_prev_or_null(&block->list, &subheap->blocks,
                                                struct mem_block, list);

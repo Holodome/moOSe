@@ -6,8 +6,10 @@
 #include <arch/cpu.h>
 #include <drivers/pci.h>
 #include <net/inet.h>
+#include <net/icmp.h>
 #include <net/arp.h>
 #include <net/ip.h>
+#include <net/netdaemon.h>
 
 __attribute__((noreturn)) void other_task(void) {
     for (;;)
@@ -35,18 +37,15 @@ void idle_task(void) {
         kprintf("can't find mac for this ip address\n");
         halt_cpu();
     }
+    kprintf("gateway ");
     debug_print_mac_addr(mac_addr);
 
     if (arp_get_mac(dns_ip_addr, mac_addr)) {
         kprintf("can't find mac for this ip address\n");
         halt_cpu();
     }
+    kprintf("dns ");
     debug_print_mac_addr(mac_addr);
-
-    kprintf("sdfsf");
-
-//    char *message = "Hello world!\n";
-//    ipv4_send_frame(gateway_ip_addr, 1, message, strlen(message));
 
     launch_task(other_task);
 

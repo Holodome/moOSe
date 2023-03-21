@@ -72,7 +72,7 @@ static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
         }
     }
 
-    entry = kmalloc(sizeof(*entry));
+    entry = kmalloc(sizeof(struct arp_cache_entry));
     if (entry == NULL) {
         spin_unlock_irqrestore(&cache->lock, flags);
         return;
@@ -81,6 +81,7 @@ static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
     memcpy(entry->ip_addr, ip_addr, 4);
     memcpy(entry->mac_addr, mac_addr, 6);
     list_add(&entry->list, &cache->entries);
+    spin_unlock_irqrestore(&cache->lock, flags);
 }
 
 int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
@@ -95,7 +96,7 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
     int found = 0;
     memcpy(mac_addr, broadcast_mac_addr, 6);
     u64 end = jiffies64_to_msecs(get_jiffies64()) + ARP_TIMEOUT_MSECS;
-    while ((!found || memcmp(mac_addr, broadcast_mac_addr, 6) == 0) &&
+    while (!(found && memcmp(mac_addr, broadcast_mac_addr, 6) != 0) &&
            jiffies64_to_msecs(get_jiffies64()) < end) {
         found = (arp_cache_get(ip_addr, mac_addr) == 0);
     }
@@ -169,5 +170,17 @@ void arp_receive_frame(void *frame) {
     case ARP_REPLY:
         arp_cache_add(header->src_ip, header->src_mac);
         break;
+    }
+}
+
+void debug_clear_arp_cache(void) {
+    struct arp_cache_entry *entry =
+        list_next_or_null(&cache->entries, &cache->entries,
+                          struct arp_cache_entry, list);
+    while (entry) {
+        list_remove(&entry->list);
+        kfree(entry);
+        entry = list_next_or_null(&cache->entries, &cache->entries,
+                                  struct arp_cache_entry, list);
     }
 }
