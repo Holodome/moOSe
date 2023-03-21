@@ -112,11 +112,18 @@ static inline u64 bitmap_first_clear(const u64 *bitmap, u64 bit_count) {
 // align up power of 2
 #define align_po2(_val, _align)                                                \
     ({                                                                         \
-        __auto_type __x = (_val);                                              \
-        __auto_type __align = (_align);                                        \
-        __x += __align - 1;                                                    \
-        __x &= ~(__align - 1);                                                 \
-        __x;                                                                   \
+        __auto_type __x0 = (_val);                                             \
+        typeof(__x0) __align0 = (_align);                                      \
+        __x0 += __align0 - 1;                                                  \
+        __x0 &= ~(__align0 - 1);                                               \
+        __x0;                                                                  \
+    })
+
+#define align_po2_safe(_val, _align)                                           \
+    ({                                                                         \
+        __auto_type __x1 = (_val);                                             \
+        typeof(__x1) __align1 = (_align);                                      \
+        __x1 == 0 ? __align1 : align_po2(__x1, __align1);                    \
     })
 
 static inline size_t bits_to_bitmap(size_t bits) {

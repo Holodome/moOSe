@@ -393,13 +393,20 @@ static blkcnt_t ext2_get_disk_blk(struct ext2_inode *inode,
 static size_t ext2_read_in_block(struct ext2_inode *inode,
                                  struct superblock *sb, off_t cursor, void *buf,
                                  size_t count) {
+    /* kprintf("cursor=%ld count=%zu\n", cursor, count); */
     off_t cursor_in_block = cursor % sb->blk_sz;
     off_t current_block = cursor / sb->blk_sz;
+    /* kprintf("block_end %ld\n", __block_end(sb, cursor)); */
     size_t to_read = __block_end(sb, cursor) - cursor;
-    if (to_read > count) to_read = count - cursor;
+    /* kprintf("to read %zu\n", to_read); */
+    if (to_read > count) to_read = count;
+    /* kprintf("to read %zu\n", to_read); */
 
-    off_t phys_offset =
-        ext2_get_disk_blk(inode, sb, current_block) * sb->blk_sz;
+    off_t phys_offset = ext2_get_disk_blk(inode, sb, current_block)
+                        << sb->blk_sz_bits;
+    /* kprintf("%u %u %u %u %u\n", inode->i_block[0], inode->i_block[1], */
+    /*         inode->i_block[2], inode->i_block[3], inode->i_block[4]); */
+    /* kprintf("cur block %ld, phys offset %lx\n", current_block, phys_offset); */
     blk_read(sb->dev, phys_offset + cursor_in_block, buf, to_read);
     return to_read;
 }
@@ -496,7 +503,7 @@ static struct dentry *ext2_readdir(struct file *dir) {
     ext2_get_raw_inode(sb, inode->ino, &ei);
     struct ext2_dentry ed;
     size_t read = ext2_read_in_block(&ei, sb, dir->offset, &ed, sizeof(ed));
-    assert(read != sizeof(ed)); // Directory does not span block
+    assert(read == sizeof(ed)); // Directory does not span block
     if (ed.inode == 0) return ERR_PTR(-ENOENT);
     print_dentry(&ed);
 
@@ -508,7 +515,7 @@ static struct dentry *ext2_readdir(struct file *dir) {
     }
     char name[name_len + 1];
     read =
-        ext2_read_in_block(&ei, sb, dir->offset + sizeof(ed), &name, name_len);
+        ext2_read_in_block(&ei, sb, dir->offset + sizeof(ed), name, name_len);
     expects(read == name_len);
     name[name_len] = '\0';
 

@@ -32,13 +32,13 @@ static ssize_t buffered_read(struct blk_device *dev, void *dst_, size_t size) {
     struct blk_device_buffered *buf = dev->private;
     char *dst = dst_;
     while (size) {
-        u32 lba = buf->pos / buf->dev->block_size;
-        u32 offset = buf->pos % buf->dev->block_size;
+        u32 lba = buf->pos / dev->block_size;
+        u32 offset = buf->pos % dev->block_size;
 
-        if (buf->current_block != lba) {
-            if (buf->dev->read_block(dev, lba, buf->buffer)) { return -EIO; }
-            buf->current_block = lba;
-        }
+        /* if (buf->current_block != lba) { */
+        if (dev->read_block(dev, lba, buf->buffer)) { return -EIO; }
+        /* buf->current_block = lba; */
+        /* } */
 
         size_t to_copy = size;
         if (offset + to_copy > 512) to_copy = 512 - offset;
@@ -58,23 +58,23 @@ static ssize_t buffered_write(struct blk_device *dev, const void *src_,
     const char *src = src_;
     size_t total_wrote = 0;
     while (size) {
-        u32 lba = buf->pos / buf->dev->block_size;
-        u32 offset = buf->pos % buf->dev->block_size;
+        u32 lba = buf->pos / dev->block_size;
+        u32 offset = buf->pos % dev->block_size;
         if (buf->current_block != lba) {
-            if (buf->dev->read_block(dev, lba, buf->buffer)) { return -EIO; }
+            if (dev->read_block(dev, lba, buf->buffer)) { return -EIO; }
             buf->current_block = lba;
         }
 
         size_t to_copy = size;
-        if (offset + to_copy > buf->dev->block_size)
-            to_copy = buf->dev->block_size - offset;
+        if (offset + to_copy > dev->block_size)
+            to_copy = dev->block_size - offset;
 
         memcpy(buf->buffer + offset, src, to_copy);
         buf->pos += to_copy;
         size -= to_copy;
         total_wrote += to_copy;
 
-        if (buf->dev->write_block(dev, lba, buf->buffer)) { return -EIO; }
+        if (dev->write_block(dev, lba, buf->buffer)) { return -EIO; }
     }
 
     return total_wrote;

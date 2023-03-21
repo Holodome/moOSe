@@ -131,8 +131,9 @@ struct ext2_dentry {
     u16 rec_len;
     u8 name_len;
     u8 file_type;
-    char name[];
 };
+
+static_assert(sizeof(struct ext2_dentry) == 8);
 
 struct ext2_fs {
     struct ext2_sb sb;

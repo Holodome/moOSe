@@ -36,7 +36,7 @@ static int partition_write_block(struct blk_device *dev __unused, size_t idx,
 
 static int partition1_read_block(struct blk_device *dev __unused, size_t idx,
                                  void *buf) {
-    kprintf("reading %zu (%zx)\n", idx, (idx + partition1_start) * 512);
+    /* kprintf("reading %zu (%zx)\n", idx, (idx + partition1_start) * 512); */
     return ata_read_block(idx + partition1_start, buf);
 }
 

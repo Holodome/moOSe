@@ -15,6 +15,7 @@ void idle_task(void) {
     print_blk_device(disk_part1_dev);
     struct superblock *sb = vfs_mount(disk_part1_dev, ext2_mount);
     struct dentry *root_dentry = sb->root;
+    print_inode(root_dentry->inode);
     struct file *root_file = vfs_open_dentry(root_dentry);
     for (;;) {
         struct dentry *read = vfs_readdir(root_file);
