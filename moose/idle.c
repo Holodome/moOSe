@@ -47,6 +47,8 @@ void idle_task(void) {
     kprintf("dns ");
     debug_print_mac_addr(mac_addr);
 
+    icmp_send_echo_request(dns_ip_addr);
+
     launch_task(other_task);
 
     for (;;)

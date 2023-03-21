@@ -17,7 +17,7 @@ extern u8 local_net_ip_addr[4];
 extern u8 broadcast_mac_addr[6];
 
 int init_inet(void);
-u16 checksum(void *data, size_t size);
+u16 inet_checksum(void *data, u16 size);
 void debug_print_frame_hexdump(u8 *frame, size_t size);
 void debug_print_mac_addr(u8 *mac_addr);
 void debug_print_ip_addr(u8 *ip_addr);

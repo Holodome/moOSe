@@ -7,6 +7,7 @@
 #include <endian.h>
 #include <assert.h>
 #include <mm/kmem.h>
+#include <kstdio.h>
 
 static int is_local_ip_addr(u8 *ip_addr) {
     expects(ip_addr != NULL);
@@ -37,8 +38,10 @@ void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
     memset(frame, 0, sizeof(struct ipv4_header));
 
     struct ipv4_header *header = (struct ipv4_header *)frame;
-    header->version_ihl |= 4;
-    header->version_ihl |= (5 << IHL_BITS);
+    // ihl
+    header->version_ihl |= 5;
+    // version
+    header->version_ihl |= (4 << IHL_BITS);
     header->dscp_ecn = 0;
     header->total_len = htobe16(sizeof(struct ipv4_header) + size);
     header->id = 0;
@@ -47,7 +50,8 @@ void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
     memcpy(header->src_ip, nic.ip_addr, 4);
     memcpy(header->dst_ip, ip_addr, 4);
     header->checksum = 0;
-    header->checksum = checksum(header, sizeof(struct ipv4_header));
+    header->checksum = inet_checksum(header, sizeof(struct ipv4_header));
+    header->checksum = htobe16(header->checksum);
 
     memcpy(header + 1, payload, size);
     u16 frame_size = size + sizeof(struct ipv4_header);
@@ -60,8 +64,8 @@ void ipv4_receive_frame(void *frame) {
     header->total_len = be16toh(header->total_len);
     header->id = be16toh(header->id);
     header->flags_fragment = be16toh(header->flags_fragment);
-    u8 version = header->version_ihl & 0xf;
-    u8 ihl = header->version_ihl >> IHL_BITS;
+    u8 ihl = header->version_ihl & 0xf;
+    u8 version = header->version_ihl >> IHL_BITS;
 
     if (version == IPV4_VERSION) {
         void *payload = frame + ihl * 4;

@@ -5,6 +5,7 @@
 #include <mm/kmem.h>
 #include <net/netdaemon.h>
 #include <net/arp.h>
+#include <endian.h>
 
 struct nic nic;
 
@@ -33,21 +34,21 @@ int init_inet(void) {
     return 0;
 }
 
-u16 checksum(void *data, size_t size) {
+u16 inet_checksum(void *data, u16 size) {
     expects(data != NULL);
 
-    u64 sum = 0;
+    u16 *ptr = data;
+    u32 sum = 0;
 
     while(size > 1)  {
-        sum += *(u16 *)data++;
+        sum += htobe16(*ptr++);
         size -= 2;
     }
 
     if (size > 0)
-        sum += *(u8 *)data;
+        sum += htobe16(*(u8 *)data << 16);
 
-    while (sum >> 16)
-        sum = (sum & 0xffff) + (sum >> 16);
+    sum = (sum & 0xffff) + (sum >> 16);
 
     return ~sum;
 }
