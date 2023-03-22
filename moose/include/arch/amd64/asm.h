@@ -12,7 +12,7 @@ __attribute__((noreturn)) static inline void hlt(void) {
 static inline void cli(void) { asm volatile("cli" : : : "memory"); }
 static inline void sti(void) { asm volatile("sti" : : : "memory"); }
 static inline void pause(void) { asm volatile("pause"); }
-static inline void nop(void) { asm volatile("nop"); }
+static inline void nop(void) { asm volatile("nop" : : : "memory"); }
 
 static inline u64 read_cr0(void) {
     u64 result;

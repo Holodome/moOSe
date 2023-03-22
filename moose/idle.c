@@ -1,16 +1,19 @@
+#include <arch/cpu.h>
+#include <device.h>
 #include <disk.h>
+#include <drivers/pci.h>
+#include <fs/fat.h>
 #include <idle.h>
 #include <kstdio.h>
 #include <kthread.h>
-#include <shell.h>
-#include <arch/cpu.h>
-#include <drivers/pci.h>
-#include <net/inet.h>
-#include <net/icmp.h>
 #include <net/arp.h>
-#include <net/udp.h>
+#include <net/icmp.h>
+#include <net/inet.h>
 #include <net/ip.h>
 #include <net/netdaemon.h>
+#include <net/udp.h>
+#include <panic.h>
+#include <shell.h>
 
 __attribute__((noreturn)) void other_task(void) {
     for (;;)
@@ -34,12 +37,15 @@ void idle_task(void) {
     }
 
     u8 mac_addr[6];
-    if (arp_get_mac(gateway_ip_addr, mac_addr)) {
-        kprintf("can't find mac for this ip address\n");
-        halt_cpu();
+    for (int i = 0; i < 5; i++) {
+        if (arp_get_mac(gateway_ip_addr, mac_addr)) {
+            kprintf("can't find mac for this ip address\n");
+            halt_cpu();
+        }
+        kprintf("gateway ");
+        debug_print_mac_addr(mac_addr);
+        debug_clear_arp_cache();
     }
-    kprintf("gateway ");
-    debug_print_mac_addr(mac_addr);
 
     if (arp_get_mac(dns_ip_addr, mac_addr)) {
         kprintf("can't find mac for this ip address\n");
@@ -49,7 +55,8 @@ void idle_task(void) {
     debug_print_mac_addr(mac_addr);
 
     icmp_send_echo_request(dns_ip_addr);
-    char *message = "Hello world!\n";
+
+    char *message = "Hello world!";
     udp_send_frame(gateway_ip_addr, 80, 80, message, strlen(message));
 
     launch_task(other_task);

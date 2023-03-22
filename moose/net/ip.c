@@ -4,15 +4,14 @@
 #include <net/udp.h>
 #include <net/inet.h>
 #include <net/icmp.h>
-#include <net/common.h>
 #include <endian.h>
 #include <assert.h>
 #include <mm/kmem.h>
+#include <mm/kmalloc.h>
 #include <kstdio.h>
+#include <errno.h>
 
 static int is_local_ip_addr(u8 *ip_addr) {
-    expects(ip_addr != NULL);
-
     u8 temp[4];
     memcpy(temp, ip_addr, 4);
     for (u8 i = 0; i < 4; i++)
@@ -21,9 +20,7 @@ static int is_local_ip_addr(u8 *ip_addr) {
     return memcmp(temp, local_net_ip_addr, 4) == 0;
 }
 
-void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
-    expects(ip_addr != NULL);
-    expects(payload != NULL);
+int ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, size_t size) {
     expects(size <= ETH_PAYLOAD_MAX_SIZE);
 
     u8 dst_mac[6];
@@ -33,18 +30,20 @@ void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
     } else {
         found = (arp_get_mac(gateway_ip_addr, dst_mac) == 0);
     }
-    if (!found) return;
+    if (!found) return -1;
 
-    u8 frame[ETH_PAYLOAD_MAX_SIZE];
-    memset(frame, 0, sizeof(struct ipv4_header));
+    size_t frame_size = sizeof(struct ipv4_header) + size;
+    void *frame = kzalloc(frame_size);
+    if (frame == NULL)
+        return -ENOMEM;
 
-    struct ipv4_header *header = (struct ipv4_header *)frame;
+    struct ipv4_header *header = frame;
     // ihl
     header->version_ihl |= 5;
     // version
     header->version_ihl |= (4 << IHL_BITS);
     header->dscp_ecn = 0;
-    header->total_len = htobe16(sizeof(struct ipv4_header) + size);
+    header->total_len = htobe16(frame_size);
     header->id = 0;
     header->ttl = 64;
     header->protocol = protocol;
@@ -55,13 +54,18 @@ void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size) {
     header->checksum = htobe16(header->checksum);
 
     memcpy(header + 1, payload, size);
-    u16 frame_size = size + sizeof(struct ipv4_header);
 
-    eth_send_frame(dst_mac, ETH_TYPE_IPV4, frame, frame_size);
+    int err;
+    if ((err = eth_send_frame(dst_mac, ETH_TYPE_IPV4, frame, frame_size)))
+        return err;
+
+    kfree(frame);
+    return 0;
 }
 
 void ipv4_receive_frame(void *frame) {
-    struct ipv4_header *header = (struct ipv4_header *)frame;
+    struct ipv4_header *header = frame;
+
     header->total_len = be16toh(header->total_len);
     header->id = be16toh(header->id);
     header->flags_fragment = be16toh(header->flags_fragment);
@@ -80,6 +84,8 @@ void ipv4_receive_frame(void *frame) {
         case IP_PROTOCOL_UDP:
             udp_receive_frame(payload);
             break;
+        default:
+            kprintf("ip protocol %d is unsupported\n", header->protocol);
         }
     }
 }

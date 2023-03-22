@@ -32,6 +32,6 @@ struct ipv4_header {
     u8 dst_ip[4];
 } __attribute__((packed));
 
-void ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, u16 size);
+int ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, size_t size);
 void ipv4_receive_frame(void *frame);
 void ipv6_receive_frame(void *frame);

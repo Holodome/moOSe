@@ -2,19 +2,21 @@
 #include <net/arp.h>
 #include <net/inet.h>
 #include <net/ip.h>
-#include <net/common.h>
 #include <mm/kmem.h>
 #include <endian.h>
 #include <assert.h>
 #include <kstdio.h>
+#include <errno.h>
+#include <mm/kmalloc.h>
 
-void eth_send_frame(u8 *dst_mac_addr, u16 eth_type, void *payload, u16 size) {
-    expects(dst_mac_addr != NULL);
-    expects(payload != NULL);
+int eth_send_frame(u8 *dst_mac_addr, u16 eth_type, void *payload, size_t size) {
     expects(size <= ETH_PAYLOAD_MAX_SIZE);
 
-    u8 frame[ETH_FRAME_MAX_SIZE];
-    struct eth_header *header = (struct eth_header*)frame;
+    void *frame = kmalloc(ETH_FRAME_MAX_SIZE);
+    if (frame == NULL)
+        return -ENOMEM;
+
+    struct eth_header *header = frame;
 
     memcpy(header->dst_mac, dst_mac_addr, sizeof(header->dst_mac));
     memcpy(header->src_mac, nic.mac_addr, sizeof(header->src_mac));
@@ -29,21 +31,22 @@ void eth_send_frame(u8 *dst_mac_addr, u16 eth_type, void *payload, u16 size) {
         frame_size = sizeof(*header) + ETH_PAYLOAD_MIN_SIZE;
     }
 
-    debug_print_frame_hexdump(frame, frame_size);
+//    debug_print_frame_hexdump(frame, frame_size);
 
     nic.send_frame(frame, frame_size);
+
+    kfree(frame);
+    return 0;
 }
 
-void eth_receive_frame(void *frame, u16 size) {
-    expects(frame != NULL);
+void eth_receive_frame(void *frame, size_t size) {
     expects(size <= ETH_FRAME_MAX_SIZE);
 
-    debug_print_frame_hexdump(frame, size);
+//    debug_print_frame_hexdump(frame, size);
 
-    struct eth_header *header = (struct eth_header *)frame;
+    struct eth_header *header = frame;
     header->eth_type = be16toh(header->eth_type);
     void *payload = header + 1;
-
     switch (header->eth_type) {
     case ETH_TYPE_ARP:
         arp_receive_frame(payload); break;

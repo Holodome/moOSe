@@ -868,8 +868,11 @@ ssize_t pfatfs_write(pfatfs *fs, pfatfs_file *file, const void *buffer,
     PFATFS_TRY(pfatfs__read_dirent(fs, file->dirent_loc, &dirent));
     if (dirent.file_size < file->offset) {
         dirent.file_size = file->offset;
+        file->size = file->offset;
+        kprintf("here %u\n", file->offset);
         PFATFS_TRY(pfatfs__write_dirent(fs, file->dirent_loc, &dirent));
     }
+    kprintf("here %u %u\n", file->size, file->offset);
 
     return cursor - (const char *)buffer;
 }

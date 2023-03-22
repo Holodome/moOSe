@@ -17,26 +17,25 @@ u8 local_net_mask[4] =      {255, 255, 255, 0};
 u8 broadcast_mac_addr[6] =  {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 int init_inet(void) {
-    if (init_rtl8139(nic.mac_addr))
-        return -1;
+    int rc;
+    if ((rc = init_rtl8139(nic.mac_addr)))
+        return rc;
 
     memcpy(nic.ip_addr, nic_ip_addr, 4);
     debug_print_mac_addr(nic.mac_addr);
 
     nic.send_frame = rtl8139_send;
 
-    if (init_arp_cache())
-        return -1;
+    if ((rc = init_arp_cache()))
+        return rc;
 
-//    if (init_net_daemon())
-//        return -1;
+    if ((rc = init_net_daemon()))
+        return rc;
 
     return 0;
 }
 
-u16 inet_checksum(void *data, u16 size) {
-    expects(data != NULL);
-
+u16 inet_checksum(void *data, size_t size) {
     u16 *ptr = data;
     u32 sum = 0;
 
@@ -54,7 +53,6 @@ u16 inet_checksum(void *data, u16 size) {
 }
 
 void debug_print_mac_addr(u8 *mac_addr) {
-    expects(mac_addr != NULL);
     kprintf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
             mac_addr[0], mac_addr[1],
             mac_addr[2], mac_addr[3],
@@ -62,14 +60,13 @@ void debug_print_mac_addr(u8 *mac_addr) {
 }
 
 void debug_print_ip_addr(u8 *ip_addr) {
-    expects(ip_addr != NULL);
     kprintf("IP: %d.%d.%d.%d\n",
             ip_addr[0], ip_addr[1],
             ip_addr[2], ip_addr[3]);
 }
 
-void debug_print_frame_hexdump(u8 *frame, size_t size) {
-    expects(frame != NULL);
+void debug_print_frame_hexdump(void *frame, size_t size) {
+    u8 *data = frame;
     size_t dump_lines = size / 16;
     if (size % 16 != 0)
         dump_lines++;
@@ -77,7 +74,7 @@ void debug_print_frame_hexdump(u8 *frame, size_t size) {
     for (size_t i = 0; i < dump_lines; i++) {
         kprintf("%06lx ", i * 16);
         for (u8 j = 0; j < 16; j++)
-            kprintf("%02x ", frame[i * 16 + j]);
+            kprintf("%02x ", data[i * 16 + j]);
         kprintf("\n");
     }
 }

@@ -5,6 +5,7 @@
 #include <mm/kmalloc.h>
 #include <mm/resource.h>
 #include <assert.h>
+#include <errno.h>
 
 #define PCI_CONFIG_ADDRESS 0xcf8
 #define PCI_CONFIG_DATA    0xcfc
@@ -202,7 +203,7 @@ int enable_pci_device(struct pci_device *device) {
         }
 
         if (res == NULL)
-            return -1;
+            return -EIO;
 
         device->resources[res_idx++] = res;
     }
@@ -212,8 +213,6 @@ int enable_pci_device(struct pci_device *device) {
 
 static struct pci_device *find_pci_device(struct pci_bus *bus, u16 vendor_id,
                                           u16 device_id) {
-    expects(bus != NULL);
-
     struct pci_device *device;
     list_for_each_entry(device, &bus->devices, list) {
         if (device->vendor == vendor_id && device->device == device_id) {
@@ -233,7 +232,6 @@ static struct pci_device *find_pci_device(struct pci_bus *bus, u16 vendor_id,
 }
 
 struct pci_device *get_pci_device(u16 vendor, u16 device) {
-    expects(root_bus != NULL);
     return find_pci_device(root_bus, vendor, device);
 }
 
@@ -245,7 +243,6 @@ static void debug_print_device(struct pci_device *device) {
 }
 
 void debug_print_bus(struct pci_bus *bus) {
-    expects(bus != NULL);
     kprintf("BUS: bus=%d\n", bus->index);
 
     struct pci_device *device;

@@ -3,14 +3,17 @@
 #include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
 #include <net/netdaemon.h>
-#include <net/common.h>
+#include <net/inet.h>
 #include <net/eth.h>
 #include <sched/spinlock.h>
 #include <kstdio.h>
 #include <assert.h>
 #include <param.h>
+#include <bitops.h>
+#include <errno.h>
+#include <mm/kmalloc.h>
 
-#define RTL_REG_MAC0            0x0
+#define RTL_REG_MAC0            0x00
 #define TRL_REG_TX_STATUS       0x10
 #define RTL_REG_TX_ADDR         0x20
 #define RTL_REG_RX_BUFFER       0x30
@@ -22,10 +25,10 @@
 #define RTL_REG_RX_CONFIG       0x44
 #define RTL_REG_CONFIG1         0x52
 
-#define RTL_ROK (1 << 0)
-#define RTL_RER (1 << 1)
-#define RTL_TOK (1 << 2)
-#define RTL_TER (1 << 3)
+#define RTL_ROK BIT(0)
+#define RTL_RER BIT(1)
+#define RTL_TOK BIT(2)
+#define RTL_TER BIT(3)
 
 #define RX_BUFFER_SIZE (8192 + 16)
 // 1522 - 4 bytes for crc
@@ -43,7 +46,8 @@ static struct {
 } rtl8139;
 
 static void rtl8139_receive(void) {
-    u8 frame[ETH_FRAME_MAX_SIZE];
+    void *frame = kmalloc(ETH_FRAME_MAX_SIZE);
+
     // check that rx buffer is not empty
     while ((port_in8(rtl8139.io_addr + RTL_REG_CMD) & 0x1) != 1) {
         u8 *rx_ptr = rtl8139.rx_buffer + rtl8139.rx_offset;
@@ -58,14 +62,15 @@ static void rtl8139_receive(void) {
         }
 
         // first 4 bytes is rtl header
-//        net_daemon_add_frame(frame + 4, frame_size - 4);
-        eth_receive_frame(frame + 4, frame_size - 4);
+        net_daemon_add_frame(frame + 4, frame_size - 4);
 
         rtl8139.rx_offset = (rtl8139.rx_offset + frame_size + 4 + 3) & ~0x3;
         rtl8139.rx_offset %= RX_BUFFER_SIZE;
 
         port_out16(rtl8139.io_addr + RTL_REG_CAPR, rtl8139.rx_offset - 0x10);
     }
+
+    kfree(frame);
 }
 
 static void rtl8139_handler(struct registers_state *regs
@@ -103,17 +108,16 @@ static void read_mac_addr(u8 *mac_addr) {
 }
 
 int init_rtl8139(u8 *mac_addr) {
-    expects(mac_addr != NULL);
-
     struct pci_device *dev = get_pci_device(RTL8139_VENDOR_ID, RTL8139_DEVICE_ID);
     if (dev == NULL) {
         kprintf("rtl8139 is not connected to pci bus\n");
-        return -1;
+        return -EIO;
     }
 
-    if (enable_pci_device(dev)) {
+    int rc;
+    if ((rc = enable_pci_device(dev))) {
         kprintf("failed to enable rtl8139\n");
-        return -1;
+        return rc;
     }
 
     spin_lock_init(&rtl8139.lock);
@@ -164,8 +168,7 @@ int init_rtl8139(u8 *mac_addr) {
     return 0;
 }
 
-void rtl8139_send(void *frame, u16 size) {
-    expects(frame != NULL);
+void rtl8139_send(void *frame, size_t size) {
     expects(size <= ETH_FRAME_MAX_SIZE);
 
     u64 flags;

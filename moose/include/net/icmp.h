@@ -10,7 +10,7 @@ struct icmp_header {
     u8 code;
     u16 checksum;
     u32 rest;
-};
+} __attribute__((packed));
 
-void icmp_send_echo_request(u8 *ip_addr);
-void icmp_receive_frame(u8 *ip_addr, void *frame, u16 size);
+int icmp_send_echo_request(u8 *ip_addr);
+void icmp_receive_frame(u8 *ip_addr, void *frame, size_t size);
