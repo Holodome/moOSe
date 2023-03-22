@@ -3,6 +3,7 @@
 #include <drivers/disk.h>
 #include <idle.h>
 #include <shell.h>
+#include <string.h>
 
 #include <fs/ext2.h>
 #include <fs/vfs.h>
@@ -21,7 +22,21 @@ void idle_task(void) {
         struct dentry *read = vfs_readdir(root_file);
         if (PTR_ERR(read) == -ENOENT) break;
 
-        kprintf("file %s\n", read->name);
+        struct inode *inode = read->inode;
+        /* print_inode(inode); */
+        if (S_ISREG(inode->mode)) {
+            kprintf("file %s\n", read->name);
+        } else if (S_ISDIR(inode->mode) && strcmp(read->name, ".") &&
+                   strcmp(read->name, "..")) {
+
+            struct file *dir_file = vfs_open_dentry(read);
+            kprintf("dir %s\n", read->name);
+            for (;;) {
+                struct dentry *read1 = vfs_readdir(dir_file);
+                if (PTR_ERR(read1) == -ENOENT) break;
+                kprintf("in dir %s\n", read1->name);
+            }
+        }
     }
 
     kprintf("finished");

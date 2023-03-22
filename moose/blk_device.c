@@ -16,13 +16,12 @@ static off_t buffered_lseek(struct blk_device *dev, off_t off, int whence) {
     case SEEK_CUR:
         buf->pos += off;
         break;
-    case SEEK_END:
-        return -1;
     case SEEK_SET:
         buf->pos = off;
         break;
+    case SEEK_END:
     default:
-        return -1;
+        return -EINVAL;
     }
 
     return 0;
@@ -35,10 +34,10 @@ static ssize_t buffered_read(struct blk_device *dev, void *dst_, size_t size) {
         u32 lba = buf->pos / dev->block_size;
         u32 offset = buf->pos % dev->block_size;
 
-        /* if (buf->current_block != lba) { */
-        if (dev->read_block(dev, lba, buf->buffer)) { return -EIO; }
-        /* buf->current_block = lba; */
-        /* } */
+        if (buf->current_block != lba) {
+            if (dev->read_block(dev, lba, buf->buffer)) return -EIO;
+            buf->current_block = lba;
+        }
 
         size_t to_copy = size;
         if (offset + to_copy > 512) to_copy = 512 - offset;
@@ -61,7 +60,7 @@ static ssize_t buffered_write(struct blk_device *dev, const void *src_,
         u32 lba = buf->pos / dev->block_size;
         u32 offset = buf->pos % dev->block_size;
         if (buf->current_block != lba) {
-            if (dev->read_block(dev, lba, buf->buffer)) { return -EIO; }
+            if (dev->read_block(dev, lba, buf->buffer)) return -EIO;
             buf->current_block = lba;
         }
 
@@ -74,7 +73,7 @@ static ssize_t buffered_write(struct blk_device *dev, const void *src_,
         size -= to_copy;
         total_wrote += to_copy;
 
-        if (dev->write_block(dev, lba, buf->buffer)) { return -EIO; }
+        if (dev->write_block(dev, lba, buf->buffer)) return -EIO;
     }
 
     return total_wrote;
