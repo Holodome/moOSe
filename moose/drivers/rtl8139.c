@@ -46,7 +46,7 @@ static struct {
     spinlock_t lock;
 } rtl8139;
 
-static void rtl8139_receive(void) {
+__attribute__((used)) static void rtl8139_receive(void) {
     void *frame = kmalloc(ETH_FRAME_MAX_SIZE);
 
     // check that rx buffer is not empty
@@ -87,7 +87,7 @@ static void rtl8139_handler(struct registers_state *regs
     }
 
     if (isr & RTL_ROK) {
-        rtl8139_receive();
+//        rtl8139_receive();
         kprintf("rtl8139 frame was recieved\n");
     }
 

@@ -27,13 +27,14 @@ struct daemon_queue {
 static struct daemon_queue *queue;
 
 __attribute__((noreturn)) static void net_daemon_task(void) {
+    kprintf("daemon task start\n");
     u64 flags;
     for (;;) {
         spin_lock_irqsave(&queue->lock, flags);
         for (int i = 0; i < QUEUE_SIZE; i++) {
             struct queue_entry *entry = &queue->entries[i];
             if (!entry->is_free) {
-                eth_receive_frame(entry->buffer, entry->size);
+                kprintf("%s\n", entry->buffer);
                 entry->is_free = 1;
             }
         }
@@ -57,6 +58,12 @@ int init_net_daemon(void) {
     }
 
     return 0;
+}
+
+void print_queue(void) {
+    for (size_t i = 0; i < QUEUE_SIZE; i++)
+        kprintf("%d ", queue->entries[i].is_free);
+    kprintf("\n");
 }
 
 int net_daemon_add_frame(void *frame, size_t size) {
