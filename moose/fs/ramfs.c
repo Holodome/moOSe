@@ -55,6 +55,8 @@ static void ramfs_free_inode(struct inode *inode) {
 
 static struct ramfs_block *ramfs_find_block(struct ramfs_inode *ri,
                                             off_t cursor, off_t *offset) {
+    // TODO: We can optimize this using backwards iteration if block index is
+    // closer to file end
     size_t block_idx = cursor >> RAMFS_BLOCK_SIZE_BITS;
     if (block_idx >= ri->block_count) return NULL;
 
@@ -69,7 +71,7 @@ static struct ramfs_block *ramfs_find_block(struct ramfs_inode *ri,
 static struct ramfs_block *ramfs_append_block(struct ramfs *fs,
                                               struct ramfs_inode *ri) {
     struct ramfs_block *new_block = ramfs_get_empty_block(fs);
-    if (new_block == NULL) return ERR_PTR(-ENOMEM);
+    if (new_block == NULL) return NULL;
 
     list_add_tail(&new_block->list, &ri->block_list);
     return new_block;
@@ -81,7 +83,6 @@ ramfs_find_or_create_block(struct inode *inode, off_t cursor, off_t *offset) {
     struct superblock *sb = i_sb(inode);
     struct ramfs *fs = sb_ram(sb);
     size_t block_idx = cursor >> RAMFS_BLOCK_SIZE_BITS;
-    if (block_idx >= ri->block_count) return NULL;
 
     struct ramfs_block *block =
         list_first_entry(&ri->block_list, struct ramfs_block, list);
@@ -91,7 +92,7 @@ ramfs_find_or_create_block(struct inode *inode, off_t cursor, off_t *offset) {
     if (block_idx && !block) {
         while (block_idx) {
             block = ramfs_append_block(fs, ri);
-            if (IS_PTR_ERR(block)) return block;
+            if (!block) return NULL;
         }
     }
     *offset = cursor & (RAMFS_BLOCK_SIZE - 1);
@@ -107,12 +108,12 @@ static ssize_t ramfs_read(struct file *filp, void *buf, size_t count) {
     struct ramfs_block *block =
         ramfs_find_block(ri, filp->offset, &in_block_offset);
 
+    if (filp->offset + count > inode->size) count = inode->size - filp->offset;
+
     void *cursor = buf;
     while (count != 0 && block) {
         off_t to_read = __block_end(sb, filp->offset) - filp->offset;
         if (to_read > count) to_read = count;
-        if (filp->offset + to_read > inode->size)
-            to_read = inode->size - filp->offset;
 
         memcpy(cursor, block->data + in_block_offset, to_read);
         in_block_offset = 0;
@@ -132,6 +133,7 @@ static ssize_t ramfs_write(struct file *filp, const void *buf, size_t count) {
     off_t in_block_offset;
     struct ramfs_block *block =
         ramfs_find_or_create_block(inode, filp->offset, &in_block_offset);
+    if (!block) return -ENOMEM;
 
     const void *cursor = buf;
     while (count != 0 && block) {
@@ -145,11 +147,17 @@ static ssize_t ramfs_write(struct file *filp, const void *buf, size_t count) {
         block = list_next_entry_or_null(block, &ri->block_list, list);
         if (block == NULL) {
             block = ramfs_append_block(fs, ri);
-            if (IS_PTR_ERR(block)) return PTR_ERR(block);
+            if (!block) return -ENOMEM;
         }
     }
+    ssize_t total_wrote = cursor - buf;
+    off_t result_pos = total_wrote + filp->offset;
+    if (result_pos > inode->size) {
+        inode->size = result_pos;
+        ri->block_count = result_pos >> RAMFS_BLOCK_SIZE_BITS;
+    }
 
-    return cursor - buf;
+    return total_wrote;
 }
 
 static const struct sb_ops sb_ops = {.release_sb = ramfs_release_sb};
