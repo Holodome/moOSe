@@ -5,13 +5,6 @@
 #define RAMFS_BLOCK_SIZE 4096
 #define RAMFS_BLOCK_SIZE_BITS 12
 
-static const struct sb_ops sb_ops = {.release_sb = ext2_release_sb};
-static const struct inode_ops inode_ops = {.free = ext2_free_inode};
-static const struct file_ops file_ops = {.lseek = generic_lseek,
-                                         .read = ext2_read,
-                                         .write = ext2_write,
-                                         .readdir = ext2_readdir};
-
 struct ramfs_block {
     struct list_head list;
     size_t idx;
@@ -28,6 +21,38 @@ struct ramfs {
     struct list_head block_freelist;
 };
 
+static struct ramfs *sb_ram(const struct superblock *sb) { return sb->private; }
+static struct ramfs_inode *i_ram(const struct inode *inode) {
+    return inode->private;
+}
+
+static void ramfs_release_sb(struct superblock *sb) {
+    struct ramfs *fs = sb_ram(sb);
+    struct ramfs_block *block, *temp;
+    list_for_each_entry_safe(block, temp, &fs->block_freelist, list) {
+        kfree(block);
+    }
+    kfree(fs);
+}
+
+static void ramfs_free_inode(struct inode *inode) {
+    struct superblock *sb = i_sb(inode);
+    struct ramfs *fs = sb_ram(sb);
+    struct ramfs_inode *ri = i_ram(inode);
+    struct ramfs_block *block, *temp;
+    list_for_each_entry_safe(block, temp, &ri->block_list, list) {
+        list_add(&block->list, &fs->block_freelist);
+    }
+    kfree(ri);
+}
+
+static const struct sb_ops sb_ops = {.release_sb = ramfs_release_sb};
+static const struct inode_ops inode_ops = {.free = ramfs_free_inode};
+static const struct file_ops file_ops = {.lseek = generic_lseek,
+                                         .read = ramfs_read,
+                                         .write = ramfs_write,
+                                         .readdir = ramfs_readdir};
+
 static struct inode *ramfs_create_inode(void) {
     struct inode *inode = alloc_inode();
     if (!inode) return NULL;
@@ -39,6 +64,8 @@ static struct inode *ramfs_create_inode(void) {
     }
     init_list_head(&ri->block_list);
     inode->private = ri;
+    inode->ops = &inode_ops;
+    inode->file_ops = &file_ops;
     return inode;
 }
 

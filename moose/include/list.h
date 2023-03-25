@@ -43,17 +43,34 @@ static __forceinline __nodiscard int list_is_empty(const struct list_head *it) {
     return it->next == it->prev;
 }
 
+#define list_first_entry(_item, _type, _member)                                \
+    list_entry((_item)->next, _type, _member)
+
+#define list_next_entry(_item, _member)                                        \
+    list_entry((_item)->_member.next, typeof(*(_item)), _member)
+
+#define list_entry_is_head(_item, _head, _member) (&(_item)->_member == (_head))
+
 #define list_for_each(_iter, _head)                                            \
     for (struct list_head *_iter = (_head)->next; _iter != _head;              \
          _iter = _iter->next)
 
+#define list_for_each_safe(_iter, _temp, _head)                                \
+    for (struct list_head *_iter = (_head)->next, _temp = _iter->next;         \
+         _iter != _head; _iter = _temp, _temp = (_iter)->next)
+
 #define list_entry(_ptr, _type, _member) container_of(_ptr, _type, _member)
 
 #define list_for_each_entry(_iter, _head, _member)                             \
-    for ((_iter) = list_entry((_head)->next, typeof(*(_iter)), _member);       \
-         &(_iter)->_member != _head;                                           \
-         (_iter) =                                                             \
-             list_entry((_iter)->_member.next, typeof(*(_iter)), _member))
+    for ((_iter) = list_first_entry(_head, typeof(*(_iter)), _member);         \
+         !list_entry_is_head(_iter, _head, _member);                           \
+         (_iter) = list_next_entry(_iter, _member))
+
+#define list_for_each_entry_safe(_iter, _temp, _head, _member)                 \
+    for (_iter = list_first_entry(_head, typeof(*_iter), _member),             \
+        _temp = list_next_entry(_iter, _member);                               \
+         !list_entry_is_head(_iter, _head, _member);                           \
+         _iter = _temp, _temp = list_next_entry(_iter, _member))
 
 #define list_prev_or_null(_ptr, _head, _type, _member)                         \
     ({                                                                         \

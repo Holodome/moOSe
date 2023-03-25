@@ -114,7 +114,7 @@ void vfs_umount(struct superblock *sb) {
     expects(refcount_read(&sb->refcnt) == 0);
     sb->ops->release_sb(sb);
 }
-&
+
 struct inode *alloc_inode(void) {
     struct inode *inode = kzalloc(sizeof(*inode));
     if (!inode) return NULL;

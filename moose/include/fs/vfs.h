@@ -89,6 +89,10 @@ struct dentry {
     struct list_head inode_list;
 };
 
+static __forceinline struct superblock *i_sb(const struct inode *i) {
+    return i->sb;
+}
+
 struct superblock *vfs_mount(struct blk_device *dev,
                              int (*mount)(struct superblock *));
 void vfs_umount(struct superblock *sb);
