@@ -29,7 +29,10 @@ static struct ramfs_inode *i_ram(const struct inode *inode) {
 static struct ramfs_block *ramfs_get_empty_block(struct ramfs *fs) {
     struct ramfs_block *block =
         list_first_or_null(&fs->block_freelist, struct ramfs_block, list);
-    if (!block) block = kmalloc(sizeof(*block));
+    if (!block)
+        block = kmalloc(sizeof(*block));
+    else
+        list_remove(&block->list);
     return block;
 }
 
