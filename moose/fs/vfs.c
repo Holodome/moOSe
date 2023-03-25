@@ -91,10 +91,6 @@ struct dentry *create_root_dentry(void) {
     return entry;
 }
 
-void init_dentry(struct dentry *entry, struct inode *inode) {
-    entry->inode = inode;
-}
-
 struct superblock *vfs_mount(struct blk_device *dev,
                              int (*mount)(struct superblock *)) {
     struct superblock *sb = kzalloc(sizeof(*sb));
@@ -118,7 +114,7 @@ void vfs_umount(struct superblock *sb) {
     expects(refcount_read(&sb->refcnt) == 0);
     sb->ops->release_sb(sb);
 }
-
+&
 struct inode *alloc_inode(void) {
     struct inode *inode = kzalloc(sizeof(*inode));
     if (!inode) return NULL;
@@ -164,6 +160,12 @@ struct file *vfs_open_dentry(struct dentry *entry) {
     filp->ops = entry->inode->file_ops;
 
     return filp;
+}
+
+void init_dentry(struct dentry *entry, struct inode *inode) {
+    refcount_inc(&inode->refcnt);
+    entry->inode = inode;
+    list_add(&entry->inode_list, &inode->dentry_list);
 }
 
 struct dentry *vfs_readdir(struct file *filp) {

@@ -105,6 +105,7 @@ off_t generic_lseek(struct file *filp, off_t offset, int whence);
 struct dentry *create_dentry(struct dentry *parent, const char *str);
 struct dentry *create_root_dentry(void);
 struct inode *alloc_inode(void);
+void init_dentry(struct dentry *entry, struct inode *inode);
 void release_sb(struct superblock *sb);
 void release_inode(struct inode *inode);
 void release_dentry(struct dentry *entry);
