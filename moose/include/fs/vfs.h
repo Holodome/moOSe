@@ -33,7 +33,6 @@ struct superblock {
 
 struct inode_ops {
     void (*free)(struct inode *inode);
-    int (*lookup)(struct inode *inode, struct dentry *dentry);
 };
 
 struct inode {

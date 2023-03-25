@@ -7,6 +7,7 @@
 #include <fs/vfs_impl.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
+#include <string.h>
 
 #define EXT2_DIRECT_BLOCKS 12
 #define EXT2_SB_OFFSET 1024
@@ -253,7 +254,7 @@ static void ext2_get_raw_inode(struct superblock *sb, ino_t ino,
     blk_read(sb->dev, inode_offset, ei, sizeof(*ei));
 }
 
-__used static struct inode *ext2_iget(struct superblock *sb, ino_t ino) {
+static struct inode *ext2_iget(struct superblock *sb, ino_t ino) {
     struct ext2_inode ei;
     ext2_get_raw_inode(sb, ino, &ei);
 
@@ -496,29 +497,48 @@ int ext2_mount(struct superblock *sb) {
     return 0;
 }
 
+// 0 - success
+// 1 - no entries left
+int ext2_read_dentry_at(struct ext2_inode *ei, struct superblock *sb,
+                        off_t *offset, struct ext2_dentry1 *ed) {
+    if (*offset >= ei->i_size) return 1;
+    size_t read =
+        ext2_read_in_block(ei, sb, *offset, ed, sizeof(struct ext2_dentry));
+    if (read != sizeof(struct ext2_dentry)) {
+        kprintf("ext2: directory entry does not span block");
+        return -EIO;
+    }
+    size_t name_len = ed->name_len;
+    if (name_len > EXT2_NAME_LEN) {
+        kprintf("ext2: name length is wrong %zu\n", name_len);
+        return -ENAMETOOLONG;
+    }
+    read = ext2_read_in_block(ei, sb, *offset + sizeof(struct ext2_dentry),
+                              ed->name, ed->name_len);
+    if (read != ed->name_len) {
+        kprintf("ext2: directory entry does not span block");
+        return -EIO;
+    }
+    ed->name[ed->name_len] = '\0';
+    *offset += ed->rec_len;
+    return 0;
+}
+
 static struct dentry *ext2_readdir(struct file *dir) {
     struct inode *inode = dir->dentry->inode;
+    expects(S_ISDIR(inode->mode));
     struct superblock *sb = inode->sb;
     if (dir->offset >= inode->size) return ERR_PTR(-ENOENT);
     struct ext2_inode ei;
     ext2_get_raw_inode(sb, inode->ino, &ei);
-    struct ext2_dentry ed;
-    size_t read = ext2_read_in_block(&ei, sb, dir->offset, &ed, sizeof(ed));
-    assert(read == sizeof(ed)); // Directory does not span block
-    if (ed.inode == 0) return ERR_PTR(-ENOENT);
+    struct ext2_dentry1 ed;
+    // TODO: If read_dentry_at fails with error we should try to read next
+    // directory entry
+    off_t new_offset = dir->offset;
+    int read_result = ext2_read_dentry_at(&ei, sb, &new_offset, &ed);
+    if (read_result) return ERR_PTR(read_result < 0 ? read_result : -ENOENT);
 
-    size_t name_len = ed.name_len;
-    if (name_len > EXT2_NAME_LEN) {
-        kprintf("ext2: name length is wrong %zu\n", name_len);
-        name_len = EXT2_NAME_LEN;
-    }
-    char name[name_len + 1];
-    read =
-        ext2_read_in_block(&ei, sb, dir->offset + sizeof(ed), name, name_len);
-    expects(read == name_len);
-    name[name_len] = '\0';
-
-    struct dentry *dentry = create_dentry(dir->dentry, name);
+    struct dentry *dentry = create_dentry(dir->dentry, ed.name);
     if (!dentry) return ERR_PTR(-ENOMEM);
 
     struct inode *dentry_inode = ext2_iget(sb, ed.inode);
@@ -527,7 +547,7 @@ static struct dentry *ext2_readdir(struct file *dir) {
         return ERR_PTR_RECAST(dentry_inode);
     }
     dentry->inode = dentry_inode;
-    dir->offset += ed.rec_len;
+    dir->offset = new_offset;
 
     return dentry;
 }
