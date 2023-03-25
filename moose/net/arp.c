@@ -5,6 +5,7 @@
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <sched/spinlock.h>
+#include <string.h>
 #include <endian.h>
 #include <kstdio.h>
 #include <errno.h>

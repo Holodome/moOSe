@@ -6,6 +6,7 @@
 #include <net/netdaemon.h>
 #include <net/arp.h>
 #include <endian.h>
+#include <string.h>
 
 struct nic nic;
 

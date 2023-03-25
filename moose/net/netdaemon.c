@@ -3,6 +3,7 @@
 #include <net/eth.h>
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
+#include <string.h>
 #include <kthread.h>
 #include <assert.h>
 #include <errno.h>

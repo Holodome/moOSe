@@ -1,4 +1,4 @@
-#include <arch/amd64/ata.h>
+#include <drivers/ata.h>
 #include <arch/amd64/asm.h>
 
 #define PRIMARY_BUS 0x1f0

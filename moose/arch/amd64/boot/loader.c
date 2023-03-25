@@ -2,12 +2,13 @@
 // But it turns out that definitions for basic types (u32) are the same.
 // The only difference is in the size of pointer, but we can work around that
 // (usize sized types) and it makes no difference
-#include <../arch/amd64/ata.c>
-#include <../device.c>
-#include <../disk.c>
-#include <../errno.c>
-#include <../fs/fat.c>
-#include <../mm/kmalloc.c>
+#include "../../../drivers/ata.c"
+#include "../../../drivers/disk.c"
+#include "../device.c"
+#include "../errno.c"
+#include "../fs/fat.c"
+#include "../mm/kmalloc.c"
+#include "../string.c"
 
 #include <mbr.h>
 

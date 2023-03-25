@@ -3,8 +3,8 @@
 #include <endian.h>
 #include <errno.h>
 #include <fs/fat.h>
-#include <mm/kmem.h>
 #include <kstdio.h>
+#include <string.h>
 
 #define PFATFS_ROOTDIR ((u32)1)
 #define PFATFS_DIRENT_SIZE 32

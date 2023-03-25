@@ -2,9 +2,9 @@
 #include <bitops.h>
 #include <param.h>
 #include <mm/kmalloc.h>
-#include <mm/kmem.h>
 #include <mm/vmalloc.h>
 #include <list.h>
+#include <string.h>
 
 #define INITIAL_HEAP_SIZE (1 << 19)
 #define ALIGNMENT 16

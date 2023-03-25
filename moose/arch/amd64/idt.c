@@ -1,6 +1,7 @@
-#include <arch/amd64/idt.h>
 #include <arch/amd64/asm.h>
+#include <arch/amd64/idt.h>
 #include <kstdio.h>
+#include <panic.h>
 
 // Port address for master PIC
 #define PIC1 0x20
@@ -34,12 +35,11 @@ static void load_idt(void) {
     struct idt_reg idt_reg;
     idt_reg.offset = (u64)&idt[0];
     idt_reg.size = 256 * sizeof(struct idt_entry) - 1;
-    asm volatile("lidt %0\n"
-                 :
-                 : "m"(idt_reg));
+    asm volatile("lidt %0\n" : : "m"(idt_reg));
 }
 
-static void print_registers(const struct registers_state *r) {
+__attribute__((used)) static void
+print_registers(const struct registers_state *r) {
     kprintf("exception_code: %u, isr: %u\n", (unsigned)r->exception_code,
             (unsigned)r->isr_number);
     kprintf("rdi: %#018llx rsi: %#018llx rbp: %#018llx\n", r->rdi, r->rsi,
@@ -96,8 +96,7 @@ static const char *get_exception_name(unsigned exception) {
     static_assert(ARRAY_SIZE(strs) == 32);
 
     const char *result = NULL;
-    if (exception < ARRAY_SIZE(strs))
-        result = strs[exception];
+    if (exception < ARRAY_SIZE(strs)) result = strs[exception];
 
     return result;
 }
@@ -153,8 +152,7 @@ extern void isr14();
 extern void isr15();
 
 static void eoi(u8 irq) {
-    if (irq >= 8 + IRQ_BASE)
-        port_out8(PIC2_CMD, PIC_EOI);
+    if (irq >= 8 + IRQ_BASE) port_out8(PIC2_CMD, PIC_EOI);
 
     port_out8(PIC1_CMD, PIC_EOI);
 }
@@ -162,18 +160,14 @@ static void eoi(u8 irq) {
 void isr_handler(struct registers_state *regs) {
     unsigned no = regs->isr_number;
     if (no < 32) {
-        kprintf("exception %s(%u): %u\n", get_exception_name(no), no,
-                (unsigned)regs->exception_code);
         if (no == EXCEPTION_PAGE_FAULT) {
             kprintf("address: %#018llx\n", read_cr2());
         }
-        print_registers(regs);
-        cli();
-        hlt();
+        _panic("exception %s(%u): %u\n", get_exception_name(no), no,
+               (unsigned)regs->exception_code);
     } else {
         isr_t *isr = isrs[no];
-        if (isr != NULL)
-            isr(regs);
+        if (isr != NULL) isr(regs);
     }
 
     eoi(no);

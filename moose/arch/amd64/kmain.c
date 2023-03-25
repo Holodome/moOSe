@@ -1,5 +1,5 @@
+#include <drivers/keyboard.h>
 #include <arch/amd64/idt.h>
-#include <arch/amd64/keyboard.h>
 #include <arch/amd64/memmap.h>
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
@@ -10,6 +10,7 @@
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
+#include <panic.h>
 #include <types.h>
 
 static void zero_bss(void) {
@@ -23,6 +24,7 @@ static void zero_bss(void) {
 __attribute__((noreturn)) void kmain(void) {
     zero_bss();
     init_kmalloc();
+    /* init_slab_cache(); */
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
@@ -51,24 +53,15 @@ __attribute__((noreturn)) void kmain(void) {
         }
     }
 
-    if (init_phys_mem(ranges, usable_region_count)) {
-        kprintf("failed to initialize physical memory\n");
-        halt_cpu();
-    }
+    if (init_phys_mem(ranges, usable_region_count))
+        panic("failed to initialize physical memory\n");
 
-    if (init_virt_mem(ranges, usable_region_count)) {
-        kprintf("failed to initialize virtual memory\n");
-        halt_cpu();
-    }
+    if (init_virt_mem(ranges, usable_region_count))
+        panic("failed to initialize virtual memory\n");
 
     init_rtc();
+    if (launch_first_task(idle_task)) panic("failed to create idle task\n");
 
-    if (launch_first_task(idle_task)) {
-        kprintf("failed to create idle task\n");
-        halt_cpu();
-    }
-
-    for (;;)
-        halt_cpu();
+    halt_cpu();
 }
 

@@ -90,9 +90,13 @@ static inline u16 htole16(u16 a) {
     return result;
 }
 
-static inline u16 be16toh(u16 a) { return read_be16((u8 *)&a); }
+static inline u16 be16toh(u16 a) {
+    return read_be16((u8 *)&a);
+}
 
-static inline u16 le16toh(u16 a) { return read_le16((u8 *)&a); }
+static inline u16 le16toh(u16 a) {
+    return read_le16((u8 *)&a);
+}
 
 static inline u32 htobe32(u32 a) {
     u32 result;
@@ -106,9 +110,13 @@ static inline u32 htole32(u32 a) {
     return result;
 }
 
-static inline u32 be32toh(u32 a) { return read_be32((u8 *)&a); }
+static inline u32 be32toh(u32 a) {
+    return read_be32((u8 *)&a);
+}
 
-static inline u32 le32toh(u32 a) { return read_le32((u8 *)&a); }
+static inline u32 le32toh(u32 a) {
+    return read_le32((u8 *)&a);
+}
 
 static inline u64 htobe64(u64 a) {
     u64 result;
@@ -122,6 +130,10 @@ static inline u64 htole64(u64 a) {
     return result;
 }
 
-static inline u64 be64toh(u64 a) { return read_be64((u8 *)&a); }
+static inline u64 be64toh(u64 a) {
+    return read_be64((u8 *)&a);
+}
 
-static inline u64 le64toh(u64 a) { return read_le64((u8 *)&a); }
+static inline u64 le64toh(u64 a) {
+    return read_le64((u8 *)&a);
+}

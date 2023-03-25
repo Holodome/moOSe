@@ -1,9 +1,9 @@
 #include <arch/amd64/idt.h>
 #include <arch/amd64/asm.h>
-#include <arch/amd64/keyboard.h>
-#include <arch/amd64/vga.h>
+#include <drivers/keyboard.h>
+#include <drivers/vga.h>
 #include <kstdio.h>
-#include <tty.h>
+#include <drivers/tty.h>
 #include <sched/spinlock.h>
 
 #define PORT 0x60

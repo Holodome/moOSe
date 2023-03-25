@@ -10,6 +10,7 @@
 #include <mm/kmalloc.h>
 #include <kstdio.h>
 #include <errno.h>
+#include <string.h>
 
 static int is_local_ip_addr(u8 *ip_addr) {
     u8 temp[4];

@@ -3,9 +3,8 @@
 #include <arch/amd64/rtc.h>
 #include <arch/cpu.h>
 #include <assert.h>
-#include <mm/kmem.h>
-#include <kstdio.h>
 #include <kthread.h>
+#include <string.h>
 
 #define RATE 8
 #define FREQUENCY (32768 >> (RATE - 1))
@@ -15,8 +14,10 @@ static volatile u64 jiffies;
 static void timer_interrupt(struct registers_state *regs) {
     ++jiffies;
     (void)cmos_read(0x8c);
-    memcpy((void *)&current->regs, regs, sizeof(*regs));
+    if (!current)
+        return;
 
+    memcpy((void *)&current->regs, regs, sizeof(*regs));
     struct task *next_task =
         list_next_or_null(&current->list, &tasks, struct task, list);
     if (!next_task) {

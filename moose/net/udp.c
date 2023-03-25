@@ -3,6 +3,7 @@
 #include <net/ip.h>
 #include <mm/kmem.h>
 #include <mm/kmalloc.h>
+#include <string.h>
 #include <endian.h>
 #include <kstdio.h>
 #include <errno.h>

@@ -3,6 +3,7 @@
 #include <net/inet.h>
 #include <net/ip.h>
 #include <mm/kmem.h>
+#include <string.h>
 #include <endian.h>
 #include <assert.h>
 #include <kstdio.h>
