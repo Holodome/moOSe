@@ -92,6 +92,9 @@ struct dentry {
 static __forceinline struct superblock *i_sb(const struct inode *i) {
     return i->sb;
 }
+static __forceinline struct inode *f_i(const struct file *filp) {
+    return filp->dentry->inode;
+}
 
 struct superblock *vfs_mount(struct blk_device *dev,
                              int (*mount)(struct superblock *));
@@ -115,3 +118,8 @@ void release_inode(struct inode *inode);
 void release_dentry(struct dentry *entry);
 
 void print_inode(const struct inode *inode);
+
+static __forceinline off_t __block_end(struct superblock *sb, off_t cursor) {
+    cursor += (sb->blk_sz - cursor % sb->blk_sz);
+    return cursor;
+}

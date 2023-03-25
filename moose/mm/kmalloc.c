@@ -145,16 +145,16 @@ void kfree(void *mem) {
     struct subheap *subheap = find_block_heap(block);
     assert(subheap);
 
-    struct mem_block *left = list_prev_or_null(&block->list, &subheap->blocks,
-                                               struct mem_block, list);
+    struct mem_block *left =
+        list_prev_entry_or_null(block, &subheap->blocks, list);
     if (left && !left->used) {
         left->size += block->size + sizeof(struct mem_block);
         list_remove(&block->list);
         block = left;
     }
 
-    struct mem_block *right = list_next_or_null(&block->list, &subheap->blocks,
-                                                struct mem_block, list);
+    struct mem_block *right =
+        list_next_entry_or_null(block, &subheap->blocks, list);
     if (right && !right->used) {
         block->size += right->size + sizeof(struct mem_block);
         list_remove(&right->list);

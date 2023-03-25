@@ -4,7 +4,6 @@
 #include <bitops.h>
 #include <blk_device.h>
 #include <endian.h>
-#include <fs/vfs_impl.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
 #include <string.h>
@@ -218,11 +217,13 @@ static void sync_superblock(struct superblock *);
  * ino=%u name_len=%u rec_len=%u\n", entry->inode, entry->name_len,
  * entry->rec_len); } */
 
+static struct ext2_fs *sb_ext2(struct superblock *sb) { return sb->private; }
+
 #define ext2_error(_sb, _fmt, ...)                                             \
     ext2_error_(_sb, __PRETTY_FUNCTION__, _fmt, ##__VA_ARGS__)
 static void ext2_error_(struct superblock *sb, const char *func_name,
                         const char *fmt, ...) {
-    struct ext2_fs *ext2 = sb->private;
+    struct ext2_fs *ext2 = sb_ext2(sb);
     ext2->sb.s_state |= EXT2_ERROR_FS;
     sync_superblock(sb);
 
@@ -259,15 +260,15 @@ static void read_superblock(struct superblock *fs, struct ext2_sb *sb) {
     blk_read(fs->dev, EXT2_SB_OFFSET, sb, sizeof(*sb));
 }
 
-static void sync_superblock(struct superblock *fs) {
-    struct ext2_fs *ext2 = fs->private;
-    blk_write(fs->dev, EXT2_SB_OFFSET, &ext2->sb, sizeof(ext2->sb));
+static void sync_superblock(struct superblock *sb) {
+    struct ext2_fs *ext2 = sb_ext2(sb);
+    blk_write(sb->dev, EXT2_SB_OFFSET, &ext2->sb, sizeof(ext2->sb));
 }
 
 // note: need to provide is_dir because ext2 block group tracks directory
 // count
 __used static ssize_t ext2_alloc_ino(struct superblock *sb, int is_dir) {
-    struct ext2_fs *ext2 = sb->private;
+    struct ext2_fs *ext2 = sb_ext2(sb);
 
     size_t bgdi;
     struct ext2_group_desc *desc = NULL;
@@ -308,7 +309,7 @@ __used static ssize_t ext2_alloc_ino(struct superblock *sb, int is_dir) {
 }
 
 static void ext2_free_ino(struct superblock *sb, ino_t ino, int is_dir) {
-    struct ext2_fs *ext2 = sb->private;
+    struct ext2_fs *ext2 = sb_ext2(sb);
     u32 ino_group, ino_in_group;
     calc_ino_group(ext2, ino, &ino_group, &ino_in_group);
     expects(ino_group < ext2->bgds_count);
@@ -335,7 +336,7 @@ static void ext2_free_ino(struct superblock *sb, ino_t ino, int is_dir) {
 }
 
 __used static ssize_t ext2_alloc_block(struct superblock *sb) {
-    struct ext2_fs *ext2 = sb->private;
+    struct ext2_fs *ext2 = sb_ext2(sb);
     size_t bgdi;
     struct ext2_group_desc *desc = NULL;
     for (bgdi = 0; bgdi < ext2->bgds_count && !desc; ++bgdi) {
@@ -374,7 +375,7 @@ __used static ssize_t ext2_alloc_block(struct superblock *sb) {
 }
 
 __used static void ext2_free_block(struct superblock *sb, blkcnt_t block) {
-    struct ext2_fs *fs = sb->private;
+    struct ext2_fs *fs = sb_ext2(sb);
     u32 block_group, block_in_group;
     calc_block_group(fs, block, &block_group, &block_in_group);
 
@@ -398,7 +399,7 @@ __used static void ext2_free_block(struct superblock *sb, blkcnt_t block) {
 
 static void ext2_get_raw_inode(struct superblock *sb, ino_t ino,
                                struct ext2_inode *ei) {
-    struct ext2_fs *ext2 = sb->private;
+    struct ext2_fs *ext2 = sb_ext2(sb);
 
     u32 ino_group, ino_in_group;
     calc_ino_group(ext2, ino, &ino_group, &ino_in_group);
@@ -437,8 +438,8 @@ static struct inode *ext2_iget(struct superblock *sb, ino_t ino) {
 }
 
 __used static void ext2_write_inode(struct inode *inode) {
-    struct superblock *sb = inode->sb;
-    struct ext2_fs *ext2 = sb->private;
+    struct superblock *sb = i_sb(inode);
+    struct ext2_fs *ext2 = sb_ext2(sb);
 
     ino_t ino = inode->ino;
     u32 ino_group, ino_in_group;
@@ -466,7 +467,7 @@ __used static void ext2_write_inode(struct inode *inode) {
 }
 
 static int ext2_do_mount(struct superblock *sb) {
-    struct ext2_fs *ext2 = sb->private;
+    struct ext2_fs *ext2 = sb_ext2(sb);
     read_superblock(sb, &ext2->sb);
 
     u32 blk_sz = 1024 << ext2->sb.s_log_block_size;
@@ -499,7 +500,7 @@ static int ext2_do_mount(struct superblock *sb) {
 // TODO: Support implicitly allocated block (filled with 0s)
 static blkcnt_t ext2_get_disk_blk(struct ext2_inode *inode,
                                   struct superblock *sb, blkcnt_t blk) {
-    struct ext2_fs *ext2 = sb->private;
+    struct ext2_fs *ext2 = sb_ext2(sb);
     blkcnt_t result;
 
     if (blk < EXT2_DIRECT_BLOCKS) {
@@ -677,9 +678,9 @@ int ext2_read_dentry_at(struct ext2_inode *ei, struct superblock *sb,
 }
 
 static struct dentry *ext2_readdir(struct file *dir) {
-    struct inode *inode = dir->dentry->inode;
+    struct inode *inode = f_i(dir);
     expects(S_ISDIR(inode->mode));
-    struct superblock *sb = inode->sb;
+    struct superblock *sb = i_sb(inode);
     if (dir->offset >= inode->size) return ERR_PTR(-ENOENT);
     struct ext2_inode ei;
     ext2_get_raw_inode(sb, inode->ino, &ei);
@@ -705,7 +706,7 @@ static struct dentry *ext2_readdir(struct file *dir) {
 }
 
 static void ext2_release_sb(struct superblock *sb) {
-    struct ext2_fs *ext2 = sb->private;
+    struct ext2_fs *ext2 = sb_ext2(sb);
     kfree(ext2->bgds);
     kfree(ext2);
 }
