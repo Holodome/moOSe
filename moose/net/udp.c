@@ -1,8 +1,7 @@
 #include <net/udp.h>
 #include <net/inet.h>
+#include <net/frame.h>
 #include <net/ip.h>
-#include <mm/kmem.h>
-#include <mm/kmalloc.h>
 #include <string.h>
 #include <endian.h>
 #include <kstdio.h>
@@ -11,11 +10,13 @@
 int udp_send_frame(u8 *dst_ip_addr, u16 src_port, u16 dst_port,
                    void *payload, size_t size) {
     size_t frame_size = sizeof(struct udp_header) + size;
-    void *frame = kmalloc(frame_size);
+    struct net_frame *frame = alloc_net_frame();
     if (frame == NULL)
         return -ENOMEM;
 
-    struct udp_header *header = frame;
+    frame->size = frame_size;
+
+    struct udp_header *header = frame->data;
     header->src_port = htobe16(src_port);
     header->dst_port = htobe16(dst_port);
     header->len = frame_size;
@@ -24,12 +25,11 @@ int udp_send_frame(u8 *dst_ip_addr, u16 src_port, u16 dst_port,
 
     memcpy(header + 1, payload, size);
 
-    int err;
-    if ((err = ipv4_send_frame(dst_ip_addr, IP_PROTOCOL_UDP,
-                               frame, header->len)))
-        return err;
+    int err = ipv4_send_frame(dst_ip_addr, IP_PROTOCOL_UDP,
+                              frame->data, frame->size);
+    if (err) return err;
 
-    kfree(frame);
+    free_net_frame(frame);
     return 0;
 }
 

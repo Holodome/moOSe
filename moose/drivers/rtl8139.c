@@ -11,7 +11,6 @@
 #include <param.h>
 #include <bitops.h>
 #include <errno.h>
-#include <mm/kmalloc.h>
 #include <string.h>
 
 #define RTL_REG_MAC0            0x00
@@ -47,7 +46,7 @@ static struct {
 } rtl8139;
 
 __attribute__((used)) static void rtl8139_receive(void) {
-    void *frame = kmalloc(ETH_FRAME_MAX_SIZE);
+    u8 frame[ETH_FRAME_MAX_SIZE];
 
     // check that rx buffer is not empty
     while ((port_in8(rtl8139.io_addr + RTL_REG_CMD) & 0x1) != 1) {
@@ -70,8 +69,6 @@ __attribute__((used)) static void rtl8139_receive(void) {
 
         port_out16(rtl8139.io_addr + RTL_REG_CAPR, rtl8139.rx_offset - 0x10);
     }
-
-    kfree(frame);
 }
 
 static void rtl8139_handler(struct registers_state *regs
@@ -87,7 +84,7 @@ static void rtl8139_handler(struct registers_state *regs
     }
 
     if (isr & RTL_ROK) {
-//        rtl8139_receive();
+        rtl8139_receive();
         kprintf("rtl8139 frame was recieved\n");
     }
 

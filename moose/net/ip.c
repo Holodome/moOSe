@@ -4,6 +4,7 @@
 #include <net/udp.h>
 #include <net/inet.h>
 #include <net/icmp.h>
+#include <net/frame.h>
 #include <endian.h>
 #include <assert.h>
 #include <mm/kmem.h>
@@ -34,11 +35,13 @@ int ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, size_t size) {
     if (!found) return -1;
 
     size_t frame_size = sizeof(struct ipv4_header) + size;
-    void *frame = kzalloc(frame_size);
+    struct net_frame *frame = alloc_net_frame();
     if (frame == NULL)
         return -ENOMEM;
 
-    struct ipv4_header *header = frame;
+    frame->size = frame_size;
+
+    struct ipv4_header *header = frame->data;
     // ihl
     header->version_ihl |= 5;
     // version
@@ -56,11 +59,10 @@ int ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, size_t size) {
 
     memcpy(header + 1, payload, size);
 
-    int err;
-    if ((err = eth_send_frame(dst_mac, ETH_TYPE_IPV4, frame, frame_size)))
-        return err;
+    int err = eth_send_frame(dst_mac, ETH_TYPE_IPV4, frame->data, frame->size);
+    if (err) return err;
 
-    kfree(frame);
+    free_net_frame(frame);
     return 0;
 }
 

@@ -1,9 +1,8 @@
 #include <net/inet.h>
 #include <kstdio.h>
-#include <assert.h>
 #include <drivers/rtl8139.h>
-#include <mm/kmem.h>
 #include <net/netdaemon.h>
+#include <net/frame.h>
 #include <net/arp.h>
 #include <endian.h>
 #include <string.h>
@@ -19,6 +18,9 @@ u8 broadcast_mac_addr[6] =  {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 int init_inet(void) {
     int rc;
+    if ((rc = init_net_frames()))
+        return rc;
+
     if ((rc = init_rtl8139(nic.mac_addr)))
         return rc;
 

@@ -1,6 +1,7 @@
 #include <net/icmp.h>
 #include <net/ip.h>
 #include <net/inet.h>
+#include <net/frame.h>
 #include <assert.h>
 #include <endian.h>
 #include <kstdio.h>
@@ -12,11 +13,13 @@
 
 int icmp_send_echo_request(u8 *ip_addr) {
     u16 frame_size = sizeof(struct icmp_header) + ICMP_CONTROL_SEQ_SIZE;
-    void *frame = kzalloc(frame_size);
+    struct net_frame *frame = alloc_net_frame();
     if (frame == NULL)
         return -ENOMEM;
 
-    struct icmp_header *header = frame;
+    frame->size = frame_size;
+
+    struct icmp_header *header = frame->data;
     header->type = ICMP_ECHO_REQUEST;
     u8 *control_seq = (u8 *)(header + 1);
     for (int i = 0; i < ICMP_CONTROL_SEQ_SIZE; i++)
@@ -27,11 +30,11 @@ int icmp_send_echo_request(u8 *ip_addr) {
     kprintf("icmp request to host ");
     debug_print_ip_addr(ip_addr);
 
-    int err;
-    if ((err = ipv4_send_frame(ip_addr, IP_PROTOCOL_ICMP, frame, frame_size)))
-        return err;
+    int err = ipv4_send_frame(ip_addr, IP_PROTOCOL_ICMP,
+                              frame->data, frame->size);
+    if (err) return err;
 
-    kfree(frame);
+    free_net_frame(frame);
     return 0;
 }
 

@@ -2,7 +2,6 @@
 #include <net/inet.h>
 #include <net/eth.h>
 #include <mm/kmalloc.h>
-#include <mm/kmem.h>
 #include <string.h>
 #include <kthread.h>
 #include <assert.h>
@@ -27,14 +26,13 @@ struct daemon_queue {
 static struct daemon_queue *queue;
 
 __attribute__((noreturn)) static void net_daemon_task(void) {
-    kprintf("daemon task start\n");
     u64 flags;
     for (;;) {
         spin_lock_irqsave(&queue->lock, flags);
         for (int i = 0; i < QUEUE_SIZE; i++) {
             struct queue_entry *entry = &queue->entries[i];
             if (!entry->is_free) {
-                kprintf("%s\n", entry->buffer);
+                eth_receive_frame(entry->buffer, entry->size);
                 entry->is_free = 1;
             }
         }
@@ -60,12 +58,6 @@ int init_net_daemon(void) {
     return 0;
 }
 
-void print_queue(void) {
-    for (size_t i = 0; i < QUEUE_SIZE; i++)
-        kprintf("%d ", queue->entries[i].is_free);
-    kprintf("\n");
-}
-
 int net_daemon_add_frame(void *frame, size_t size) {
     expects(size <= ETH_FRAME_MAX_SIZE);
 
@@ -78,6 +70,7 @@ int net_daemon_add_frame(void *frame, size_t size) {
             memcpy(entry->buffer, frame, size);
             entry->size = size;
             entry->is_free = 0;
+            spin_unlock_irqrestore(&queue->lock, flags);
             return 0;
         }
     }

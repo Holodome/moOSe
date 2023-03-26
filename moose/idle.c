@@ -25,14 +25,40 @@ void idle_task(void) {
     init_disk();
     init_shell();
 
-    init_net_daemon();
-
-    print_queue();
-    char message[] = "hello world";
-    for (int i = 0; i < 5; i++) {
-        net_daemon_add_frame(message, strlen(message));
+    if (init_pci()) {
+        kprintf("failed to initialize pci bus\n");
+        halt_cpu();
     }
-    print_queue();
+    struct pci_bus *bus = get_root_bus();
+    debug_print_bus(bus);
+
+    if (init_inet()) {
+        kprintf("failed to initialize inet system\n");
+        halt_cpu();
+    }
+
+    u8 mac_addr[6];
+    for (int i = 0; i < 5; i++) {
+        if (arp_get_mac(gateway_ip_addr, mac_addr)) {
+            kprintf("can't find mac for this ip address\n");
+            halt_cpu();
+        }
+        kprintf("gateway ");
+        debug_print_mac_addr(mac_addr);
+        debug_clear_arp_cache();
+    }
+
+    if (arp_get_mac(dns_ip_addr, mac_addr)) {
+        kprintf("can't find mac for this ip address\n");
+        halt_cpu();
+    }
+    kprintf("dns ");
+    debug_print_mac_addr(mac_addr);
+
+    icmp_send_echo_request(dns_ip_addr);
+
+    char *message = "Hello world!";
+    udp_send_frame(gateway_ip_addr, 80, 80, message, strlen(message));
 
     launch_task(other_task);
 

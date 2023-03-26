@@ -1,9 +1,9 @@
 #include <net/arp.h>
 #include <net/inet.h>
 #include <net/eth.h>
+#include <net/frame.h>
 #include <arch/jiffies.h>
 #include <mm/kmalloc.h>
-#include <mm/kmem.h>
 #include <sched/spinlock.h>
 #include <string.h>
 #include <endian.h>
@@ -100,11 +100,11 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
 }
 
 int arp_send_request(u8 *ip_addr) {
-    void *frame = kmalloc(sizeof(struct arp_header));
+    struct net_frame *frame = alloc_net_frame();
     if (frame == NULL)
         return -ENOMEM;
 
-    struct arp_header *header = frame;
+    struct arp_header *header = frame->data;
     header->hw_type = htobe16(ETH_HW_TYPE);
     header->protocol_type = htobe16(ETH_TYPE_IPV4);
     header->hw_len = 6;
@@ -115,25 +115,26 @@ int arp_send_request(u8 *ip_addr) {
     memset(header->dst_mac, 0, 6);
     memcpy(header->dst_ip, ip_addr, 4);
 
-    int err;
-    if ((err = eth_send_frame(broadcast_mac_addr, ETH_TYPE_ARP,
-                             frame, sizeof(struct arp_header))))
-        return err;
+    frame->size = sizeof(struct arp_header);
+    int err = eth_send_frame(broadcast_mac_addr, ETH_TYPE_ARP,
+                             frame->data, frame->size);
+    if (err) return err;
 
-    kfree(frame);
+    free_net_frame(frame);
     return 0;
 }
 
 int arp_send_reply(void *frame) {
     struct arp_header *header = frame;
 
-    void *reply_frame = kmalloc(sizeof(struct arp_header));
+    struct net_frame *reply_frame = alloc_net_frame();
     if (reply_frame == NULL)
         return -ENOMEM;
 
-    memcpy(reply_frame, frame, sizeof(*reply_frame));
+    reply_frame->size = sizeof(struct arp_header);
+    memcpy(reply_frame->data, frame, reply_frame->size);
 
-    struct arp_header *reply_header = (struct arp_header *)reply_frame;
+    struct arp_header *reply_header = reply_frame->data;
     memcpy(reply_header->src_mac, header->dst_mac, 6);
     memcpy(reply_header->dst_mac, nic.mac_addr, 6);
     memcpy(reply_header->src_ip, header->dst_ip, 4);
@@ -141,12 +142,11 @@ int arp_send_reply(void *frame) {
 
     reply_header->operation = htobe16(ARP_REPLY);
 
-    int err;
-    if ((err = eth_send_frame(reply_header->dst_mac, ETH_TYPE_ARP,
-                             reply_frame, sizeof(struct arp_header))))
-        return err;
+    int err = eth_send_frame(reply_header->dst_mac, ETH_TYPE_ARP,
+                             reply_frame->data, reply_frame->size);
+    if (err) return err;
 
-    kfree(reply_frame);
+    free_net_frame(reply_frame);
     return 0;
 }
 
@@ -185,4 +185,10 @@ void debug_clear_arp_cache(void) {
         entry = list_next_or_null(&cache->entries, &cache->entries,
                                   struct arp_cache_entry, list);
     }
+//
+//    struct arp_cache_entry *entry;
+//    list_for_each_entry(entry, &cache->entries, list) {
+//        *entry->ip_addr = 0;
+//        *entry->mac_addr = 0;
+//    }
 }

@@ -1,23 +1,22 @@
 #include <net/eth.h>
 #include <net/arp.h>
+#include <net/frame.h>
 #include <net/inet.h>
 #include <net/ip.h>
-#include <mm/kmem.h>
 #include <string.h>
 #include <endian.h>
 #include <assert.h>
 #include <kstdio.h>
 #include <errno.h>
-#include <mm/kmalloc.h>
 
 int eth_send_frame(u8 *dst_mac_addr, u16 eth_type, void *payload, size_t size) {
     expects(size <= ETH_PAYLOAD_MAX_SIZE);
 
-    void *frame = kmalloc(ETH_FRAME_MAX_SIZE);
+    struct net_frame *frame = alloc_net_frame();
     if (frame == NULL)
         return -ENOMEM;
 
-    struct eth_header *header = frame;
+    struct eth_header *header = frame->data;
 
     memcpy(header->dst_mac, dst_mac_addr, sizeof(header->dst_mac));
     memcpy(header->src_mac, nic.mac_addr, sizeof(header->src_mac));
@@ -25,25 +24,30 @@ int eth_send_frame(u8 *dst_mac_addr, u16 eth_type, void *payload, size_t size) {
 
     memcpy(header + 1, payload, size);
 
-    u16 frame_size = sizeof(*header) + size;
+    size_t frame_size = sizeof(*header) + size;
     // pad frame with zeros, to be at least mininum size
     if (size < ETH_PAYLOAD_MIN_SIZE) {
-        memset(frame + frame_size, 0, ETH_PAYLOAD_MIN_SIZE - size);
+        memset(frame->data + frame_size, 0, ETH_PAYLOAD_MIN_SIZE - size);
         frame_size = sizeof(*header) + ETH_PAYLOAD_MIN_SIZE;
     }
+    frame->size = frame_size;
 
-//    debug_print_frame_hexdump(frame, frame_size);
+#if 0
+    debug_print_frame_hexdump(frame, size);
+#endif
 
-    nic.send_frame(frame, frame_size);
+    nic.send_frame(frame->data, frame->size);
+    free_net_frame(frame);
 
-    kfree(frame);
     return 0;
 }
 
 void eth_receive_frame(void *frame, size_t size) {
     expects(size <= ETH_FRAME_MAX_SIZE);
 
-//    debug_print_frame_hexdump(frame, size);
+#if 0
+    debug_print_frame_hexdump(frame, size);
+#endif
 
     struct eth_header *header = frame;
     header->eth_type = be16toh(header->eth_type);
