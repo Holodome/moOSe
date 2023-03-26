@@ -6,7 +6,7 @@
 
 #define FRAMES_COUNT 20
 
-LIST_HEAD(free_list);
+static LIST_HEAD(free_list);
 
 static spinlock_t lock = SPIN_LOCK_INIT();
 

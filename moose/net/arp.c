@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <list.h>
 
+#define ARP_CACHE_SIZE    256
 #define ARP_TIMEOUT_MSECS 15000
 
 struct arp_cache_entry {
@@ -24,12 +25,22 @@ struct arp_cache {
     spinlock_t lock;
 };
 
+static LIST_HEAD(free_list);
 static struct arp_cache *cache;
 
 int init_arp_cache(void) {
     cache = kmalloc(sizeof(*cache));
     if (cache == NULL)
         return -ENOMEM;
+
+    struct arp_cache_entry *entries = kmalloc(
+        ARP_CACHE_SIZE * sizeof(struct arp_cache_entry));
+    if (entries == NULL)
+        return -ENOMEM;
+
+    for (size_t i = 0; i < ARP_CACHE_SIZE; i++) {
+        list_add(&entries[i].list, &free_list);
+    }
 
     init_list_head(&cache->entries);
     spin_lock_init(&cache->lock);
@@ -66,11 +77,13 @@ static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
         }
     }
 
-    entry = kmalloc(sizeof(struct arp_cache_entry));
+    entry = list_next_or_null(&free_list, &free_list,
+                              struct arp_cache_entry, list);
     if (entry == NULL) {
         spin_unlock_irqrestore(&cache->lock, flags);
         return;
     }
+    list_remove(&entry->list);
 
     memcpy(entry->ip_addr, ip_addr, 4);
     memcpy(entry->mac_addr, mac_addr, 6);
@@ -181,14 +194,8 @@ void debug_clear_arp_cache(void) {
                           struct arp_cache_entry, list);
     while (entry) {
         list_remove(&entry->list);
-        kfree(entry);
+        list_add(&entry->list, &free_list);
         entry = list_next_or_null(&cache->entries, &cache->entries,
                                   struct arp_cache_entry, list);
     }
-//
-//    struct arp_cache_entry *entry;
-//    list_for_each_entry(entry, &cache->entries, list) {
-//        *entry->ip_addr = 0;
-//        *entry->mac_addr = 0;
-//    }
 }
