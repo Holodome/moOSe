@@ -26,9 +26,12 @@ void read_unlock(rwlock_t *lock) {
 }
 
 void write_lock(rwlock_t *lock) {
-retry:
     spin_lock(&lock->lock);
     ++lock->writers;
+    spin_unlock(&lock->lock);
+
+retry:
+    spin_lock(&lock->lock);
     if (lock->readers > 0 || lock->is_writing) {
         spin_unlock(&lock->lock);
         spinloop_hint();
