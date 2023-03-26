@@ -38,9 +38,15 @@ struct inode_ops {
     // Find child in directory
     int (*lookup)(struct inode *dir, struct dentry *entry);
     // Apply changed inode attributes
-    int (*chattr)(struct inode *inode);
-    int (*mkdir)(struct inode *dir, struct dentry *entry);
+    int (*setattr)(struct inode *inode);
+    int (*mkdir)(struct inode *dir, struct dentry *entry, mode_t mode);
     int (*rmdir)(struct inode *dir, struct dentry *entry);
+    int (*create)(struct inode *dir, struct dentry *entry, mode_t mode);
+    int (*mknod)(struct inode *dir, struct dentry *entry, mode_t mode,
+                 dev_t dev);
+    int (*rename)(struct inode *olddir, struct dentry *oldentry,
+                  struct inode *newdir, struct dentry *newentry);
+    int (*unlink)(struct inode *dir, struct dentry *entry);
 };
 
 struct inode {
@@ -88,6 +94,7 @@ struct file {
 struct dentry {
     refcount_t refcnt;
 
+    struct dentry *parent;
     struct inode *inode;
     char *name;
 

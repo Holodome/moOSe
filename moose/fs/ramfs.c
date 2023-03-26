@@ -38,19 +38,38 @@ struct ramfs {
     struct list_head inode_freelist;
 };
 
+static int ramfs_setattr(struct inode *inode __unused) { return 0; }
 static void ramfs_release_sb(struct superblock *sb);
 static void ramfs_free_inode(struct inode *inode);
 static int ramfs_truncate(struct inode *inode);
 static ssize_t ramfs_read(struct file *filp, void *buf, size_t count);
 static ssize_t ramfs_write(struct file *filp, const void *buf, size_t count);
-static int ramfs_mkdir(struct inode *dir, struct dentry *entry);
+static int ramfs_mkdir(struct inode *dir, struct dentry *entry, mode_t mode);
 static int ramfs_rmdir(struct inode *dir, struct dentry *entry);
+static int ramfs_create(struct inode *dir, struct dentry *entry, mode_t mode);
+static int ramfs_rename(struct inode *olddir, struct dentry *oldentry,
+                        struct inode *newdir, struct dentry *newentry);
+static int ramfs_lookup(struct inode *dir, struct dentry *entry);
+static struct dentry *ramfs_readdir(struct file *filp);
+int ramfs_unlink(struct inode *dir, struct dentry *entry);
 
 static const struct sb_ops sb_ops = {.release_sb = ramfs_release_sb};
-static const struct inode_ops inode_ops = {.free = ramfs_free_inode,
-                                           .truncate = ramfs_truncate,
-                                           .mkdir = ramfs_mkdir,
-                                           .rmdir = ramfs_rmdir};
+static const struct inode_ops dir_inode_ops = {.lookup = ramfs_lookup,
+                                               .free = ramfs_free_inode,
+                                               .mkdir = ramfs_mkdir,
+                                               .rmdir = ramfs_rmdir,
+                                               .create = ramfs_create,
+                                               .rename = ramfs_rename,
+                                               .setattr = ramfs_setattr,
+                                               .unlink = ramfs_unlink
+
+};
+static const struct inode_ops file_inode_ops = {
+    .free = ramfs_free_inode,
+    .truncate = ramfs_truncate,
+    .setattr = ramfs_setattr,
+
+};
 static const struct file_ops file_ops = {.lseek = generic_lseek,
                                          .read = ramfs_read,
                                          .write = ramfs_write,
@@ -59,6 +78,12 @@ static const struct file_ops file_ops = {.lseek = generic_lseek,
 static struct ramfs *sb_ram(const struct superblock *sb) { return sb->private; }
 static struct ramfs_inode *i_ram(const struct inode *inode) {
     return inode->private;
+}
+
+static void ramfs_release_dentry(struct ramfs *fs, struct ramfs_dentry *entry) {
+    list_remove(&entry->list);
+    list_add(&entry->list, &fs->dentry_freelist);
+    release_inode(entry->inode);
 }
 
 static struct ramfs_block *ramfs_get_empty_block(struct ramfs *fs) {
@@ -91,7 +116,8 @@ static struct ramfs_inode *ramfs_get_empty_inode(struct ramfs *fs) {
     return inode;
 }
 
-static struct inode *ramfs_create_inode(struct superblock *sb) {
+static struct inode *ramfs_create_inode(struct inode *dir, mode_t mode) {
+    struct superblock *sb = i_sb(dir);
     struct ramfs *fs = sb_ram(sb);
     struct inode *inode = alloc_inode();
     if (!inode) return NULL;
@@ -101,23 +127,19 @@ static struct inode *ramfs_create_inode(struct superblock *sb) {
         kfree(inode);
         return NULL;
     }
+    inode->mode = mode;
+    if (S_ISDIR(mode)) {
+        inode->ops = &dir_inode_ops;
+        ri->parent = dir;
+        init_list_head(&ri->dentry_list);
+    } else {
+        inode->ops = &file_inode_ops;
+        init_list_head(&ri->block_list);
+    }
     inode->private = ri;
-    inode->ops = &inode_ops;
     inode->file_ops = &file_ops;
     inode->ino = fs->inode_counter++;
     list_add(&inode->sb_list, &sb->inode_list);
-    return inode;
-}
-
-static struct inode *ramfs_create_dir_inode(struct superblock *sb,
-                                            struct inode *parent) {
-    struct inode *inode = ramfs_create_inode(sb);
-    if (!inode) return NULL;
-    inode->mode = 0666 | S_IFDIR;
-
-    struct ramfs_inode *ri = i_ram(inode);
-    ri->parent = parent;
-    init_list_head(&ri->dentry_list);
     return inode;
 }
 
@@ -223,7 +245,7 @@ static ssize_t ramfs_read(struct file *filp, void *buf, size_t count) {
     struct inode *inode = f_i(filp);
     struct ramfs_inode *ri = i_ram(inode);
     struct superblock *sb = i_sb(inode);
-    off_t in_block_offset;
+    off_t in_block_offset = 0;
     struct ramfs_block *block =
         ramfs_find_block(inode, filp->offset, &in_block_offset);
 
@@ -314,11 +336,11 @@ static struct ramfs_dentry *ramfs_find_by_name(struct inode *dir,
     return NULL;
 }
 
-int ramfs_lookup(struct inode *dir, struct dentry *entry) {
+static int ramfs_lookup(struct inode *dir, struct dentry *entry) {
     if (strcmp(entry->name, ".") == 0) {
         init_dentry(entry, dir);
         return 0;
-    } 
+    }
     if (strcmp(entry->name, "..") == 0) {
         struct ramfs_inode *ri = i_ram(dir);
         struct inode *parent = ri->parent;
@@ -333,9 +355,7 @@ int ramfs_lookup(struct inode *dir, struct dentry *entry) {
     return 0;
 }
 
-static int ramfs_chattr(struct inode *inode __unused) { return 0; }
-
-static int ramfs_mkdir(struct inode *dir, struct dentry *entry) {
+static int ramfs_mkdir(struct inode *dir, struct dentry *entry, mode_t mode) {
     expects(S_ISDIR(dir->mode));
     if (ramfs_find_by_name(dir, entry->name)) return -EEXIST;
 
@@ -349,7 +369,7 @@ static int ramfs_mkdir(struct inode *dir, struct dentry *entry) {
     memcpy(rd->name, entry->name, test_name_len);
     rd->name_len = test_name_len;
 
-    struct inode *new_inode = ramfs_create_dir_inode(sb, dir);
+    struct inode *new_inode = ramfs_create_inode(dir, mode | S_IFDIR);
     if (new_inode == NULL) {
         list_add(&rd->list, &fs->dentry_freelist);
         return -ENOMEM;
@@ -373,18 +393,43 @@ static int ramfs_rmdir(struct inode *dir, struct dentry *entry) {
     struct ramfs_inode *ri = i_ram(found_inode);
 
     if (!list_is_empty(&ri->dentry_list)) return -ENOTEMPTY;
-    list_remove(&found->list);
-    list_add(&found->list, &fs->dentry_freelist);
-    release_inode(found_inode);
+    ramfs_release_dentry(fs, found);
 
     return 0;
+}
+
+static int ramfs_create(struct inode *dir, struct dentry *entry, mode_t mode) {
+    struct inode *inode = ramfs_create_inode(dir, mode);
+    //
+    return 0;
+}
+
+static struct inode *ramfs_create_root_inode(struct superblock *sb) {
+    struct ramfs *fs = sb_ram(sb);
+    struct inode *inode = alloc_inode();
+    if (!inode) return NULL;
+
+    struct ramfs_inode *ri = ramfs_get_empty_inode(fs);
+    if (!ri) {
+        kfree(inode);
+        return NULL;
+    }
+    inode->mode = 0666;
+    inode->ops = &dir_inode_ops;
+    ri->parent = NULL;
+    init_list_head(&ri->dentry_list);
+    inode->private = ri;
+    inode->file_ops = &file_ops;
+    inode->ino = fs->inode_counter++;
+    list_add(&inode->sb_list, &sb->inode_list);
+    return inode;
 }
 
 static struct dentry *ramfs_create_root(struct superblock *sb) {
     struct dentry *entry = create_root_dentry();
     if (!entry) return NULL;
 
-    struct inode *inode = ramfs_create_dir_inode(sb, NULL);
+    struct inode *inode = ramfs_create_root_inode(sb);
     if (!inode) {
         kfree(entry);
         return NULL;
