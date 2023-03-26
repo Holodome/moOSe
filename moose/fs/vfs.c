@@ -56,7 +56,7 @@ struct file *get_empty_filp(void) {
     struct file *filp = kzalloc(sizeof(*filp));
     if (!filp) return NULL;
 
-    init_list_head(&filp->list);
+    init_list_head(&filp->sb_list);
     return filp;
 }
 
@@ -68,11 +68,7 @@ struct dentry *create_dentry(struct dentry *parent, const char *str) {
     entry->name = kstrdup(str);
     if (!entry->name) goto err_dentry;
 
-    init_list_head(&entry->dir_list);
-    init_list_head(&entry->subdir_list);
-    init_list_head(&entry->inode_list);
     entry->parent = parent;
-    list_add(&entry->subdir_list, &parent->subdir_list);
 
     return entry;
 err_dentry:
@@ -83,10 +79,6 @@ err_dentry:
 struct dentry *create_root_dentry(void) {
     struct dentry *entry = kzalloc(sizeof(*entry));
     if (!entry) return NULL;
-
-    init_list_head(&entry->dir_list);
-    init_list_head(&entry->subdir_list);
-    init_list_head(&entry->inode_list);
 
     return entry;
 }
@@ -121,7 +113,6 @@ struct inode *alloc_inode(void) {
 
     refcount_set(&inode->refcnt, 1);
     init_list_head(&inode->sb_list);
-    init_list_head(&inode->dentry_list);
 
     return inode;
 }
@@ -165,7 +156,6 @@ struct file *vfs_open_dentry(struct dentry *entry) {
 void init_dentry(struct dentry *entry, struct inode *inode) {
     refcount_inc(&inode->refcnt);
     entry->inode = inode;
-    list_add(&entry->inode_list, &inode->dentry_list);
 }
 
 struct dentry *vfs_readdir(struct file *filp) {

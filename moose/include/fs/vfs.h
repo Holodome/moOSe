@@ -33,7 +33,13 @@ struct superblock {
 
 struct inode_ops {
     void (*free)(struct inode *inode);
-    int (*truncate)(struct inode *inode, off_t new_size);
+    // Apply changed 'size'
+    int (*truncate)(struct inode *inode);
+    // Find child in directory
+    int (*lookup)(struct inode *dir, struct dentry *entry);
+    // Apply changed inode attributes
+    int (*chattr)(struct inode *inode);
+    int (*mkdir)(struct inode *dir, struct dentry *entry);
 };
 
 struct inode {
@@ -75,18 +81,15 @@ struct file {
     const struct file_ops *ops;
     struct dentry *dentry;
 
-    struct list_head list;
+    struct list_head sb_list;
 };
 
 struct dentry {
     refcount_t refcnt;
 
     struct inode *inode;
-    struct dentry *parent;
     char *name;
 
-    struct list_head dir_list;
-    struct list_head subdir_list;
     struct list_head inode_list;
 };
 
