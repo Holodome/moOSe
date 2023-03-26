@@ -40,6 +40,7 @@ struct inode_ops {
     // Apply changed inode attributes
     int (*chattr)(struct inode *inode);
     int (*mkdir)(struct inode *dir, struct dentry *entry);
+    int (*rmdir)(struct inode *dir, struct dentry *entry);
 };
 
 struct inode {
