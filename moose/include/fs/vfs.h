@@ -33,6 +33,7 @@ struct superblock {
 
 struct inode_ops {
     void (*free)(struct inode *inode);
+    int (*truncate)(struct inode *inode, off_t new_size);
 };
 
 struct inode {

@@ -1,5 +1,6 @@
 #include <fs/ramfs.h>
 
+#include <assert.h>
 #include <mm/kmalloc.h>
 #include <string.h>
 
@@ -78,6 +79,14 @@ static struct ramfs_block *ramfs_append_block(struct ramfs *fs,
 
     list_add_tail(&new_block->list, &ri->block_list);
     return new_block;
+}
+
+static void ramfs_pop_block(struct ramfs *fs, struct ramfs_inode *ri) {
+    struct ramfs_block *block =
+        list_last_or_null(&ri->block_list, struct ramfs_block, list);
+    assert(block);
+    list_remove(&block->list);
+    list_add(&block->list, &fs->block_freelist);
 }
 
 static struct ramfs_block *
@@ -163,8 +172,34 @@ static ssize_t ramfs_write(struct file *filp, const void *buf, size_t count) {
     return total_wrote;
 }
 
+static int ramfs_truncate(struct inode *inode, off_t new_size) {
+    struct ramfs_inode *ri = i_ram(inode);
+    struct superblock *sb = i_sb(inode);
+    struct ramfs *fs = sb_ram(sb);
+    off_t old_size = inode->size;
+    off_t old_blocks = old_size >> RAMFS_BLOCK_SIZE_BITS;
+    off_t new_blocks = new_size >> RAMFS_BLOCK_SIZE_BITS;
+    if (old_blocks > new_blocks) {
+        off_t count_to_delete = old_blocks - new_blocks;
+        while (count_to_delete) ramfs_pop_block(fs, ri);
+        ri->block_count = new_blocks;
+    } else if (old_blocks < new_blocks) {
+        off_t count_to_append = new_blocks - old_blocks;
+        while (count_to_append) {
+            struct ramfs_block *block = ramfs_append_block(fs, ri);
+            if (block == NULL) return -ENOMEM;
+            memset(block->data, 0, sizeof(block->data));
+        }
+        ri->block_count = new_blocks;
+    }
+    inode->size = new_size;
+
+    return 0;
+}
+
 static const struct sb_ops sb_ops = {.release_sb = ramfs_release_sb};
-static const struct inode_ops inode_ops = {.free = ramfs_free_inode};
+static const struct inode_ops inode_ops = {.free = ramfs_free_inode,
+                                           .truncate = ramfs_truncate};
 static const struct file_ops file_ops = {.lseek = generic_lseek,
                                          .read = ramfs_read,
                                          .write = ramfs_write,

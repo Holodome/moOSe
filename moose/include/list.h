@@ -78,8 +78,11 @@ static __forceinline __nodiscard int list_is_empty(const struct list_head *it) {
         __prev != (_head) ? list_entry(__prev, _type, _member) : NULL;         \
     })
 
-#define list_prev_entry_or_null(_ptr, _head, _member)\
+#define list_prev_entry_or_null(_ptr, _head, _member)                          \
     list_prev_or_null(&(_ptr)->_member, _head, typeof(*(_ptr)), _member)
+
+#define list_last_or_null(_head, _type, _member)                               \
+    list_prev_or_null(_head, _head, _type, _member)
 
 #define list_next_or_null(_ptr, _head, _type, _member)                         \
     ({                                                                         \
@@ -87,9 +90,9 @@ static __forceinline __nodiscard int list_is_empty(const struct list_head *it) {
         __next != (_head) ? list_entry(__next, _type, _member) : NULL;         \
     })
 
-#define list_next_entry_or_null(_ptr, _head, _member)\
+#define list_next_entry_or_null(_ptr, _head, _member)                          \
     list_next_or_null(&(_ptr)->_member, _head, typeof(*(_ptr)), _member)
 
-#define list_first_or_null(_head, _type, _member)\
+#define list_first_or_null(_head, _type, _member)                              \
     list_next_or_null(_head, _head, _type, _member)
 
