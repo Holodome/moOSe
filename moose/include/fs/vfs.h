@@ -128,6 +128,7 @@ void init_dentry(struct dentry *entry, struct inode *inode);
 void release_sb(struct superblock *sb);
 void release_inode(struct inode *inode);
 void release_dentry(struct dentry *entry);
+void release_filp(struct file *filp);
 
 void print_inode(const struct inode *inode);
 

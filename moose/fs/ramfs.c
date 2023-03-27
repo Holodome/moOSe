@@ -103,6 +103,7 @@ static struct ramfs_dentry *ramfs_get_empty_dentry(struct ramfs *fs) {
         dentry = kmalloc(sizeof(*dentry));
     else
         list_remove(&dentry->list);
+    init_list_head(&dentry->list);
     return dentry;
 }
 
@@ -399,8 +400,29 @@ static int ramfs_rmdir(struct inode *dir, struct dentry *entry) {
 }
 
 static int ramfs_create(struct inode *dir, struct dentry *entry, mode_t mode) {
-    struct inode *inode = ramfs_create_inode(dir, mode);
-    //
+    struct ramfs *fs = sb_ram(i_sb(dir));
+    if (ramfs_find_by_name(dir, entry->name)) return -EEXIST;
+
+    struct inode *new_inode = ramfs_create_inode(dir, mode);
+    struct ramfs_dentry *new_dentry = ramfs_get_empty_dentry(fs);
+    if (!new_dentry) {
+        release_inode(new_inode);
+        return -ENOMEM;
+    }
+    new_dentry->inode = new_inode;
+
+    size_t test_name_len = strlen(entry->name);
+    if (test_name_len > RAMFS_NAME_LEN) {
+        ramfs_release_dentry(fs, new_dentry);
+        return -ENAMETOOLONG;
+    }
+
+    struct ramfs_inode *dir_ir = i_ram(dir);
+    memcpy(new_dentry->name, entry->name, test_name_len);
+    new_dentry->name_len = test_name_len;
+    list_add(&new_dentry->list, &dir_ir->dentry_list);
+    if (S_ISDIR(mode)) i_ram(new_inode)->parent = dir;
+
     return 0;
 }
 
