@@ -23,7 +23,6 @@ void idle_task(void) {
         if (PTR_ERR(read) == -ENOENT) break;
 
         struct inode *inode = read->inode;
-        /* print_inode(inode); */
         if (S_ISREG(inode->mode)) {
             kprintf("file %s\n", read->name);
         } else if (S_ISDIR(inode->mode) && strcmp(read->name, ".") &&
@@ -33,8 +32,8 @@ void idle_task(void) {
             kprintf("dir %s\n", read->name);
             for (;;) {
                 struct dentry *read1 = vfs_readdir(dir_file);
-                if (PTR_ERR(read1) == -ENOENT) break;
-                kprintf("in dir %s\n", read1->name);
+                if (IS_PTR_ERR(read1) && PTR_ERR(read1) == -ENOENT) break;
+                kprintf("  in dir %s\n", read1->name);
             }
         }
     }

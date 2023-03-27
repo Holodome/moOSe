@@ -188,7 +188,7 @@ static ssize_t ext2_read(struct file *filp, void *buf, size_t count) {
 }
 static void ext2_release_sb(struct superblock *sb);
 static void ext2_free_inode(struct inode *inode);
-static struct dentry *ext2_readdir(struct file *filp);
+static int ext2_readdir(struct file *filp, struct dentry *entry);
 static const struct sb_ops sb_ops = {.release_sb = ext2_release_sb};
 static const struct inode_ops inode_ops = {.free = ext2_free_inode};
 static const struct file_ops file_ops = {.lseek = generic_lseek,
@@ -198,24 +198,25 @@ static const struct file_ops file_ops = {.lseek = generic_lseek,
 
 static void sync_superblock(struct superblock *);
 
-/* static void print_raw_inode(const struct ext2_inode *inode) { */
-/*     kprintf("ext2_inode\n"); */
-/*     kprintf(" mode=%lu uid=%lu gid=%lu\n", (unsigned long)inode->i_mode, */
-/*             (unsigned long)inode->i_uid, (unsigned long)inode->i_gid); */
-/*     kprintf(" size=%ld nlink=%ld blkcnt=%ld\n", (unsigned long)inode->i_size,
- */
-/*             (unsigned long)inode->i_links_count, (unsigned
- * long)inode->i_blocks); */
-/* } */
+__used static void print_raw_inode(const struct ext2_inode *inode) {
+    kprintf("ext2_inode\n");
+    kprintf(" mode=%lu uid=%lu gid=%lu\n", (unsigned long)inode->i_mode,
+            (unsigned long)inode->i_uid, (unsigned long)inode->i_gid);
+    kprintf(" size=%ld nlink=%ld blkcnt=%ld\n", (unsigned long)inode->i_size,
+
+            (unsigned long)inode->i_links_count,
+            (unsigned long)inode->i_blocks);
+}
 
 /* static void print_bgd(const struct ext2_group_desc *d) { */
 /*     kprintf("gd bbit=%u ibit=%u it=%u\n", d->bg_block_bitmap, */
 /*             d->bg_inode_bitmap, d->bg_inode_table); */
 /* } */
 
-/* static void print_dentry(const struct ext2_dentry *entry) { kprintf("de
- * ino=%u name_len=%u rec_len=%u\n", entry->inode, entry->name_len,
- * entry->rec_len); } */
+__used static void print_dentry(const struct ext2_dentry *entry) {
+    kprintf("de ino=%u name_len=%u rec_len=%u\n",
+            entry->inode, entry->name_len, entry->rec_len);
+}
 
 static struct ext2_fs *sb_ext2(struct superblock *sb) { return sb->private; }
 
@@ -438,7 +439,7 @@ static struct inode *ext2_iget(struct superblock *sb, ino_t ino) {
 }
 
 __used static void ext2_write_inode(struct inode *inode) {
-    struct superblock *sb = i_sb(inode);
+    struct superblock *sb = inode->sb;
     struct ext2_fs *ext2 = sb_ext2(sb);
 
     ino_t ino = inode->ino;
@@ -677,11 +678,11 @@ int ext2_read_dentry_at(struct ext2_inode *ei, struct superblock *sb,
     return 0;
 }
 
-static struct dentry *ext2_readdir(struct file *dir) {
-    struct inode *inode = f_i(dir);
+static int ext2_readdir(struct file *dir, struct dentry *entry) {
+    struct inode *inode = dir->dentry->inode;
     expects(S_ISDIR(inode->mode));
-    struct superblock *sb = i_sb(inode);
-    if (dir->offset >= inode->size) return ERR_PTR(-ENOENT);
+    struct superblock *sb = inode->sb;
+    if (dir->offset >= inode->size) return -ENOENT;
     struct ext2_inode ei;
     ext2_get_raw_inode(sb, inode->ino, &ei);
     struct ext2_dentry1 ed;
@@ -689,20 +690,21 @@ static struct dentry *ext2_readdir(struct file *dir) {
     // directory entry
     off_t new_offset = dir->offset;
     int read_result = ext2_read_dentry_at(&ei, sb, &new_offset, &ed);
-    if (read_result) return ERR_PTR(read_result < 0 ? read_result : -ENOENT);
+    if (read_result) return read_result < 0 ? read_result : -ENOENT;
 
-    struct dentry *dentry = create_dentry(dir->dentry, ed.name);
-    if (!dentry) return ERR_PTR(-ENOMEM);
+    // TODO: 0 means that dentry is not allocated, we should read next
+    if (ed.inode == 0) return -ENOENT;
+
+    // TODO: ed.name is not zero-terminated!!!
+    if (dentry_set_name(entry, ed.name)) return -ENOMEM;
 
     struct inode *dentry_inode = ext2_iget(sb, ed.inode);
-    if (IS_PTR_ERR(dentry_inode)) {
-        release_dentry(dentry);
-        return ERR_PTR_RECAST(dentry_inode);
-    }
-    init_dentry(dentry, dentry_inode);
+    if (IS_PTR_ERR(dentry_inode)) return PTR_ERR(dentry_inode);
+
+    init_dentry(entry, dentry_inode);
     dir->offset = new_offset;
 
-    return dentry;
+    return 0;
 }
 
 static void ext2_release_sb(struct superblock *sb) {

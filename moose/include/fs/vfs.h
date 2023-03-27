@@ -73,11 +73,12 @@ struct inode {
 };
 
 struct file_ops {
-    off_t (*lseek)(struct file *, off_t, int);
-    ssize_t (*read)(struct file *, void *, size_t);
-    ssize_t (*write)(struct file *, const void *, size_t);
-    int (*release)(struct inode *, struct file *);
-    struct dentry *(*readdir)(struct file *);
+    off_t (*lseek)(struct file *filp, off_t offset, int whence);
+    ssize_t (*read)(struct file *filp, void *buf, size_t count);
+    ssize_t (*write)(struct file *filp, const void *buf, size_t count);
+    void (*release)(struct file *filp);
+    int (*readdir)(struct file *dir, struct dentry *entry);
+    int (*open)(struct inode *inode, struct file *filp);
 };
 
 struct file {
@@ -101,10 +102,7 @@ struct dentry {
     struct list_head inode_list;
 };
 
-static __forceinline struct superblock *i_sb(const struct inode *i) {
-    return i->sb;
-}
-static __forceinline struct inode *f_i(const struct file *filp) {
+static __forceinline struct inode *file_inode(const struct file *filp) {
     return filp->dentry->inode;
 }
 
@@ -125,10 +123,10 @@ struct dentry *create_dentry(struct dentry *parent, const char *str);
 struct dentry *create_root_dentry(void);
 struct inode *alloc_inode(void);
 void init_dentry(struct dentry *entry, struct inode *inode);
+int dentry_set_name(struct dentry *entry, const char *name);
 void release_sb(struct superblock *sb);
 void release_inode(struct inode *inode);
 void release_dentry(struct dentry *entry);
-void release_filp(struct file *filp);
 
 void print_inode(const struct inode *inode);
 

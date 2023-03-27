@@ -158,8 +158,23 @@ void init_dentry(struct dentry *entry, struct inode *inode) {
     entry->inode = inode;
 }
 
+int dentry_set_name(struct dentry *entry, const char *name) {
+    char *new_name = kstrdup(name);
+    if (!new_name) return -1;
+    entry->name = new_name;
+    return 0;
+}
+
 struct dentry *vfs_readdir(struct file *filp) {
-    return filp->ops->readdir(filp);
+    struct dentry *entry = kmalloc(sizeof(*entry));
+    if (!entry) return ERR_PTR(-ENOMEM);
+    int err = filp->ops->readdir(filp, entry);
+    if (err) {
+        kfree(entry);
+        return ERR_PTR(err);
+    }
+
+    return entry;
 }
 
 void print_inode(const struct inode *inode) {
