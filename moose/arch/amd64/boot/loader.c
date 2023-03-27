@@ -16,13 +16,19 @@
 #include <mbr.h>
 
 extern void print(const char *s);
-void __panic(void) { __builtin_unreachable(); }
+void __panic(void) {
+    __builtin_unreachable();
+}
 int kprintf(const char *fmt, ...) {
     print(fmt);
     return 0;
 }
-void *vsbrk(intptr_t inc __unused) { return NULL; }
-int __udivmoddi4() { return 0; }
+void *vsbrk(intptr_t inc __unused) {
+    return NULL;
+}
+int __udivmoddi4() {
+    return 0;
+}
 
 int load_kernel(void) {
     init_kmalloc();

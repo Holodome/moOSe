@@ -214,11 +214,13 @@ __used static void print_raw_inode(const struct ext2_inode *inode) {
 /* } */
 
 __used static void print_dentry(const struct ext2_dentry *entry) {
-    kprintf("de ino=%u name_len=%u rec_len=%u\n",
-            entry->inode, entry->name_len, entry->rec_len);
+    kprintf("de ino=%u name_len=%u rec_len=%u\n", entry->inode, entry->name_len,
+            entry->rec_len);
 }
 
-static struct ext2_fs *sb_ext2(struct superblock *sb) { return sb->private; }
+static struct ext2_fs *sb_ext2(struct superblock *sb) {
+    return sb->private;
+}
 
 #define ext2_error(_sb, _fmt, ...)                                             \
     ext2_error_(_sb, __PRETTY_FUNCTION__, _fmt, ##__VA_ARGS__)
@@ -275,19 +277,22 @@ __used static ssize_t ext2_alloc_ino(struct superblock *sb, int is_dir) {
     struct ext2_group_desc *desc = NULL;
     for (bgdi = 0; bgdi < ext2->bgds_count && !desc; ++bgdi) {
         struct ext2_group_desc *test = ext2->bgds + bgdi;
-        if (!test->bg_free_inodes_count) continue;
+        if (!test->bg_free_inodes_count)
+            continue;
 
         desc = test;
     }
 
-    if (desc == NULL) return -ENOSPC;
+    if (desc == NULL)
+        return -ENOSPC;
 
     u64 bitmap[ext2->group_inode_bitmap_size];
     blk_read(sb->dev, desc->bg_inode_bitmap << sb->blk_sz_bits, bitmap,
              sizeof(bitmap));
 
     u64 found = bitmap_first_clear(bitmap, ext2->sb.s_inodes_per_group);
-    if (!found) ext2_error(sb, "corrupted inode bitmap");
+    if (!found)
+        ext2_error(sb, "corrupted inode bitmap");
 
     if (desc->bg_free_inodes_count)
         --desc->bg_free_inodes_count;
@@ -299,7 +304,8 @@ __used static ssize_t ext2_alloc_ino(struct superblock *sb, int is_dir) {
     else
         ext2_error(sb, "corrupted superblock free inode count");
 
-    if (is_dir) --desc->bg_used_dirs_count;
+    if (is_dir)
+        --desc->bg_used_dirs_count;
     set_bit(found, bitmap);
 
     blk_write(sb->dev, desc->bg_inode_bitmap << sb->blk_sz_bits, bitmap,
@@ -342,19 +348,22 @@ __used static ssize_t ext2_alloc_block(struct superblock *sb) {
     struct ext2_group_desc *desc = NULL;
     for (bgdi = 0; bgdi < ext2->bgds_count && !desc; ++bgdi) {
         struct ext2_group_desc *test = ext2->bgds + bgdi;
-        if (!test->bg_free_blocks_count) continue;
+        if (!test->bg_free_blocks_count)
+            continue;
 
         desc = test;
     }
 
-    if (desc == NULL) return -ENOSPC;
+    if (desc == NULL)
+        return -ENOSPC;
 
     u64 bitmap[ext2->group_block_bitmap_size];
     blk_read(sb->dev, desc->bg_block_bitmap << sb->blk_sz_bits, bitmap,
              sizeof(bitmap));
 
     u64 found = bitmap_first_clear(bitmap, ext2->sb.s_blocks_per_group);
-    if (!found) ext2_error(sb, "corrupted block bitmap");
+    if (!found)
+        ext2_error(sb, "corrupted block bitmap");
 
     if (desc->bg_free_blocks_count)
         --desc->bg_free_blocks_count;
@@ -418,7 +427,8 @@ static struct inode *ext2_iget(struct superblock *sb, ino_t ino) {
     ext2_get_raw_inode(sb, ino, &ei);
 
     struct inode *inode = alloc_inode();
-    if (!inode) return ERR_PTR(-ENOMEM);
+    if (!inode)
+        return ERR_PTR(-ENOMEM);
 
     inode->ino = ino;
     inode->mode = ei.i_mode;
@@ -476,7 +486,8 @@ static int ext2_do_mount(struct superblock *sb) {
     expects(bgds_count != 0);
     size_t bgds_size = bgds_count * sizeof(struct ext2_group_desc);
     struct ext2_group_desc *bgds = kmalloc(bgds_size);
-    if (!bgds) return -ENOMEM;
+    if (!bgds)
+        return -ENOMEM;
 
     size_t bgds_loc = 1 * blk_sz;
     blk_read(sb->dev, bgds_loc, bgds, bgds_size);
@@ -563,7 +574,8 @@ static size_t ext2_read_in_block(struct ext2_inode *inode,
     off_t cursor_in_block = cursor % sb->blk_sz;
     off_t current_block = cursor / sb->blk_sz;
     size_t to_read = __block_end(sb, cursor) - cursor;
-    if (to_read > count) to_read = count;
+    if (to_read > count)
+        to_read = count;
 
     off_t phys_offset = ext2_get_disk_blk(inode, sb, current_block)
                         << sb->blk_sz_bits;
@@ -622,7 +634,8 @@ ssize_t ext2_write(struct file *filp, const void *buf, size_t count) {
 
 int ext2_mount(struct superblock *sb) {
     struct ext2_fs *ext2 = kzalloc(sizeof(*ext2));
-    if (!ext2) return -ENOMEM;
+    if (!ext2)
+        return -ENOMEM;
     sb->private = ext2;
     int result = ext2_do_mount(sb);
     if (result) {
@@ -655,7 +668,8 @@ int ext2_mount(struct superblock *sb) {
 // 1 - no entries left
 int ext2_read_dentry_at(struct ext2_inode *ei, struct superblock *sb,
                         off_t *offset, struct ext2_dentry1 *ed) {
-    if (*offset >= ei->i_size) return 1;
+    if (*offset >= ei->i_size)
+        return 1;
     size_t read =
         ext2_read_in_block(ei, sb, *offset, ed, sizeof(struct ext2_dentry));
     if (read != sizeof(struct ext2_dentry)) {
@@ -682,7 +696,8 @@ static int ext2_readdir(struct file *dir, struct dentry *entry) {
     struct inode *inode = dir->dentry->inode;
     expects(S_ISDIR(inode->mode));
     struct superblock *sb = inode->sb;
-    if (dir->offset >= inode->size) return -ENOENT;
+    if (dir->offset >= inode->size)
+        return -ENOENT;
     struct ext2_inode ei;
     ext2_get_raw_inode(sb, inode->ino, &ei);
     struct ext2_dentry1 ed;
@@ -690,16 +705,20 @@ static int ext2_readdir(struct file *dir, struct dentry *entry) {
     // directory entry
     off_t new_offset = dir->offset;
     int read_result = ext2_read_dentry_at(&ei, sb, &new_offset, &ed);
-    if (read_result) return read_result < 0 ? read_result : -ENOENT;
+    if (read_result)
+        return read_result < 0 ? read_result : -ENOENT;
 
     // TODO: 0 means that dentry is not allocated, we should read next
-    if (ed.inode == 0) return -ENOENT;
+    if (ed.inode == 0)
+        return -ENOENT;
 
     // TODO: ed.name is not zero-terminated!!!
-    if (dentry_set_name(entry, ed.name)) return -ENOMEM;
+    if (dentry_set_name(entry, ed.name))
+        return -ENOMEM;
 
     struct inode *dentry_inode = ext2_iget(sb, ed.inode);
-    if (IS_PTR_ERR(dentry_inode)) return PTR_ERR(dentry_inode);
+    if (IS_PTR_ERR(dentry_inode))
+        return PTR_ERR(dentry_inode);
 
     init_dentry(entry, dentry_inode);
     dir->offset = new_offset;

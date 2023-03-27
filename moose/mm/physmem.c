@@ -1,9 +1,9 @@
+#include <arch/amd64/types.h>
+#include <assert.h>
+#include <bitops.h>
 #include <mm/kmalloc.h>
 #include <mm/physmem.h>
 #include <param.h>
-#include <bitops.h>
-#include <assert.h>
-#include <arch/amd64/types.h>
 
 struct free_area {
     u32 size;
@@ -135,16 +135,19 @@ void free_pages(u64 addr, u32 order) {
     }
 }
 
-ssize_t alloc_page(void) { return alloc_pages(0); }
+ssize_t alloc_page(void) {
+    return alloc_pages(0);
+}
 
-void free_page(u64 addr) { free_pages(addr, 0); }
+void free_page(u64 addr) {
+    free_pages(addr, 0);
+}
 
 int alloc_region(u64 addr, u64 count) {
     assert((addr & 0xfff) == 0);
     for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];
-        if (addr < zone->base_addr ||
-            addr >= zone->base_addr + zone->mem_size)
+        if (addr < zone->base_addr || addr >= zone->base_addr + zone->mem_size)
             continue;
 
         struct free_area *area = &zone->free_area[0];

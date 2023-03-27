@@ -32,4 +32,3 @@ static_assert(sizeof(i32) == 4);
 static_assert(sizeof(u32) == 4);
 static_assert(sizeof(i64) == 8);
 static_assert(sizeof(u64) == 8);
-

@@ -95,4 +95,3 @@ static __forceinline __nodiscard int list_is_empty(const struct list_head *it) {
 
 #define list_first_or_null(_head, _type, _member)                              \
     list_next_or_null(_head, _head, _type, _member)
-

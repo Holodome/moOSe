@@ -46,21 +46,27 @@ static __forceinline u16 htobe16(u16 a) {
     return result;
 }
 
-static __forceinline u16 be16toh(u16 a) { return read_be16((u8 *)&a); }
+static __forceinline u16 be16toh(u16 a) {
+    return read_be16((u8 *)&a);
+}
 static __forceinline u32 htobe32(u32 a) {
     u32 result;
     write_be32((u8 *)&result, a);
     return result;
 }
 
-static __forceinline u32 be32toh(u32 a) { return read_be32((u8 *)&a); }
+static __forceinline u32 be32toh(u32 a) {
+    return read_be32((u8 *)&a);
+}
 static __forceinline u64 htobe64(u64 a) {
     u64 result;
     write_be64((u8 *)&result, a);
     return result;
 }
 
-static __forceinline u64 be64toh(u64 a) { return read_be64((u8 *)&a); }
+static __forceinline u64 be64toh(u64 a) {
+    return read_be64((u8 *)&a);
+}
 static __forceinline u16 be16add(u16 be, u16 a) {
     return htobe16(be16toh(be) + a);
 }
@@ -85,9 +91,21 @@ static __forceinline u64 be64sub(u64 be, u16 a) {
     return htobe64(be64toh(be) - a);
 }
 
-static __forceinline void be16dec(u16 *be) { *be = htobe16(be16toh(*be) - 1); }
-static __forceinline void be32dec(u32 *be) { *be = htobe32(be32toh(*be) - 1); }
-static __forceinline void be64dec(u64 *be) { *be = htobe64(be64toh(*be) - 1); }
-static __forceinline void be16inc(u16 *be) { *be = htobe16(be16toh(*be) + 1); }
-static __forceinline void be32inc(u32 *be) { *be = htobe32(be32toh(*be) + 1); }
-static __forceinline void be64inc(u64 *be) { *be = htobe64(be64toh(*be) + 1); }
+static __forceinline void be16dec(u16 *be) {
+    *be = htobe16(be16toh(*be) - 1);
+}
+static __forceinline void be32dec(u32 *be) {
+    *be = htobe32(be32toh(*be) - 1);
+}
+static __forceinline void be64dec(u64 *be) {
+    *be = htobe64(be64toh(*be) - 1);
+}
+static __forceinline void be16inc(u16 *be) {
+    *be = htobe16(be16toh(*be) + 1);
+}
+static __forceinline void be32inc(u32 *be) {
+    *be = htobe32(be32toh(*be) + 1);
+}
+static __forceinline void be64inc(u64 *be) {
+    *be = htobe64(be64toh(*be) + 1);
+}

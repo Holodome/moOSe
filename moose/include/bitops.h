@@ -103,7 +103,8 @@ static inline u64 bitmap_first_clear(const u64 *bitmap, u64 bit_count) {
     u64 found = 0;
     for (size_t i = 0; i < bit_count && !found; i += BITMAP_STRIDE) {
         u64 biti = bit_scan_forward(bitmap[i / BITMAP_STRIDE]);
-        if (biti) found = i + biti - 1;
+        if (biti)
+            found = i + biti - 1;
     }
 
     return found;
@@ -123,7 +124,7 @@ static inline u64 bitmap_first_clear(const u64 *bitmap, u64 bit_count) {
     ({                                                                         \
         __auto_type __x1 = (_val);                                             \
         typeof(__x1) __align1 = (_align);                                      \
-        __x1 == 0 ? __align1 : align_po2(__x1, __align1);                    \
+        __x1 == 0 ? __align1 : align_po2(__x1, __align1);                      \
     })
 
 static inline size_t bits_to_bitmap(size_t bits) {

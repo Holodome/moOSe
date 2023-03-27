@@ -48,4 +48,3 @@ void dump_registers(void) {
     get_registers(&regs);
     print_registers(&regs);
 }
-

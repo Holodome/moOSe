@@ -31,7 +31,8 @@ off_t generic_lseek(struct file *filp, off_t offset, int whence) {
     off_t new_offset;
     switch (whence) {
     case SEEK_SET:
-        if (offset < 0) offset = 0;
+        if (offset < 0)
+            offset = 0;
         new_offset = offset;
         break;
     case SEEK_CUR:
@@ -54,7 +55,8 @@ off_t generic_lseek(struct file *filp, off_t offset, int whence) {
 
 struct file *get_empty_filp(void) {
     struct file *filp = kzalloc(sizeof(*filp));
-    if (!filp) return NULL;
+    if (!filp)
+        return NULL;
 
     init_list_head(&filp->sb_list);
     return filp;
@@ -64,9 +66,11 @@ struct dentry *create_dentry(struct dentry *parent, const char *str) {
     expects(parent);
     expects(str);
     struct dentry *entry = kzalloc(sizeof(*entry));
-    if (!entry) return NULL;
+    if (!entry)
+        return NULL;
     entry->name = kstrdup(str);
-    if (!entry->name) goto err_dentry;
+    if (!entry->name)
+        goto err_dentry;
 
     entry->parent = parent;
 
@@ -78,7 +82,8 @@ err_dentry:
 
 struct dentry *create_root_dentry(void) {
     struct dentry *entry = kzalloc(sizeof(*entry));
-    if (!entry) return NULL;
+    if (!entry)
+        return NULL;
 
     return entry;
 }
@@ -86,7 +91,8 @@ struct dentry *create_root_dentry(void) {
 struct superblock *vfs_mount(struct blk_device *dev,
                              int (*mount)(struct superblock *)) {
     struct superblock *sb = kzalloc(sizeof(*sb));
-    if (!sb) return ERR_PTR(-ENOMEM);
+    if (!sb)
+        return ERR_PTR(-ENOMEM);
 
     sb->dev = dev;
     init_list_head(&sb->inode_list);
@@ -109,7 +115,8 @@ void vfs_umount(struct superblock *sb) {
 
 struct inode *alloc_inode(void) {
     struct inode *inode = kzalloc(sizeof(*inode));
-    if (!inode) return NULL;
+    if (!inode)
+        return NULL;
 
     refcount_set(&inode->refcnt, 1);
     init_list_head(&inode->sb_list);
@@ -136,7 +143,8 @@ void release_sb(struct superblock *sb) {
 void release_dentry(struct dentry *entry) {
     if (refcount_dec_and_test(&entry->refcnt)) {
         release_inode(entry->inode);
-        if (entry->parent) release_dentry(entry->parent);
+        if (entry->parent)
+            release_dentry(entry->parent);
         kfree(entry->name);
         kfree(entry);
     }
@@ -144,7 +152,8 @@ void release_dentry(struct dentry *entry) {
 
 struct file *vfs_open_dentry(struct dentry *entry) {
     struct file *filp = get_empty_filp();
-    if (!filp) return ERR_PTR(-ENOMEM);
+    if (!filp)
+        return ERR_PTR(-ENOMEM);
 
     refcount_inc(&entry->refcnt);
     filp->dentry = entry;
@@ -160,14 +169,16 @@ void init_dentry(struct dentry *entry, struct inode *inode) {
 
 int dentry_set_name(struct dentry *entry, const char *name) {
     char *new_name = kstrdup(name);
-    if (!new_name) return -1;
+    if (!new_name)
+        return -1;
     entry->name = new_name;
     return 0;
 }
 
 struct dentry *vfs_readdir(struct file *filp) {
     struct dentry *entry = kmalloc(sizeof(*entry));
-    if (!entry) return ERR_PTR(-ENOMEM);
+    if (!entry)
+        return ERR_PTR(-ENOMEM);
     int err = filp->ops->readdir(filp, entry);
     if (err) {
         kfree(entry);

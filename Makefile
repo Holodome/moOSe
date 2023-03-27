@@ -47,7 +47,7 @@ qemu-debug: all
   	$(GDB) -ex "target remote localhost:1234" -ex "symbol-file moose/arch/boot/adm64/stage2.elf"
 
 format:
-	$(Q)find . -name "*.c" -o -name "*.h" -exec clang-format -i {} \;
+	$(Q)find . \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} \;
 
 clean:
 	$(Q)rm -f $(shell find . -name "*.o" \

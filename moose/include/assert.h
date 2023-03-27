@@ -7,7 +7,8 @@
 // assertion contains % compilation fails
 #define assert(_x)                                                             \
     do {                                                                       \
-        if (!(_x)) panic("assertion '%s' failed\n", STRINGIFY(_x));            \
+        if (!(_x))                                                             \
+            panic("assertion '%s' failed\n", STRINGIFY(_x));                   \
     } while (0)
 
 #define expects(_x)                                                            \

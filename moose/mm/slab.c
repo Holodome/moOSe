@@ -1,12 +1,11 @@
-#include <mm/slab.h>
 #include <bitops.h>
-#include <param.h>
 #include <mm/physmem.h>
+#include <mm/slab.h>
+#include <param.h>
 #include <string.h>
 
 #define FREE_QUEUE_END UINT_MAX
-#define FREE_QUEUE_PTR(_slab) \
-    ((u32 *)(((struct slab*)_slab)+1))
+#define FREE_QUEUE_PTR(_slab) ((u32 *)(((struct slab *)_slab) + 1))
 
 #define ALIGNMENT 16
 
@@ -18,8 +17,7 @@ static struct slab_cache cache_cache = {
     .slabs_partial = LIST_HEAD_INIT(cache_cache.slabs_partial),
     .slabs_free = LIST_HEAD_INIT(cache_cache.slabs_free),
     .obj_size = sizeof(struct slab_cache),
-    .name = "slab_cache"
-};
+    .name = "slab_cache"};
 
 struct general_cache {
     char *name;
@@ -33,25 +31,20 @@ struct general_cache {
 #define GENERAL_CACHE_MAX_SIZE 2048
 
 static struct general_cache general_caches[] = {
-    { "general-16",  16,    NULL},
-    { "general-32",  32,    NULL},
-    { "general-64",  64,    NULL},
-    { "general-128", 128,   NULL},
-    { "general-256", 256,   NULL},
-    { "general-512", 512,   NULL},
-    { "general-1k",  1024,  NULL},
-    { "general-2k",  2048,  NULL},
+    {"general-16", 16, NULL},   {"general-32", 32, NULL},
+    {"general-64", 64, NULL},   {"general-128", 128, NULL},
+    {"general-256", 256, NULL}, {"general-512", 512, NULL},
+    {"general-1k", 1024, NULL}, {"general-2k", 2048, NULL},
 };
 
 static void estimate_cache(struct slab_cache *cache) {
     size_t mem_size = PAGE_SIZE;
-    cache->obj_count = (mem_size - sizeof(struct slab)) /
-                       (sizeof(u32) + cache->obj_size);
+    cache->obj_count =
+        (mem_size - sizeof(struct slab)) / (sizeof(u32) + cache->obj_size);
 
-    cache->slab_header_size = align_po2(sizeof(struct slab) +
-                                            cache->obj_count * sizeof(u32), ALIGNMENT);
-    if (cache->slab_header_size +
-            cache->obj_count * cache->obj_size > mem_size)
+    cache->slab_header_size = align_po2(
+        sizeof(struct slab) + cache->obj_count * sizeof(u32), ALIGNMENT);
+    if (cache->slab_header_size + cache->obj_count * cache->obj_size > mem_size)
         cache->obj_count--;
 }
 
@@ -104,8 +97,8 @@ int grow_cache(struct slab_cache *cache) {
         return -1;
 
     struct slab *slab = FIXUP_PTR((void *)addr);
-    slab->memory = (void *)slab + sizeof(struct slab) +
-                   cache->obj_count * sizeof(u32);
+    slab->memory =
+        (void *)slab + sizeof(struct slab) + cache->obj_count * sizeof(u32);
 
     slab->cache = cache;
 
@@ -210,8 +203,8 @@ int init_slab_cache(void) {
 
     // init general caches for smalloc, sfree
     for (u32 i = 0; i < GENERAL_CACHE_COUNT; i++) {
-        struct slab_cache *cache = create_cache(
-            general_caches[i].name, general_caches[i].obj_size);
+        struct slab_cache *cache =
+            create_cache(general_caches[i].name, general_caches[i].obj_size);
         if (cache == NULL)
             return -1;
 

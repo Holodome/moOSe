@@ -90,7 +90,8 @@ static const char *get_exception_name(unsigned exception) {
     static_assert(ARRAY_SIZE(strs) == 32);
 
     const char *result = NULL;
-    if (exception < ARRAY_SIZE(strs)) result = strs[exception];
+    if (exception < ARRAY_SIZE(strs))
+        result = strs[exception];
 
     return result;
 }
@@ -146,7 +147,8 @@ extern void isr14();
 extern void isr15();
 
 static void eoi(u8 irq) {
-    if (irq >= 8 + IRQ_BASE) port_out8(PIC2_CMD, PIC_EOI);
+    if (irq >= 8 + IRQ_BASE)
+        port_out8(PIC2_CMD, PIC_EOI);
 
     port_out8(PIC1_CMD, PIC_EOI);
 }
@@ -162,13 +164,16 @@ void isr_handler(struct registers_state *regs) {
                (unsigned)regs->exception_code);
     } else {
         isr_t *isr = isrs[no];
-        if (isr != NULL) isr(regs);
+        if (isr != NULL)
+            isr(regs);
     }
 
     eoi(no);
 }
 
-void register_isr(int num, isr_t *isr) { isrs[IRQ_BASE + num] = isr; }
+void register_isr(int num, isr_t *isr) {
+    isrs[IRQ_BASE + num] = isr;
+}
 
 void init_idt(void) {
     set_idt_entry(0, (u64)exception0);
@@ -237,4 +242,3 @@ void init_idt(void) {
     load_idt();
     sti();
 }
-

@@ -35,12 +35,14 @@ static ssize_t buffered_read(struct blk_device *dev, void *dst_, size_t size) {
         u32 offset = buf->pos % dev->block_size;
 
         if (buf->current_block != lba) {
-            if (dev->read_block(dev, lba, buf->buffer)) return -EIO;
+            if (dev->read_block(dev, lba, buf->buffer))
+                return -EIO;
             buf->current_block = lba;
         }
 
         size_t to_copy = size;
-        if (offset + to_copy > 512) to_copy = 512 - offset;
+        if (offset + to_copy > 512)
+            to_copy = 512 - offset;
 
         memcpy(dst, buf->buffer + offset, to_copy);
         buf->pos += to_copy;
@@ -60,7 +62,8 @@ static ssize_t buffered_write(struct blk_device *dev, const void *src_,
         u32 lba = buf->pos / dev->block_size;
         u32 offset = buf->pos % dev->block_size;
         if (buf->current_block != lba) {
-            if (dev->read_block(dev, lba, buf->buffer)) return -EIO;
+            if (dev->read_block(dev, lba, buf->buffer))
+                return -EIO;
             buf->current_block = lba;
         }
 
@@ -73,7 +76,8 @@ static ssize_t buffered_write(struct blk_device *dev, const void *src_,
         size -= to_copy;
         total_wrote += to_copy;
 
-        if (dev->write_block(dev, lba, buf->buffer)) return -EIO;
+        if (dev->write_block(dev, lba, buf->buffer))
+            return -EIO;
     }
 
     return total_wrote;
@@ -81,7 +85,8 @@ static ssize_t buffered_write(struct blk_device *dev, const void *src_,
 
 int init_blk_device(struct blk_device *blk) {
     struct blk_device_buffered *block = kzalloc(sizeof(*block));
-    if (block == NULL) return -1;
+    if (block == NULL)
+        return -1;
 
     block->buffer = kmalloc(blk->block_size);
     if (block->buffer == NULL) {

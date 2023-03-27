@@ -79,4 +79,3 @@ void init_disk(void) {
     disk_part1_dev->capacity = partition.size;
     init_blk_device(disk_part1_dev);
 }
-

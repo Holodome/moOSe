@@ -17,7 +17,8 @@ static void zero_bss(void) {
     extern volatile u64 *__bss_start;
     extern volatile u64 *__bss_end;
     volatile u64 *p = __bss_start;
-    while (p != __bss_end) *p++ = 0;
+    while (p != __bss_end)
+        *p++ = 0;
 }
 
 __noreturn void kmain(void) {
@@ -59,8 +60,8 @@ __noreturn void kmain(void) {
         panic("failed to initialize virtual memory\n");
 
     init_rtc();
-    if (launch_first_task(idle_task)) panic("failed to create idle task\n");
+    if (launch_first_task(idle_task))
+        panic("failed to create idle task\n");
 
     halt_cpu();
 }
-

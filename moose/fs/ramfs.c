@@ -40,7 +40,9 @@ struct ramfs {
     ino_t inode_counter;
 };
 
-static int ramfs_setattr(struct inode *inode __unused) { return 0; }
+static int ramfs_setattr(struct inode *inode __unused) {
+    return 0;
+}
 static void ramfs_release_sb(struct superblock *sb);
 static void ramfs_free_inode(struct inode *inode);
 static int ramfs_truncate(struct inode *inode);
@@ -83,7 +85,9 @@ static const struct file_ops file_ops = {.lseek = generic_lseek,
                                          .open = ramfs_open_file,
                                          .readdir = ramfs_readdir};
 
-static struct ramfs *sb_ram(const struct superblock *sb) { return sb->private; }
+static struct ramfs *sb_ram(const struct superblock *sb) {
+    return sb->private;
+}
 static struct ramfs_inode *i_ram(const struct inode *inode) {
     return inode->private;
 }
@@ -99,7 +103,8 @@ static void ramfs_release_dentry(struct ramfs_dentry *entry) {
 
 static struct ramfs_dentry *ramfs_get_empty_dentry(void) {
     struct ramfs_dentry *dentry = kmalloc(sizeof(*dentry));
-    if (dentry != NULL) init_list_head(&dentry->list);
+    if (dentry != NULL)
+        init_list_head(&dentry->list);
     return dentry;
 }
 
@@ -107,7 +112,8 @@ static struct inode *ramfs_create_inode(struct inode *dir, mode_t mode) {
     struct superblock *sb = dir->sb;
     struct ramfs *fs = sb_ram(sb);
     struct inode *inode = alloc_inode();
-    if (!inode) return NULL;
+    if (!inode)
+        return NULL;
 
     struct ramfs_inode *ri = kmalloc(sizeof(*ri));
     if (!ri) {
@@ -151,11 +157,13 @@ static struct ramfs_block *ramfs_find_block(struct inode *inode, off_t cursor,
     // TODO: We can optimize this using backwards iteration if block index is
     // closer to file end
     size_t block_idx = cursor >> RAMFS_BLOCK_SIZE_BITS;
-    if (block_idx >= inode->block_count) return NULL;
+    if (block_idx >= inode->block_count)
+        return NULL;
 
     struct ramfs_block *block =
         list_first_entry(&ri->block_list, struct ramfs_block, list);
-    while (block_idx--) block = list_next_entry(block, list);
+    while (block_idx--)
+        block = list_next_entry(block, list);
     *offset = cursor & (RAMFS_BLOCK_SIZE - 1);
 
     return block;
@@ -164,7 +172,8 @@ static struct ramfs_block *ramfs_find_block(struct inode *inode, off_t cursor,
 static struct ramfs_block *ramfs_append_block(struct inode *inode) {
     struct ramfs_inode *ri = i_ram(inode);
     struct ramfs_block *new_block = kmalloc(sizeof(*new_block));
-    if (new_block == NULL) return NULL;
+    if (new_block == NULL)
+        return NULL;
 
     list_add_tail(&new_block->list, &ri->block_list);
     return new_block;
@@ -193,7 +202,8 @@ ramfs_find_or_create_block(struct inode *inode, off_t cursor, off_t *offset) {
     if (block_idx && !block) {
         while (block_idx) {
             block = ramfs_append_block(inode);
-            if (!block) return NULL;
+            if (!block)
+                return NULL;
         }
     }
     *offset = cursor & (RAMFS_BLOCK_SIZE - 1);
@@ -209,12 +219,14 @@ static ssize_t ramfs_read(struct file *filp, void *buf, size_t count) {
     struct ramfs_block *block =
         ramfs_find_block(inode, filp->offset, &in_block_offset);
 
-    if (filp->offset + count > inode->size) count = inode->size - filp->offset;
+    if (filp->offset + count > inode->size)
+        count = inode->size - filp->offset;
 
     void *cursor = buf;
     while (count != 0 && block) {
         off_t to_read = __block_end(sb, filp->offset) - filp->offset;
-        if (to_read > count) to_read = count;
+        if (to_read > count)
+            to_read = count;
 
         memcpy(cursor, block->data + in_block_offset, to_read);
         in_block_offset = 0;
@@ -233,12 +245,14 @@ static ssize_t ramfs_write(struct file *filp, const void *buf, size_t count) {
     off_t in_block_offset;
     struct ramfs_block *block =
         ramfs_find_or_create_block(inode, filp->offset, &in_block_offset);
-    if (!block) return -ENOMEM;
+    if (!block)
+        return -ENOMEM;
 
     const void *cursor = buf;
     while (count != 0 && block) {
         off_t to_write = __block_end(sb, filp->offset) - filp->offset;
-        if (to_write > count) to_write = count;
+        if (to_write > count)
+            to_write = count;
 
         memcpy(block->data + in_block_offset, cursor, to_write);
         in_block_offset = 0;
@@ -247,7 +261,8 @@ static ssize_t ramfs_write(struct file *filp, const void *buf, size_t count) {
         block = list_next_entry_or_null(block, &ri->block_list, list);
         if (block == NULL) {
             block = ramfs_append_block(inode);
-            if (!block) return -ENOMEM;
+            if (!block)
+                return -ENOMEM;
         }
     }
     ssize_t total_wrote = cursor - buf;
@@ -265,13 +280,15 @@ static int ramfs_truncate(struct inode *inode) {
     off_t new_blocks = inode->size >> RAMFS_BLOCK_SIZE_BITS;
     if (old_blocks > new_blocks) {
         off_t count_to_delete = old_blocks - new_blocks;
-        while (count_to_delete) ramfs_pop_block(inode);
+        while (count_to_delete)
+            ramfs_pop_block(inode);
         inode->block_count = new_blocks;
     } else if (old_blocks < new_blocks) {
         off_t count_to_append = new_blocks - old_blocks;
         while (count_to_append) {
             struct ramfs_block *block = ramfs_append_block(inode);
-            if (block == NULL) return -ENOMEM;
+            if (block == NULL)
+                return -ENOMEM;
             memset(block->data, 0, sizeof(block->data));
         }
         inode->block_count = new_blocks;
@@ -303,12 +320,14 @@ static int ramfs_lookup(struct inode *dir, struct dentry *entry) {
     if (strcmp(entry->name, "..") == 0) {
         struct ramfs_inode *ri = i_ram(dir);
         struct inode *parent = ri->parent;
-        if (parent == NULL) parent = dir;
+        if (parent == NULL)
+            parent = dir;
         init_dentry(entry, dir);
         return 0;
     }
     struct ramfs_dentry *found = ramfs_find_by_name(dir, entry->name);
-    if (found == NULL) return -ENOENT;
+    if (found == NULL)
+        return -ENOENT;
 
     init_dentry(entry, found->inode);
     return 0;
@@ -317,7 +336,8 @@ static int ramfs_lookup(struct inode *dir, struct dentry *entry) {
 static int ramfs_mknod(struct inode *dir, struct dentry *entry, mode_t mode,
                        dev_t dev) {
     (void)dev;
-    if (ramfs_find_by_name(dir, entry->name)) return -EEXIST;
+    if (ramfs_find_by_name(dir, entry->name))
+        return -EEXIST;
 
     struct inode *new_inode = ramfs_create_inode(dir, mode);
     struct ramfs_dentry *new_dentry = ramfs_get_empty_dentry();
@@ -337,7 +357,8 @@ static int ramfs_mknod(struct inode *dir, struct dentry *entry, mode_t mode,
     memcpy(new_dentry->name, entry->name, test_name_len);
     new_dentry->name_len = test_name_len;
     list_add(&new_dentry->list, &dir_ir->dentry_list);
-    if (S_ISDIR(mode)) i_ram(new_inode)->parent = dir;
+    if (S_ISDIR(mode))
+        i_ram(new_inode)->parent = dir;
 
     return 0;
 }
@@ -355,7 +376,8 @@ static int ramfs_rename(struct inode *olddir, struct dentry *oldentry,
     struct ramfs_dentry *rd = ramfs_find_by_name(olddir, oldentry->name);
     expects(rd && rd->inode == oldentry->inode);
 
-    if (ramfs_find_by_name(newdir, newentry->name)) return -EEXIST;
+    if (ramfs_find_by_name(newdir, newentry->name))
+        return -EEXIST;
 
     newentry->inode = oldentry->inode;
     oldentry->inode = NULL;
@@ -367,7 +389,8 @@ static int ramfs_rename(struct inode *olddir, struct dentry *oldentry,
 
 static int ramfs_readdir(struct file *filp, struct dentry *entry) {
     struct ramfs_file *rf = f_ram(filp);
-    if (rf->is_finished) return -ENOENT;
+    if (rf->is_finished)
+        return -ENOENT;
 
     struct inode *dir = filp->dentry->inode;
     struct ramfs_inode *ri = i_ram(dir);
@@ -376,10 +399,11 @@ static int ramfs_readdir(struct file *filp, struct dentry *entry) {
         list_first_or_null(&ri->dentry_list, struct ramfs_dentry, list);
     while (index-- && iter)
         iter = list_next_entry_or_null(iter, &ri->dentry_list, list);
-    if (iter == NULL) return -ENOENT;
+    if (iter == NULL)
+        return -ENOENT;
 
     // TODO: iter->name is not zero-terminated!!!
-    if (dentry_set_name(entry, iter->name)) 
+    if (dentry_set_name(entry, iter->name))
         return -ENOMEM;
     init_dentry(entry, iter->inode);
 
@@ -388,7 +412,8 @@ static int ramfs_readdir(struct file *filp, struct dentry *entry) {
 
 static int ramfs_open_file(struct inode *inode __unused, struct file *filp) {
     struct ramfs_file *rf = kzalloc(sizeof(*rf));
-    if (!rf) return -ENOMEM;
+    if (!rf)
+        return -ENOMEM;
     filp->private = rf;
     return 0;
 }
@@ -405,7 +430,8 @@ static int ramfs_unlink(struct inode *dir, struct dentry *entry) {
 
     if (S_ISDIR(inode->mode)) {
         struct ramfs_inode *ri = i_ram(inode);
-        if (!list_is_empty(&ri->dentry_list)) return -ENOTEMPTY;
+        if (!list_is_empty(&ri->dentry_list))
+            return -ENOTEMPTY;
     }
     ramfs_release_dentry(found);
 
@@ -419,7 +445,8 @@ static int ramfs_rmdir(struct inode *dir, struct dentry *entry) {
 static struct inode *ramfs_create_root_inode(struct superblock *sb) {
     struct ramfs *fs = sb_ram(sb);
     struct inode *inode = alloc_inode();
-    if (!inode) return NULL;
+    if (!inode)
+        return NULL;
 
     mode_t mode = 0666 | S_IFDIR;
     struct ramfs_inode *ri = kmalloc(sizeof(*ri));
@@ -440,7 +467,8 @@ static struct inode *ramfs_create_root_inode(struct superblock *sb) {
 
 static struct dentry *ramfs_create_root(struct superblock *sb) {
     struct dentry *entry = create_root_dentry();
-    if (!entry) return NULL;
+    if (!entry)
+        return NULL;
 
     struct inode *inode = ramfs_create_root_inode(sb);
     if (!inode) {
@@ -454,7 +482,8 @@ static struct dentry *ramfs_create_root(struct superblock *sb) {
 
 int ramfs_mount(struct superblock *sb) {
     struct ramfs *fs = kzalloc(sizeof(*fs));
-    if (!fs) return -ENOMEM;
+    if (!fs)
+        return -ENOMEM;
 
     sb->private = fs;
     sb->blk_sz = RAMFS_BLOCK_SIZE;

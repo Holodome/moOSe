@@ -20,7 +20,8 @@ void idle_task(void) {
     struct file *root_file = vfs_open_dentry(root_dentry);
     for (;;) {
         struct dentry *read = vfs_readdir(root_file);
-        if (PTR_ERR(read) == -ENOENT) break;
+        if (PTR_ERR(read) == -ENOENT)
+            break;
 
         struct inode *inode = read->inode;
         if (S_ISREG(inode->mode)) {
@@ -32,7 +33,8 @@ void idle_task(void) {
             kprintf("dir %s\n", read->name);
             for (;;) {
                 struct dentry *read1 = vfs_readdir(dir_file);
-                if (IS_PTR_ERR(read1) && PTR_ERR(read1) == -ENOENT) break;
+                if (IS_PTR_ERR(read1) && PTR_ERR(read1) == -ENOENT)
+                    break;
                 kprintf("  in dir %s\n", read1->name);
             }
         }
@@ -40,5 +42,6 @@ void idle_task(void) {
 
     kprintf("finished");
 
-    for (;;) wait_for_int();
+    for (;;)
+        wait_for_int();
 }

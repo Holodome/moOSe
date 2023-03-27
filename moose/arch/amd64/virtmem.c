@@ -1,8 +1,8 @@
 #include <arch/amd64/asm.h>
 #include <arch/amd64/virtmem.h>
-#include <param.h>
 #include <arch/cpu.h>
 #include <mm/physmem.h>
+#include <param.h>
 #include <string.h>
 
 int alloc_virtual_page(u64 virt_addr) {
@@ -166,7 +166,9 @@ void set_pml4_table(struct pml4_table *table) {
     write_cr3((u64)table);
 }
 
-struct pml4_table *get_pml4_table(void) { return root_table; }
+struct pml4_table *get_pml4_table(void) {
+    return root_table;
+}
 
 int init_virt_mem(const struct mem_range *ranges, size_t ranges_size) {
     root_table = (struct pml4_table *)PML4_BASE_ADDR;
