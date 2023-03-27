@@ -58,4 +58,3 @@ int spin_is_locked(spinlock_t *spinlock);
             0;                                                                 \
         });                                                                    \
     })
-

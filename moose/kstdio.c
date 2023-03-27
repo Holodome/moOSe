@@ -1,7 +1,5 @@
-#include <drivers/tty.h>
 #include <ctype.h>
-#include <device.h>
-#include <errno.h>
+#include <drivers/tty.h>
 #include <kstdio.h>
 #include <string.h>
 
@@ -19,8 +17,7 @@ struct printf_opts {
 
 #define outc(_buffer, _size, _counter, _c)                                     \
     do {                                                                       \
-        if (*(_counter) < (_size))                                             \
-            (_buffer)[*(_counter)] = (_c);                                     \
+        if (*(_counter) < (_size)) (_buffer)[*(_counter)] = (_c);              \
         *(_counter) += 1;                                                      \
     } while (0)
 
@@ -38,8 +35,7 @@ int snprintf(char *buffer, size_t size, const char *fmt, ...) {
 static size_t print_number(char *buffer, uintmax_t number, int base) {
     static const char *charset = "0123456789abcdef";
     size_t counter = 0;
-    if (number == 0)
-        buffer[counter++] = '0';
+    if (number == 0) buffer[counter++] = '0';
 
     while (number > 0) {
         int digit = number % base;
@@ -59,8 +55,7 @@ static size_t print_number(char *buffer, uintmax_t number, int base) {
 static void print_signed(char *buffer, size_t size, size_t *counter,
                          intmax_t number, struct printf_opts *opts) {
     int is_negative = number < 0;
-    if (is_negative)
-        number *= -1;
+    if (is_negative) number *= -1;
 
     char number_buffer[NUMBER_BUFFER_SIZE];
     size_t number_length = print_number(number_buffer, number, 10);
@@ -71,8 +66,7 @@ static void print_signed(char *buffer, size_t size, size_t *counter,
         opts->width = 0;
 
     if (!opts->is_left_aligned && opts->padding_char != '0') {
-        while (opts->width--)
-            outc(buffer, size, counter, opts->padding_char);
+        while (opts->width--) outc(buffer, size, counter, opts->padding_char);
     }
 
     if (is_negative)
@@ -81,16 +75,14 @@ static void print_signed(char *buffer, size_t size, size_t *counter,
         outc(buffer, size, counter, '+');
 
     if (!opts->is_left_aligned && opts->padding_char == '0') {
-        while (opts->width--)
-            outc(buffer, size, counter, opts->padding_char);
+        while (opts->width--) outc(buffer, size, counter, opts->padding_char);
     }
 
     for (size_t i = 0; i < number_length; i++)
         outc(buffer, size, counter, number_buffer[i]);
 
     if (opts->is_left_aligned) {
-        while (opts->width--)
-            outc(buffer, size, counter, ' ');
+        while (opts->width--) outc(buffer, size, counter, ' ');
     }
 }
 
@@ -117,28 +109,24 @@ static void print_unsigned(char *buffer, size_t size, size_t *counter,
         opts->width = 0;
 
     if (!opts->is_left_aligned && opts->padding_char != '0') {
-        while (opts->width--)
-            outc(buffer, size, counter, opts->padding_char);
+        while (opts->width--) outc(buffer, size, counter, opts->padding_char);
     }
 
     for (size_t i = 0; i < prefix_length; i++)
         outc(buffer, size, counter, prefix[i]);
 
     if (!opts->is_left_aligned && opts->padding_char == '0') {
-        while (opts->width--)
-            outc(buffer, size, counter, opts->padding_char);
+        while (opts->width--) outc(buffer, size, counter, opts->padding_char);
     }
 
     for (size_t i = 0; i < number_length; i++) {
         int c = number_buffer[i];
-        if (opts->is_hex_uppercase)
-            c = toupper(c);
+        if (opts->is_hex_uppercase) c = toupper(c);
         outc(buffer, size, counter, c);
     }
 
     if (opts->is_left_aligned) {
-        while (opts->width--)
-            outc(buffer, size, counter, ' ');
+        while (opts->width--) outc(buffer, size, counter, ' ');
     }
 }
 
@@ -151,20 +139,16 @@ static void print_string(char *buffer, size_t size, size_t *counter, char *str,
         opts->width = 0;
 
     if (!opts->is_left_aligned) {
-        while (opts->width--)
-            outc(buffer, size, counter, ' ');
+        while (opts->width--) outc(buffer, size, counter, ' ');
     }
 
     int max_length = INT_MAX;
-    if (opts->has_precision)
-        max_length = opts->precision;
+    if (opts->has_precision) max_length = opts->precision;
 
-    while (*str && max_length--)
-        outc(buffer, size, counter, *str++);
+    while (*str && max_length--) outc(buffer, size, counter, *str++);
 
     if (opts->is_left_aligned) {
-        while (opts->width--)
-            outc(buffer, size, counter, ' ');
+        while (opts->width--) outc(buffer, size, counter, ' ');
     }
 }
 
@@ -172,11 +156,9 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
     size_t counter = 0;
 
     while (*fmt) {
-        while (*fmt != '%' && *fmt)
-            outc(buffer, size, &counter, *fmt++);
+        while (*fmt != '%' && *fmt) outc(buffer, size, &counter, *fmt++);
 
-        if (!*fmt)
-            break;
+        if (!*fmt) break;
 
         // skip %
         fmt++;
@@ -427,8 +409,7 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                            &opts);
             break;
         case 'c':
-            if (counter < size)
-                buffer[counter] = (char)va_arg(args, int);
+            if (counter < size) buffer[counter] = (char)va_arg(args, int);
             counter++;
             break;
         case 's':
@@ -442,8 +423,7 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
                            (uintptr_t)va_arg(args, void *), &opts);
             break;
         default:
-            if (counter < size)
-                buffer[counter] = *fmt;
+            if (counter < size) buffer[counter] = *fmt;
             counter++;
             break;
         }
@@ -470,45 +450,18 @@ int kprintf(const char *fmt, ...) {
 int kvprintf(const char *fmt, va_list args) {
     char buffer[256];
     int count = vsnprintf(buffer, 256, fmt, args);
-    int write_result = write(tty_device, buffer, strlen(buffer));
+    int write_result = tty_write(buffer, strlen(buffer));
     return write_result < 0 ? write_result : count;
 }
 
-int kputc(int c) { return write(tty_device, (char *)&c, 1); }
+int kputc(int c) { return tty_write((char *)&c, 1); }
 
 int kputs(const char *str) {
     size_t len = strlen(str);
-    int result = write(tty_device, str, len);
-    if (result < 0)
-        return result;
+    int result = tty_write(str, len);
+    if (result < 0) return result;
 
     kputc('\n');
     return (int)len;
 }
-
-char *strerror(int errnum) {
-    static char buf[64];
-    static const char *strs[] = {
-#define E(_name, _str) _str,
-        ERRLIST
-#undef E
-    };
-
-    const char *str = NULL;
-    if (errnum == 0) {
-        str = "No error information";
-    } else if (errnum - 1 < (int)ARRAY_SIZE(strs)) {
-        str = strs[errnum - 1];
-    }
-
-    snprintf(buf, sizeof(buf), "%s", str);
-    return buf;
-}
-
-void perror(const char *msg) {
-    if (msg != NULL && *msg)
-        kprintf("%s: ", msg);
-    kprintf("%s\n", strerror(errno));
-}
-
 

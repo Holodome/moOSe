@@ -1,23 +1,23 @@
 #pragma once
 
+#ifndef __i686__
+
 typedef signed char i8;
 typedef unsigned char u8;
 typedef signed short i16;
 typedef unsigned short u16;
 typedef signed int i32;
 typedef unsigned int u32;
-typedef signed long long int i64;
-typedef unsigned long long int u64;
-
-#ifndef __i686__
+typedef signed long int i64;
+typedef unsigned long int u64;
 
 typedef unsigned long int size_t;
-typedef unsigned long long int uintptr_t;
-typedef signed long long int ssize_t;
-typedef signed long long int ptrdiff_t;
-typedef signed long long int intmax_t;
-typedef unsigned long long int uintmax_t;
-typedef signed long long int intptr_t;
+typedef unsigned long int uintptr_t;
+typedef signed long int ssize_t;
+typedef signed long int ptrdiff_t;
+typedef signed long int intmax_t;
+typedef unsigned long int uintmax_t;
+typedef signed long int intptr_t;
 
 #define SIZE_MAX ((size_t)ULONG_MAX)
 #define UINTPTR_MAX ((uintptr_t)ULONG_MAX)
@@ -29,13 +29,22 @@ typedef signed long long int intptr_t;
 
 #else
 
+typedef signed char i8;
+typedef unsigned char u8;
+typedef signed short i16;
+typedef unsigned short u16;
+typedef signed int i32;
+typedef unsigned int u32;
+typedef signed long long int i64;
+typedef unsigned long long int u64;
+
 typedef unsigned int size_t;
 typedef unsigned int uintptr_t;
 typedef signed int intptr_t;
 typedef signed int ssize_t;
 typedef signed int ptrdiff_t;
-typedef signed long long int intmax_t;
-typedef unsigned long long int uintmax_t;
+typedef signed long int intmax_t;
+typedef unsigned long int uintmax_t;
 
 #define SIZE_MAX ((size_t)UINT_MAX)
 #define UINTPTR_MAX ((uintptr_t)UINT_MAX)

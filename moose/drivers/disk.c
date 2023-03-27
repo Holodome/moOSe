@@ -1,55 +1,82 @@
-#include <drivers/disk.h>
+#include <blk_device.h>
 #include <drivers/ata.h>
-#include <errno.h>
+#include <drivers/disk.h>
 #include <mbr.h>
+#include <string.h>
 
-static struct device disk_dev_;
-static struct device disk_part_dev_;
-struct device *disk_dev = &disk_dev_;
-struct device *disk_part_dev = &disk_part_dev_;
+static struct blk_device disk_dev_;
+struct blk_device *disk_dev = &disk_dev_;
+static struct blk_device disk_part_dev_;
+struct blk_device *disk_part_dev = &disk_part_dev_;
+static struct blk_device disk_part1_dev_;
+struct blk_device *disk_part1_dev = &disk_part1_dev_;
 
 static u32 partition_start;
+static u32 partition1_start;
 
-static int read_partition_info(void) {
-    if (lseek(disk_dev, MBR_PARTITION_OFFSET, SEEK_SET) < 0)
-        return -1;
+static int disk_read_block(struct blk_device *dev __unused, size_t idx,
+                           void *buf) {
+    return ata_read_block(idx, buf);
+}
+
+static int disk_write_block(struct blk_device *dev __unused, size_t idx,
+                            const void *buf) {
+    return ata_write_block(idx, buf);
+}
+
+static int partition_read_block(struct blk_device *dev __unused, size_t idx,
+                                void *buf) {
+    return ata_read_block(idx + partition_start, buf);
+}
+
+static int partition_write_block(struct blk_device *dev __unused, size_t idx,
+                                 const void *buf) {
+    return ata_write_block(idx + partition_start, buf);
+}
+
+static int partition1_read_block(struct blk_device *dev __unused, size_t idx,
+                                 void *buf) {
+    /* kprintf("reading %zu (%zx)\n", idx, (idx + partition1_start) * 512); */
+    return ata_read_block(idx + partition1_start, buf);
+}
+
+static int partition1_write_block(struct blk_device *dev __unused, size_t idx,
+                                  const void *buf) {
+    return ata_write_block(idx + partition1_start, buf);
+}
+
+void init_disk(void) {
+    strlcpy(disk_dev->name, "sda", sizeof(disk_dev->name));
+    disk_dev->block_size = 512;
+    disk_dev->block_size_log = 9;
+    disk_dev->read_block = disk_read_block;
+    disk_dev->write_block = disk_write_block;
+    init_blk_device(disk_dev);
 
     struct mbr_partition partition;
-    ssize_t read_result = read(disk_dev, &partition, sizeof(partition));
-    if (read_result < 0 || (size_t)read_result != sizeof(partition))
-        return -1;
-
+    blk_read(disk_dev, MBR_PARTITION_OFFSET, &partition, sizeof(partition));
     partition_start = partition.addr;
-    return 0;
-}
+    kprintf("sda1 start=%u\n", partition_start);
 
-static int partition_read_block(struct device *dev __attribute__((unused)),
-                                size_t idx, void *buf) {
-    return ata_pio_dev->read_block(dev, idx + partition_start, buf);
-}
+    strlcpy(disk_part_dev->name, "sda1", sizeof(disk_dev->name));
+    disk_part_dev->block_size = 512;
+    disk_part_dev->block_size_log = 9;
+    disk_part_dev->read_block = partition_read_block;
+    disk_part_dev->write_block = partition_write_block;
+    disk_part_dev->capacity = partition.size;
+    init_blk_device(disk_part_dev);
 
-static int partition_write_block(struct device *dev __attribute__((unused)),
-                                 size_t idx, const void *buf) {
-    return ata_pio_dev->write_block(dev, idx + partition_start, buf);
-}
+    blk_read(disk_dev, MBR_PARTITION_OFFSET + MBR_PARTITION_SIZE, &partition,
+             sizeof(partition));
+    partition1_start = partition.addr;
+    kprintf("sda2 start=%u\n", partition1_start);
 
-int init_disk(void) {
-    struct blk_device *blk_dev = ata_pio_dev;
-    if (init_blk_device(blk_dev, disk_dev)) 
-        return -1;
-
-    if (read_partition_info()) 
-        return -1;
-
-    static struct blk_device partition_blk = {
-        .read_block = partition_read_block,
-        .write_block = partition_write_block};
-    partition_blk.block_size_log = blk_dev->block_size_log;
-    partition_blk.block_size = blk_dev->block_size;
-
-    if (init_blk_device(&partition_blk, disk_part_dev)) 
-        return -1;
-
-    return 0;
+    strlcpy(disk_part1_dev->name, "sda2", sizeof(disk_dev->name));
+    disk_part1_dev->block_size = 512;
+    disk_part1_dev->block_size_log = 9;
+    disk_part1_dev->read_block = partition1_read_block;
+    disk_part1_dev->write_block = partition1_write_block;
+    disk_part1_dev->capacity = partition.size;
+    init_blk_device(disk_part1_dev);
 }
 

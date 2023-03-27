@@ -1,18 +1,11 @@
-#include <device.h>
 #include <drivers/keyboard.h>
 #include <drivers/vga.h>
 
-static ssize_t tty_read(struct device *device __attribute__((unused)),
-                        void *buffer, size_t count) {
+ssize_t tty_read(void *buffer, size_t count) {
     return keyboard_read(buffer, count);
 }
 
-static ssize_t tty_write(struct device *device __attribute__((unused)),
-                         const void *buffer, size_t count) {
+ssize_t tty_write(const void *buffer, size_t count) {
     return vga_write(buffer, count);
 }
-
-static struct device tty_device_ = {
-    .name = "tty", .ops = {.read = tty_read, .write = tty_write}};
-struct device *tty_device = &tty_device_;
 

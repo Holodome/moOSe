@@ -1,7 +1,7 @@
-#include <drivers/keyboard.h>
 #include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
 #include <arch/cpu.h>
+#include <drivers/keyboard.h>
 #include <drivers/vga.h>
 #include <kstdio.h>
 #include <sched/spinlock.h>
@@ -45,7 +45,7 @@ static void handle_input(u8 codepoint) {
     }
 }
 
-static void keyboard_isr(struct registers_state *regs __attribute__((unused))) {
+static void keyboard_isr(struct registers_state *regs __unused) {
     // read value so interrupt is flushed
     u8 codepoint = port_in8(PORT);
 
