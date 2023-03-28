@@ -6,4 +6,6 @@ void __panic(void) {
     ___panic();
 }
 
-void ___panic(void) { halt_cpu(); }
+void ___panic(void) {
+    halt_cpu();
+}

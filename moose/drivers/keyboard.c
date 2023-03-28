@@ -1,7 +1,7 @@
-#include <drivers/keyboard.h>
 #include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
 #include <arch/cpu.h>
+#include <drivers/keyboard.h>
 #include <drivers/vga.h>
 #include <kstdio.h>
 #include <sched/spinlock.h>
@@ -27,7 +27,8 @@ static const char sc_ascii[] = {
     'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', '?', '?',  '?', ' '};
 
 static void handle_input(u8 codepoint) {
-    if (codepoint > SC_MAX) return;
+    if (codepoint > SC_MAX)
+        return;
 
     if (codepoint == BACKSPACE) {
         if (keyboard.dst > keyboard.dst_start) {
@@ -45,7 +46,7 @@ static void handle_input(u8 codepoint) {
     }
 }
 
-static void keyboard_isr(struct registers_state *regs __attribute__((unused))) {
+static void keyboard_isr(struct registers_state *regs __unused) {
     // read value so interrupt is flushed
     u8 codepoint = port_in8(PORT);
 
@@ -58,7 +59,9 @@ static void keyboard_isr(struct registers_state *regs __attribute__((unused))) {
     }
 }
 
-void init_keyboard(void) { register_isr(1, keyboard_isr); }
+void init_keyboard(void) {
+    register_isr(1, keyboard_isr);
+}
 
 ssize_t keyboard_read(void *buffer, size_t count) {
     spin_lock(&keyboard.read_lock);
@@ -69,7 +72,8 @@ ssize_t keyboard_read(void *buffer, size_t count) {
     keyboard.dst_end = keyboard.dst + count;
     spin_unlock_irqrestore(&keyboard.lock, flags);
 
-    while (atomic_read(&keyboard.is_listening)) spinloop_hint();
+    while (atomic_read(&keyboard.is_listening))
+        spinloop_hint();
 
     spin_lock_irqsave(&keyboard.lock, flags);
     size_t result = keyboard.dst - keyboard.dst_start;
@@ -78,4 +82,3 @@ ssize_t keyboard_read(void *buffer, size_t count) {
 
     return result;
 }
-

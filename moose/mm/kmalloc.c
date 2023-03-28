@@ -1,9 +1,9 @@
 #include <assert.h>
 #include <bitops.h>
-#include <param.h>
+#include <list.h>
 #include <mm/kmalloc.h>
 #include <mm/vmalloc.h>
-#include <list.h>
+#include <param.h>
 #include <string.h>
 
 #define INITIAL_HEAP_SIZE (1 << 14)
@@ -13,7 +13,7 @@ struct mem_block {
     size_t size;
     int used;
     struct list_head list;
-} __attribute__((aligned(ALIGNMENT)));
+} __aligned(ALIGNMENT);
 
 struct subheap {
     void *memory;
@@ -21,7 +21,7 @@ struct subheap {
 
     struct list_head blocks;
     struct list_head list;
-} __attribute__((aligned(ALIGNMENT)));
+} __aligned(ALIGNMENT);
 
 static LIST_HEAD(subheaps);
 
@@ -149,22 +149,31 @@ void kfree(void *mem) {
     block->used = 0;
     struct subheap *subheap = find_block_heap(block);
     assert(subheap);
-    assert(0);
 
-    struct mem_block *left = list_prev_or_null(&block->list, &subheap->blocks,
-                                               struct mem_block, list);
+    struct mem_block *left =
+        list_prev_entry_or_null(block, &subheap->blocks, list);
     if (left && !left->used) {
         left->size += block->size + sizeof(struct mem_block);
         list_remove(&block->list);
         block = left;
     }
 
-    struct mem_block *right = list_next_or_null(&block->list, &subheap->blocks,
-                                                struct mem_block, list);
+    struct mem_block *right =
+        list_next_entry_or_null(block, &subheap->blocks, list);
     if (right && !right->used) {
         block->size += right->size + sizeof(struct mem_block);
         list_remove(&right->list);
     }
+}
+
+char *kstrdup(const char *str) {
+    if (str == NULL)
+        return NULL;
+
+    size_t len = strlen(str);
+    void *memory = kmalloc(len + 1);
+    strcpy(memory, str);
+    return memory;
 }
 
 #ifndef __i386__

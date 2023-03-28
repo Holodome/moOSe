@@ -1,5 +1,5 @@
-#include <drivers/ata.h>
 #include <arch/amd64/asm.h>
+#include <drivers/ata.h>
 
 #define PRIMARY_BUS 0x1f0
 #define SECONDARY_BUS 0x170
@@ -100,18 +100,10 @@ static int ata_pio_write(const void *buf, u32 lba, u8 sector_count) {
     return 0;
 }
 
-static int read_block(struct device *dev __attribute__((unused)), size_t idx,
-                      void *buf) {
+int ata_read_block(size_t idx, void *buf) {
     return ata_pio_read(buf, idx, 1);
 }
 
-static int write_block(struct device *dev __attribute__((unused)), size_t idx,
-                       const void *buf) {
+int ata_write_block(size_t idx, const void *buf) {
     return ata_pio_write(buf, idx, 1);
 }
-
-static struct blk_device ata_pio_dev_ = {.block_size = 512,
-                                         .block_size_log = 9,
-                                         .read_block = read_block,
-                                         .write_block = write_block};
-struct blk_device *ata_pio_dev = &ata_pio_dev_;

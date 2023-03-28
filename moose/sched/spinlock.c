@@ -1,7 +1,9 @@
 #include <assert.h>
 #include <sched/spinlock.h>
 
-void spin_lock_init(spinlock_t *lock) { atomic_init(&lock->atomic); }
+void spin_lock_init(spinlock_t *spinlock) {
+    atomic_init(&spinlock->atomic);
+}
 
 int spin_trylock(spinlock_t *lock) {
     int old = 0;
@@ -18,5 +20,6 @@ void spin_unlock(spinlock_t *lock) {
     atomic_set_release(&lock->atomic, 0);
 }
 
-int spin_is_locked(spinlock_t *lock) { return atomic_read(&lock->atomic); }
-
+int spin_is_locked(spinlock_t *spinlock) {
+    return atomic_read(&spinlock->atomic);
+}

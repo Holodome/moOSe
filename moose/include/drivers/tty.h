@@ -2,4 +2,5 @@
 
 #include <types.h>
 
-extern struct device *tty_device;
+ssize_t tty_read(void *buffer, size_t count);
+ssize_t tty_write(const void *buffer, size_t count);

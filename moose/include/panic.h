@@ -1,7 +1,9 @@
 #pragma once
 
-__attribute__((noreturn)) void __panic(void);
-__attribute__((noreturn)) void ___panic(void);
+#include <types.h>
+
+__noreturn void __panic(void);
+__noreturn void ___panic(void);
 
 #define panic(...)                                                             \
     do {                                                                       \
@@ -20,4 +22,3 @@ __attribute__((noreturn)) void ___panic(void);
                 __PRETTY_FUNCTION__);                                          \
         ___panic();                                                            \
     } while (0)
-

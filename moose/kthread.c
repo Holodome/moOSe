@@ -9,7 +9,8 @@ volatile struct task *current;
 
 static struct task *create_task(void (*fn)(void)) {
     struct task *task = kzalloc(sizeof(*task));
-    if (task == NULL) return NULL;
+    if (task == NULL)
+        return NULL;
 
     task->info = kzalloc(sizeof(union kthread));
     if (task->info == NULL) {
@@ -29,7 +30,8 @@ static struct task *create_task(void (*fn)(void)) {
 
 int launch_first_task(void (*fn)(void)) {
     struct task *task = create_task(fn);
-    if (task == NULL) return -1;
+    if (task == NULL)
+        return -1;
 
     current = task;
     list_add(&task->list, &tasks);
@@ -39,9 +41,9 @@ int launch_first_task(void (*fn)(void)) {
 
 int launch_task(void (*fn)(void)) {
     struct task *task = create_task(fn);
-    if (task == NULL) return -1;
+    if (task == NULL)
+        return -1;
 
     list_add(&task->list, &tasks);
     return 0;
 }
-
