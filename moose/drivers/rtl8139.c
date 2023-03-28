@@ -51,8 +51,10 @@ __attribute__((used)) static void rtl8139_receive(void) {
     // check that rx buffer is not empty
     while ((port_in8(rtl8139.io_addr + RTL_REG_CMD) & 0x1) != 1) {
         u8 *rx_ptr = rtl8139.rx_buffer + rtl8139.rx_offset;
-        u16 frame_size = *((u16 *)(rx_ptr + 2));
+        u16 frame_size = *((u16 *)(rx_ptr + 2)) - 4;
 
+        // skip 4 bytes rtl header
+        rx_ptr += 4;
         if (rx_ptr + frame_size >= rtl8139.rx_buffer + RX_BUFFER_SIZE) {
             u16 part_size = (rtl8139.rx_buffer + RX_BUFFER_SIZE) - rx_ptr;
             memcpy(frame, rx_ptr, part_size);
@@ -61,10 +63,9 @@ __attribute__((used)) static void rtl8139_receive(void) {
             memcpy(frame, rx_ptr, frame_size);
         }
 
-        // first 4 bytes is rtl header
-        net_daemon_add_frame(frame + 4, frame_size - 4);
+        net_daemon_add_frame(frame, frame_size);
 
-        rtl8139.rx_offset = (rtl8139.rx_offset + frame_size + 4 + 3) & ~0x3;
+        rtl8139.rx_offset = (rtl8139.rx_offset + frame_size + 4 + 4 + 3) & ~0x3;
         rtl8139.rx_offset %= RX_BUFFER_SIZE;
 
         port_out16(rtl8139.io_addr + RTL_REG_CAPR, rtl8139.rx_offset - 0x10);
@@ -166,13 +167,14 @@ int init_rtl8139(u8 *mac_addr) {
     return 0;
 }
 
-void rtl8139_send(void *frame, size_t size) {
+void rtl8139_send(struct net_frame *frame) {
+    size_t size = get_net_frame_size(frame);
     expects(size <= ETH_FRAME_MAX_SIZE);
 
     u64 flags;
     spin_lock_irqsave(&rtl8139.lock, flags);
 
-    memcpy(rtl8139.tx_buffer, frame, size);
+    memcpy(rtl8139.tx_buffer, frame->head, size);
 
     u8 tx_offset = sizeof(u32) * rtl8139.tx_index++;
     port_out32(rtl8139.io_addr + RTL_REG_TX_ADDR + tx_offset,

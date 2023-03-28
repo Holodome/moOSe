@@ -1,7 +1,6 @@
 #pragma once
 
 #include <types.h>
-#include <net/frame.h>
 
 #define ETH_FRAME_MAX_SIZE 1522
 #define ETH_FRAME_MIN_SIZE 64
@@ -13,10 +12,12 @@
 #define ETH_TYPE_ARP 0x0806
 #define ETH_TYPE_IPV6 0x86DD
 
+struct net_frame;
+
 struct nic {
     u8 mac_addr[6];
     u8 ip_addr[4];
-    void (*send_frame)(void *frame, size_t size);
+    void (*send_frame)(struct net_frame *frame);
 };
 
 extern struct nic nic;

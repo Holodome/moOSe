@@ -5,6 +5,8 @@
 #define ICMP_ECHO_REPLY 0
 #define ICMP_ECHO_REQUEST 8
 
+struct net_frame;
+
 struct icmp_header {
     u8 type;
     u8 code;
@@ -12,5 +14,5 @@ struct icmp_header {
     u32 rest;
 } __attribute__((packed));
 
-int icmp_send_echo_request(u8 *ip_addr);
-void icmp_receive_frame(u8 *ip_addr, void *frame, size_t size);
+int icmp_send_echo_request(struct net_frame *frame, u8 *ip_addr);
+void icmp_receive_frame(struct net_frame *frame);

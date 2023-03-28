@@ -1,20 +1,19 @@
 #include <net/netdaemon.h>
+#include <net/frame.h>
 #include <net/inet.h>
 #include <net/eth.h>
 #include <mm/kmalloc.h>
-#include <string.h>
 #include <kthread.h>
+#include <string.h>
 #include <assert.h>
 #include <errno.h>
 #include <kstdio.h>
 #include <sched/spinlock.h>
 
-#define QUEUE_SIZE 10
-#define BUFFER_SIZE ETH_FRAME_MAX_SIZE
+#define QUEUE_SIZE 32
 
 struct queue_entry {
-    u8 buffer[BUFFER_SIZE];
-    size_t size;
+    struct net_frame *frame;
     int is_free;
 };
 
@@ -32,7 +31,10 @@ __attribute__((noreturn)) static void net_daemon_task(void) {
         for (int i = 0; i < QUEUE_SIZE; i++) {
             struct queue_entry *entry = &queue->entries[i];
             if (!entry->is_free) {
-                eth_receive_frame(entry->buffer, entry->size);
+                eth_receive_frame(entry->frame);
+
+                release_net_frame(entry->frame);
+                entry->frame = NULL;
                 entry->is_free = 1;
             }
         }
@@ -58,17 +60,22 @@ int init_net_daemon(void) {
     return 0;
 }
 
-int net_daemon_add_frame(void *frame, size_t size) {
-    expects(size <= ETH_FRAME_MAX_SIZE);
-
+int net_daemon_add_frame(void *data, size_t size) {
     u64 flags;
     spin_lock_irqsave(&queue->lock, flags);
+
+    expects(size <= ETH_FRAME_MAX_SIZE);
+    struct net_frame *frame = get_free_net_frame(RECEIVE_FRAME);
+    if (frame == NULL)
+        return -ENOMEM;
+
+    memcpy(frame->buffer, data, size);
+    frame->size = size;
 
     for (int i = 0; i < QUEUE_SIZE; i++) {
         struct queue_entry *entry = &queue->entries[i];
         if (entry->is_free) {
-            memcpy(entry->buffer, frame, size);
-            entry->size = size;
+            entry->frame = frame;
             entry->is_free = 0;
             spin_unlock_irqrestore(&queue->lock, flags);
             return 0;

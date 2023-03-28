@@ -2,6 +2,8 @@
 
 #include <types.h>
 
+struct net_frame;
+
 struct udp_header {
     u16 src_port;
     u16 dst_port;
@@ -9,6 +11,6 @@ struct udp_header {
     u16 checksum;
 } __attribute__((packed));
 
-int udp_send_frame(u8 *dst_ip_addr, u16 src_port, u16 dst_port, void *payload,
-                   size_t size);
-void udp_receive_frame(void *frame);
+int udp_send_frame(struct net_frame *frame, u8 *dst_ip_addr,
+                   u16 src_port, u16 dst_port);
+void udp_receive_frame(struct net_frame *frame);

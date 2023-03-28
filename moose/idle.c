@@ -55,10 +55,18 @@ void idle_task(void) {
     kprintf("dns ");
     debug_print_mac_addr(mac_addr);
 
-    icmp_send_echo_request(dns_ip_addr);
+    struct net_frame *frame = get_free_net_frame(SEND_FRAME);
+    icmp_send_echo_request(frame, gateway_ip_addr);
+    release_net_frame(frame);
 
+    frame = get_free_net_frame(SEND_FRAME);
     char *message = "Hello world!";
-    udp_send_frame(gateway_ip_addr, 80, 80, message, strlen(message));
+    memcpy(frame->payload, message, strlen(message));
+    frame->payload_size = strlen(message);
+    frame->size = frame->payload_size;
+
+    udp_send_frame(frame, gateway_ip_addr, 80, 80);
+    release_net_frame(frame);
 
     launch_task(other_task);
 

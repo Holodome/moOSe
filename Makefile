@@ -45,7 +45,7 @@ qemu: all
 
 qemu-debug: all
 	$(QEMU) -s -S -fda moose.img -d guest_errors & 
-  	$(GDB) -ex "target remote localhost:1234" -ex "symbol-file moose/arch/boot/adm64/stage2.elf"
+  	$(GDB) -ex "target remote localhost:1234" -ex "symbol-file moose/arch/amd64/boot/stage2.elf"
 
 format:
 	$(Q)find . -name "*.c" -o -name "*.h" -exec clang-format -i {} \;

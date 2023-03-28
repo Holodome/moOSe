@@ -33,13 +33,12 @@ int init_arp_cache(void) {
     if (cache == NULL)
         return -ENOMEM;
 
-    struct arp_cache_entry *entries = kmalloc(
-        ARP_CACHE_SIZE * sizeof(struct arp_cache_entry));
-    if (entries == NULL)
-        return -ENOMEM;
-
     for (size_t i = 0; i < ARP_CACHE_SIZE; i++) {
-        list_add(&entries[i].list, &free_list);
+        struct arp_cache_entry *entry = kmalloc(sizeof(*entry));
+        if (entry == NULL)
+            return -ENOMEM;
+
+        list_add(&entry->list, &free_list);
     }
 
     init_list_head(&cache->entries);
@@ -95,8 +94,12 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
     if (arp_cache_get(ip_addr, mac_addr) == 0)
         return 0;
 
-    int err;
-    if ((err = arp_send_request(ip_addr)))
+    struct net_frame *frame = get_free_net_frame(SEND_FRAME);
+    if (frame == NULL)
+        return -ENOMEM;
+
+    int err = arp_send_request(frame, ip_addr);
+    if (err)
         return err;
 
     int found = 0;
@@ -107,17 +110,18 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
         found = (arp_cache_get(ip_addr, mac_addr) == 0);
     }
 
-    if (found) return 0;
+    release_net_frame(frame);
+
+    if (found)
+        return 0;
 
     return -1;
 }
 
-int arp_send_request(u8 *ip_addr) {
-    struct net_frame *frame = alloc_net_frame();
-    if (frame == NULL)
-        return -ENOMEM;
+int arp_send_request(struct net_frame *frame, u8 *ip_addr) {
+    pull_net_frame_head(frame, sizeof(struct arp_header));
+    struct arp_header *header = frame->head;
 
-    struct arp_header *header = frame->data;
     header->hw_type = htobe16(ETH_HW_TYPE);
     header->protocol_type = htobe16(ETH_TYPE_IPV4);
     header->hw_len = 6;
@@ -128,43 +132,37 @@ int arp_send_request(u8 *ip_addr) {
     memset(header->dst_mac, 0, 6);
     memcpy(header->dst_ip, ip_addr, 4);
 
-    frame->size = sizeof(struct arp_header);
-    int err = eth_send_frame(broadcast_mac_addr, ETH_TYPE_ARP,
-                             frame->data, frame->size);
-    if (err) return err;
+    frame->inet_type = INET_TYPE_ARP;
+    memcpy(&frame->arp_header, frame->head, sizeof(*header));
 
-    free_net_frame(frame);
-    return 0;
+    return eth_send_frame(frame, broadcast_mac_addr, ETH_TYPE_ARP);
 }
 
-int arp_send_reply(void *frame) {
-    struct arp_header *header = frame;
-
-    struct net_frame *reply_frame = alloc_net_frame();
+static int arp_send_reply(struct net_frame *frame) {
+    struct net_frame *reply_frame = get_free_net_frame(SEND_FRAME);
     if (reply_frame == NULL)
         return -ENOMEM;
 
-    reply_frame->size = sizeof(struct arp_header);
-    memcpy(reply_frame->data, frame, reply_frame->size);
+    pull_net_frame_head(reply_frame, sizeof(struct arp_header));
+    struct arp_header *header = frame->head;
+    struct arp_header *reply_header = reply_frame->head;
 
-    struct arp_header *reply_header = reply_frame->data;
-    memcpy(reply_header->src_mac, header->dst_mac, 6);
-    memcpy(reply_header->dst_mac, nic.mac_addr, 6);
+    memcpy(reply_frame->head, frame->head, sizeof(*reply_header));
+    memcpy(reply_header->src_mac, nic.mac_addr, 6);
+    memcpy(reply_header->dst_mac, header->src_mac, 6);
     memcpy(reply_header->src_ip, header->dst_ip, 4);
     memcpy(reply_header->dst_ip, header->src_ip, 4);
 
     reply_header->operation = htobe16(ARP_REPLY);
 
-    int err = eth_send_frame(reply_header->dst_mac, ETH_TYPE_ARP,
-                             reply_frame->data, reply_frame->size);
-    if (err) return err;
+    memcpy(&reply_frame->arp_header, reply_header, sizeof(*reply_header));
+    reply_frame->inet_type = INET_TYPE_ARP;
 
-    free_net_frame(reply_frame);
-    return 0;
+    return eth_send_frame(reply_frame, reply_header->dst_mac, ETH_TYPE_ARP);
 }
 
-void arp_receive_frame(void *frame) {
-    struct arp_header *header = frame;
+void arp_receive_frame(struct net_frame *frame) {
+    struct arp_header *header = frame->head;
     header->hw_type = be16toh(header->hw_type);
     header->protocol_type = be16toh(header->protocol_type);
     header->operation = be16toh(header->operation);
@@ -172,8 +170,13 @@ void arp_receive_frame(void *frame) {
     // hw type must be Ethernet, protocols ipv4, ipv6 only
     if (header->hw_type != ETH_HW_TYPE ||
         !(header->protocol_type == ETH_TYPE_IPV4 ||
-        header->protocol_type == ETH_TYPE_IPV6))
+        header->protocol_type == ETH_TYPE_IPV6)) {
+        kprintf("arp supports only ethernet link, and ipv4/ipv6\n");
         return;
+    }
+
+    memcpy(&frame->arp_header, frame->head, sizeof(*header));
+    frame->inet_type = INET_TYPE_ARP;
 
     switch (header->operation) {
     case ARP_REQUEST:

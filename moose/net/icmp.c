@@ -2,70 +2,85 @@
 #include <net/ip.h>
 #include <net/inet.h>
 #include <net/frame.h>
-#include <assert.h>
 #include <endian.h>
 #include <kstdio.h>
-#include <errno.h>
-#include <mm/kmalloc.h>
+#include <string.h>
 
 #define ICMP_CONTROL_SEQ_BASE 0x0a
-#define ICMP_CONTROL_SEQ_SIZE 32
+#define ICMP_CONTROL_SEQ_SIZE 0
 
-int icmp_send_echo_request(u8 *ip_addr) {
-    u16 frame_size = sizeof(struct icmp_header) + ICMP_CONTROL_SEQ_SIZE;
-    struct net_frame *frame = alloc_net_frame();
-    if (frame == NULL)
-        return -ENOMEM;
+int icmp_send_echo_request(struct net_frame *frame, u8 *ip_addr) {
+    pull_net_frame_head(frame, sizeof(struct icmp_header));
+    struct icmp_header *header = frame->head;
 
-    frame->size = frame_size;
-
-    struct icmp_header *header = frame->data;
     header->type = ICMP_ECHO_REQUEST;
-    u8 *control_seq = (u8 *)(header + 1);
+    u8 *control_seq = frame->payload;
+    frame->payload_size = ICMP_CONTROL_SEQ_SIZE;
+    inc_net_frame_size(frame, frame->payload_size);
     for (int i = 0; i < ICMP_CONTROL_SEQ_SIZE; i++)
         control_seq[i] = ICMP_CONTROL_SEQ_BASE + i;
 
-    header->checksum = htobe16(inet_checksum(header, frame_size));
+    header->checksum = htobe16(inet_checksum(header, get_net_frame_size(frame)));
+
+    memcpy(&frame->icmp_header, frame->head, sizeof(*header));
+    frame->transport_type = TRANSPORT_TYPE_ICMP;
 
     kprintf("icmp request to host ");
     debug_print_ip_addr(ip_addr);
 
-    int err = ipv4_send_frame(ip_addr, IP_PROTOCOL_ICMP,
-                              frame->data, frame->size);
-    if (err) return err;
-
-    free_net_frame(frame);
-    return 0;
+    return ipv4_send_frame(frame, ip_addr, IP_PROTOCOL_ICMP);
 }
 
-void icmp_receive_frame(u8 *ip_addr, void *frame, size_t size) {
-    expects(size <= ETH_PAYLOAD_MAX_SIZE);
+static void icmp_send_echo_reply(struct net_frame *frame) {
+    struct net_frame *reply_frame = get_free_net_frame(SEND_FRAME);
+    if (reply_frame == NULL)
+        return;
 
-    struct icmp_header *header = frame;
+    memcpy(reply_frame->payload, frame->payload, frame->payload_size);
+
+    pull_net_frame_head(reply_frame, sizeof(struct icmp_header));
+    struct icmp_header *header = reply_frame->head;
+
+    header->type = ICMP_ECHO_REPLY;
+    header->checksum = 0;
+    header->checksum =
+        htobe16(inet_checksum(reply_frame->head, get_net_frame_size(frame)));
+
+    memcpy(&reply_frame->icmp_header, reply_frame->head, sizeof(*header));
+    reply_frame->transport_type = TRANSPORT_TYPE_ICMP;
+
+    ipv4_send_frame(frame, frame->ipv4_header.src_ip, IP_PROTOCOL_ICMP);
+}
+
+void icmp_receive_frame(struct net_frame *frame) {
+    struct icmp_header *header = frame->head;
 
     switch (header->type) {
     case ICMP_ECHO_REQUEST:
-        header->type = ICMP_ECHO_REPLY;
-        header->checksum = 0;
-        header->checksum = htobe16(inet_checksum(frame, size));
-        ipv4_send_frame(ip_addr, IP_PROTOCOL_ICMP, frame, size);
+        icmp_send_echo_reply(frame);
         break;
     case ICMP_ECHO_REPLY: {
         // check control seq
-        u8 *control_seq = (u8 *)(header + 1);
+        push_net_frame_head(frame, sizeof(*header));
+        frame->payload = frame->head;
+        frame->payload_size = ICMP_CONTROL_SEQ_SIZE;
+        u8 *control_seq = frame->payload;
         for (int i = 0; i < ICMP_CONTROL_SEQ_SIZE; i++) {
             if (control_seq[i] != ICMP_CONTROL_SEQ_BASE + i) {
                 kprintf("icmp: reply is corrupted, from host ");
-                debug_print_ip_addr(ip_addr);
+                debug_print_ip_addr(frame->ipv4_header.src_ip);
                 return;
             }
         }
 
         kprintf("icmp reply: host is alive ");
-        debug_print_ip_addr(ip_addr);
+        debug_print_ip_addr(frame->ipv4_header.src_ip);
         break;
     }
     default:
         kprintf("unsupported icmp type\n");
     }
+
+    memcpy(&frame->icmp_header, header, sizeof(*header));
+    frame->transport_type = TRANSPORT_TYPE_ICMP;
 }

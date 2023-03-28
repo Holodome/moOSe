@@ -16,6 +16,8 @@
 #define IP_PROTOCOL_TCP 6
 #define IP_PROTOCOL_UDP 17
 
+struct net_frame;
+
 struct ipv4_header {
     // 4 bit ihl, 4 bit version
     u8 version_ihl;
@@ -32,6 +34,6 @@ struct ipv4_header {
     u8 dst_ip[4];
 } __attribute__((packed));
 
-int ipv4_send_frame(u8 *ip_addr, u8 protocol, void *payload, size_t size);
-void ipv4_receive_frame(void *frame);
-void ipv6_receive_frame(void *frame);
+int ipv4_send_frame(struct net_frame *frame, u8 *ip_addr, u8 protocol);
+void ipv4_receive_frame(struct net_frame *frame);
+void ipv6_receive_frame(struct net_frame *frame);

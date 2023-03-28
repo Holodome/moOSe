@@ -7,6 +7,8 @@
 #define ARP_REQUEST 1
 #define ARP_REPLY 2
 
+struct net_frame;
+
 struct arp_header {
     u16 hw_type;
     u16 protocol_type;
@@ -20,8 +22,7 @@ struct arp_header {
 } __attribute((packed));
 
 int init_arp_cache(void);
-int arp_send_request(u8 *ip_addr);
-int arp_send_reply(void *frame);
-void arp_receive_frame(void *frame);
+int arp_send_request(struct net_frame *frame, u8 *ip_addr);
+void arp_receive_frame(struct net_frame *frame);
 int arp_get_mac(u8 *ip_addr, u8 *mac_addr);
 void debug_clear_arp_cache(void);
