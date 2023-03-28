@@ -1,7 +1,9 @@
+#include <param.h>
+
 ENTRY(kmain)
 SECTIONS {
     /* kernel virtual base + kernel offset in physical + kboot.S */
-    . = 0xffff880000000000 + 0x100000 + 0x1000; 
+    . = KERNEL_VIRTUAL_BASE + KBOOT_SIZE; 
 
     .text : {
         KEEP(*(.text.kstart))

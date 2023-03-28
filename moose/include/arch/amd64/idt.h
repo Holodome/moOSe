@@ -10,14 +10,14 @@ struct idt_entry {
     u16 offset_mid;
     u32 offset_high;
     u32 reserved;
-} __attribute__((packed));
+} __packed;
 
 static_assert(sizeof(struct idt_entry) == 16);
 
 struct idt_reg {
     u16 size;
     u64 offset;
-} __attribute__((packed));
+} __packed;
 
 struct registers_state {
     u64 rdi;
@@ -45,12 +45,12 @@ struct registers_state {
     u64 rflags;
     u64 ursp;
     u64 uss;
-} __attribute__((packed));
+} __packed;
 
 static_assert(sizeof(struct registers_state) == 184);
 
-typedef void isr_t(const struct registers_state *regs);
+typedef void isr_t(struct registers_state *regs);
 
-void isr_handler(const struct registers_state *regs);
-void setup_idt(void);
+void isr_handler(struct registers_state *regs);
+void init_idt(void);
 void register_isr(int num, isr_t *isr);

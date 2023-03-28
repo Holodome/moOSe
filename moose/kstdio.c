@@ -1,8 +1,7 @@
-#include <device.h>
-#include <errno.h>
-#include <kmem.h>
+#include <ctype.h>
+#include <drivers/tty.h>
 #include <kstdio.h>
-#include <tty.h>
+#include <string.h>
 
 struct printf_opts {
     size_t width;
@@ -469,122 +468,20 @@ int kprintf(const char *fmt, ...) {
 int kvprintf(const char *fmt, va_list args) {
     char buffer[256];
     int count = vsnprintf(buffer, 256, fmt, args);
-    int write_result = write(tty_device, buffer, strlen(buffer));
+    int write_result = tty_write(buffer, strlen(buffer));
     return write_result < 0 ? write_result : count;
 }
 
-int kputc(int c) { return write(tty_device, (char *)&c, 1); }
+int kputc(int c) {
+    return tty_write((char *)&c, 1);
+}
 
 int kputs(const char *str) {
     size_t len = strlen(str);
-    int result = write(tty_device, str, len);
+    int result = tty_write(str, len);
     if (result < 0)
         return result;
 
     kputc('\n');
     return (int)len;
-}
-
-char *strerror(int errnum) {
-    static char buf[64];
-    static const char *strs[] = {
-#define E(_name, _str) _str,
-        ERRLIST
-#undef E
-    };
-
-    const char *str = NULL;
-    if (errnum == 0) {
-        str = "No error information";
-    } else if (errnum - 1 < (int)ARRAY_SIZE(strs)) {
-        str = strs[errnum - 1];
-    }
-
-    snprintf(buf, sizeof(buf), "%s", str);
-    return buf;
-}
-
-void perror(const char *msg) {
-    if (msg != NULL && *msg)
-        kprintf("%s: ", msg);
-    kprintf("%s\n", strerror(errno));
-}
-
-int isdigit(int c) { return c >= '0' && c <= '9'; }
-int toupper(int c) { return 'a' <= c && c <= 'z' ? c + 'A' - 'a' : c; };
-
-char *strpbrk(const char *string, const char *lookup) {
-    char *cursor = (char *)string;
-    char symb;
-
-    while ((symb = *cursor++))
-        for (const char *test = lookup; *test; ++test)
-            if (*test == symb)
-                return cursor - 1;
-
-    return NULL;
-}
-
-size_t strspn(const char *string, const char *lookup) {
-    const char *cursor = string;
-    char symb;
-    int is_valid = 1;
-
-    while ((symb = *cursor++) && is_valid) {
-        is_valid = 0;
-
-        for (const char *test = lookup; *test && !is_valid; ++test)
-            is_valid = *test == symb;
-
-        if (!is_valid)
-            --cursor;
-    }
-
-    return cursor - string - 1;
-}
-
-size_t strcspn(const char *string, const char *lookup) {
-    const char *cursor = string;
-    int is_valid = 1;
-    char symb;
-
-    while ((symb = *cursor++) && is_valid)
-        for (const char *test = lookup; *test && is_valid; ++test)
-            if (symb == *test) {
-                --cursor;
-                is_valid = 0;
-            }
-
-    return cursor - string - 1;
-}
-
-char *strchr(const char *string, int symb) {
-    do {
-        if (*string == symb)
-            return (char *)string;
-    } while (*string++);
-
-    return NULL;
-}
-
-char *strrchr(const char *string, int symb) {
-    const char *result = NULL;
-
-    do {
-        if (*string == symb)
-            result = string;
-    } while (*string++);
-
-    return (char *)result;
-}
-
-size_t strlcpy(char *dst, const char *src, size_t maxlen) {
-    const size_t srclen = strlen(src);
-    if (srclen + 1 < maxlen) {
-        memcpy(dst, src, srclen + 1);
-    } else if (maxlen != 0) {
-        memcpy(dst, src, maxlen - 1);
-        dst[maxlen - 1] = '\0';
-    }
-    return srclen;
 }

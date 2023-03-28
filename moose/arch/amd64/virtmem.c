@@ -1,10 +1,9 @@
-#include <arch/amd64/virtmem.h>
-#include <kernel.h>
-#include <kmem.h>
-#include <kstdio.h>
-#include <physmem.h>
-#include <assert.h>
 #include <arch/amd64/asm.h>
+#include <arch/amd64/virtmem.h>
+#include <arch/cpu.h>
+#include <mm/physmem.h>
+#include <param.h>
+#include <string.h>
 
 int alloc_virtual_page(u64 virt_addr) {
     ssize_t addr = alloc_page();
@@ -131,7 +130,10 @@ void unmap_virtual_region(u64 virt_addr, size_t count) {
 }
 
 void flush_tlb_entry(u64 virt_addr) {
-    asm volatile("cli; invlpg (%0); sti" : : "r"(virt_addr) : "memory");
+    unsigned long flags;
+    irq_save(flags);
+    asm volatile("invlpg (%0)" : : "r"(virt_addr) : "memory");
+    irq_restore(flags);
 }
 
 struct pt_entry *get_page_entry(u64 virt_addr) {
@@ -164,7 +166,9 @@ void set_pml4_table(struct pml4_table *table) {
     write_cr3((u64)table);
 }
 
-struct pml4_table *get_pml4_table(void) { return root_table; }
+struct pml4_table *get_pml4_table(void) {
+    return root_table;
+}
 
 int init_virt_mem(const struct mem_range *ranges, size_t ranges_size) {
     root_table = (struct pml4_table *)PML4_BASE_ADDR;
@@ -179,8 +183,9 @@ int init_virt_mem(const struct mem_range *ranges, size_t ranges_size) {
 
     // all physical memory map to PHYSMEM_VIRTUAL_BASE
     for (size_t i = 0; i < ranges_size; i++) {
-        if (map_virtual_region(ranges[i].base, PHYSMEM_VIRTUAL_BASE + ranges[i].base,
-                           ranges[i].size >> PAGE_SIZE_BITS))
+        if (map_virtual_region(ranges[i].base,
+                               PHYSMEM_VIRTUAL_BASE + ranges[i].base,
+                               ranges[i].size >> PAGE_SIZE_BITS))
             return -1;
     }
 

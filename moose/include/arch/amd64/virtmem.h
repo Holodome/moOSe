@@ -1,7 +1,6 @@
 #pragma once
 
-#include <arch/amd64/memory_map.h>
-#include <kmem.h>
+#include <mm/kmem.h>
 #include <types.h>
 
 #define ENTRIES_PER_TABLE 512
@@ -13,20 +12,6 @@
 
 #define IDENTITY_MAP_SIZE (2 * 1024 * 1024)
 #define PML4_BASE_ADDR 0x1000
-
-/*
- * Virtual paging entry bits
- * present - present bit
- * rw - read/write
- * us - user/supervisor
- * pwt - write through
- * pat - page attribute table
- * pcd - cache disable
- * accessed - page was accessed
- * page_size
- * avl - available
- * xd - execute disable
- */
 
 struct pml4_entry {
     u64 present : 1;

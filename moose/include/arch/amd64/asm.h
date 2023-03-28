@@ -2,14 +2,20 @@
 
 #include <types.h>
 
-__attribute__((noreturn)) static inline void hlt(void) {
-    asm volatile("hlt");
-    __builtin_unreachable();
-}
+#define X86_FLAGS_IF 0x0200
 
-static inline void cli(void) { asm volatile("cli" : : : "memory"); }
-static inline void sti(void) { asm volatile("sti" : : : "memory"); }
-static inline void pause(void) { asm volatile("pause"); }
+static inline void hlt(void) {
+    asm volatile("hlt");
+}
+static inline void cli(void) {
+    asm volatile("cli" : : : "memory");
+}
+static inline void sti(void) {
+    asm volatile("sti" : : : "memory");
+}
+static inline void pause(void) {
+    asm volatile("pause");
+}
 
 static inline u64 read_cr0(void) {
     u64 result;
@@ -83,4 +89,12 @@ static inline u8 cmos_read(u8 idx) {
 static inline void cmos_write(u8 idx, u8 data) {
     port_out8(0x70, idx);
     port_out8(0x71, data);
+}
+
+static inline u64 read_cpu_flags() {
+    u64 flags;
+    asm volatile("pushf\n"
+                 "pop %0\n"
+                 : "=rm"(flags)::"memory");
+    return flags;
 }
