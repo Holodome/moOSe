@@ -13,8 +13,12 @@
 #define CTL_CURSOR_HI 14
 #define CTL_CURSOR_LO 15
 
-u32 console_get_width(void) { return WIDTH; }
-u32 console_get_height(void) { return HEIGHT; }
+u32 console_get_width(void) {
+    return WIDTH;
+}
+u32 console_get_height(void) {
+    return HEIGHT;
+}
 
 static u16 get_cursor(void) {
     port_out8(PORT_CTL, CTL_CURSOR_HI);
@@ -42,7 +46,7 @@ void console_set_cursor(u32 x, u32 y) {
     u16 cursor = y * WIDTH + x;
     set_cursor(cursor);
 }
-#endif 
+#endif
 
 static void set_char(u16 offset, int symb) {
     volatile u8 *slot = TEXTBUF + offset * 2;

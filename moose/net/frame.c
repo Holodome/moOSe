@@ -4,7 +4,7 @@
 #include <sched/spinlock.h>
 #include <string.h>
 #include <panic.h>
-#include <errno.h>
+#include <fs/posix.h>
 
 #define FREE_FRAMES_COUNT 32
 

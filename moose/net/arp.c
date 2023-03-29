@@ -8,7 +8,7 @@
 #include <string.h>
 #include <endian.h>
 #include <kstdio.h>
-#include <errno.h>
+#include <fs/posix.h>
 #include <list.h>
 
 #define ARP_CACHE_SIZE    256

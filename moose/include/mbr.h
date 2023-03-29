@@ -15,6 +15,6 @@ struct mbr_partition {
     u8 last_chs[3];
     u32 addr;
     u32 size;
-} __attribute__((packed));
+} __packed;
 
 static_assert(sizeof(struct mbr_partition) == MBR_PARTITION_SIZE);

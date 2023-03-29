@@ -4,11 +4,18 @@
 
 #define X86_FLAGS_IF 0x0200
 
-static inline void hlt(void) { asm volatile("hlt"); }
-static inline void cli(void) { asm volatile("cli" : : : "memory"); }
-static inline void sti(void) { asm volatile("sti" : : : "memory"); }
-static inline void pause(void) { asm volatile("pause"); }
-static inline void nop(void) { asm volatile("nop" : : : "memory"); }
+static inline void hlt(void) {
+    asm volatile("hlt");
+}
+static inline void cli(void) {
+    asm volatile("cli" : : : "memory");
+}
+static inline void sti(void) {
+    asm volatile("sti" : : : "memory");
+}
+static inline void pause(void) {
+    asm volatile("pause");
+}
 
 static inline u64 read_cr0(void) {
     u64 result;

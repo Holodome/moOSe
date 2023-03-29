@@ -1,7 +1,5 @@
-#include <drivers/tty.h>
 #include <ctype.h>
-#include <device.h>
-#include <errno.h>
+#include <drivers/tty.h>
 #include <kstdio.h>
 #include <string.h>
 
@@ -470,45 +468,20 @@ int kprintf(const char *fmt, ...) {
 int kvprintf(const char *fmt, va_list args) {
     char buffer[256];
     int count = vsnprintf(buffer, 256, fmt, args);
-    int write_result = write(tty_device, buffer, strlen(buffer));
+    int write_result = tty_write(buffer, strlen(buffer));
     return write_result < 0 ? write_result : count;
 }
 
-int kputc(int c) { return write(tty_device, (char *)&c, 1); }
+int kputc(int c) {
+    return tty_write((char *)&c, 1);
+}
 
 int kputs(const char *str) {
     size_t len = strlen(str);
-    int result = write(tty_device, str, len);
+    int result = tty_write(str, len);
     if (result < 0)
         return result;
 
     kputc('\n');
     return (int)len;
 }
-
-char *strerror(int errnum) {
-    static char buf[64];
-    static const char *strs[] = {
-#define E(_name, _str) _str,
-        ERRLIST
-#undef E
-    };
-
-    const char *str = NULL;
-    if (errnum == 0) {
-        str = "No error information";
-    } else if (errnum - 1 < (int)ARRAY_SIZE(strs)) {
-        str = strs[errnum - 1];
-    }
-
-    snprintf(buf, sizeof(buf), "%s", str);
-    return buf;
-}
-
-void perror(const char *msg) {
-    if (msg != NULL && *msg)
-        kprintf("%s: ", msg);
-    kprintf("%s\n", strerror(errno));
-}
-
-

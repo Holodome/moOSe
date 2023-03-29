@@ -1,6 +1,5 @@
 #pragma once
 
-#include <device.h>
 #include <types.h>
 
 enum ata_dev_kind {
@@ -10,4 +9,5 @@ enum ata_dev_kind {
     ATA_DEV_SATAPI
 };
 
-extern struct blk_device *ata_pio_dev;
+int ata_read_block(size_t idx, void *buf);
+int ata_write_block(size_t idx, const void *buf);

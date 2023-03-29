@@ -83,7 +83,9 @@
     ((CHAR_BIT * sizeof(_val)) - count_leading_zeroes(_val) - 1)
 
 #define DIV_ROUND_UP(_a, _b) (((_a) + (_b)-1) / (_b))
-#define BITS_TO_BITMAP(_bits) DIV_ROUND_UP(_bits, sizeof(long) * CHAR_BIT)
+
+#define BITMAP_STRIDE (sizeof(u64) * CHAR_BIT)
+#define BITS_TO_BITMAP(_bits) DIV_ROUND_UP(_bits, BITMAP_STRIDE)
 
 #define BIT(_x) (1 << (_x))
 
@@ -99,12 +101,33 @@ static inline void clear_bit(u64 index, u64 *bitmap) {
     bitmap[index >> 6] &= ~(1l << (index & 0x3f));
 }
 
-// align up power of 2
-static inline size_t align_po2(size_t val, size_t align) {
-    val += align - 1;
-    val &= ~(align - 1);
-    return val;
+static inline u64 bitmap_first_clear(const u64 *bitmap, u64 bit_count) {
+    u64 found = 0;
+    for (size_t i = 0; i < bit_count && !found; i += BITMAP_STRIDE) {
+        u64 biti = bit_scan_forward(bitmap[i / BITMAP_STRIDE]);
+        if (biti)
+            found = i + biti - 1;
+    }
+
+    return found;
 }
+
+// align up power of 2
+#define align_po2(_val, _align)                                                \
+    ({                                                                         \
+        __auto_type __x0 = (_val);                                             \
+        typeof(__x0) __align0 = (_align);                                      \
+        __x0 += __align0 - 1;                                                  \
+        __x0 &= ~(__align0 - 1);                                               \
+        __x0;                                                                  \
+    })
+
+#define align_po2_safe(_val, _align)                                           \
+    ({                                                                         \
+        __auto_type __x1 = (_val);                                             \
+        typeof(__x1) __align1 = (_align);                                      \
+        __x1 == 0 ? __align1 : align_po2(__x1, __align1);                      \
+    })
 
 static inline size_t bits_to_bitmap(size_t bits) {
     bits = align_po2(bits, CHAR_BIT * sizeof(u64));

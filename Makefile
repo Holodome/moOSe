@@ -20,7 +20,7 @@ LDFLAGS = -Map $(subst .elf,.map,$@)
 
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles \
 			-Wl,-r -Imoose/include -Os -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
-			-mcmodel=large -fno-strict-overflow -g
+			-mcmodel=large -fno-strict-overflow -g -Wno-sign-compare
 
 ifneq ($(DEBUG),)
 	ASFLAGS += -g
@@ -30,6 +30,10 @@ endif
 TARGET_IMG := moose.img
 
 all: $(TARGET_IMG)
+
+re: 
+	$(MAKE) clean
+	$(MAKE) all
 
 $(TARGET_IMG): moose/moose.img
 	@echo Wrote target to $@
@@ -48,7 +52,7 @@ qemu-debug: all
   	$(GDB) -ex "target remote localhost:1234" -ex "symbol-file moose/arch/amd64/boot/stage2.elf"
 
 format:
-	$(Q)find . -name "*.c" -o -name "*.h" -exec clang-format -i {} \;
+	$(Q)find . \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} \;
 
 clean:
 	$(Q)rm -f $(shell find . -name "*.o" \

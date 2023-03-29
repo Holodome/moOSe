@@ -2,8 +2,12 @@
 
 #include <arch/amd64/asm.h>
 
-static inline void irq_disable(void) { cli(); }
-static inline void irq_enable(void) { sti(); }
+static inline void irq_disable(void) {
+    cli();
+}
+static inline void irq_enable(void) {
+    sti();
+}
 static inline int irqs_disabled(void) {
     return (read_cpu_flags() & X86_FLAGS_IF) != 0;
 }
@@ -16,7 +20,8 @@ static inline int irqs_disabled(void) {
 
 #define irq_restore(_flags)                                                    \
     do {                                                                       \
-        if (_flags & X86_FLAGS_IF) sti();                                      \
+        if (_flags & X86_FLAGS_IF)                                             \
+            sti();                                                             \
     } while (0)
 
 static inline void io_wait(void) { port_out32(0x80, 0); }

@@ -1,9 +1,9 @@
-#include <drivers/keyboard.h>
 #include <arch/amd64/idt.h>
 #include <arch/amd64/memmap.h>
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
 #include <arch/cpu.h>
+#include <drivers/keyboard.h>
 #include <idle.h>
 #include <kstdio.h>
 #include <kthread.h>
@@ -21,7 +21,7 @@ static void zero_bss(void) {
         *p++ = 0;
 }
 
-__attribute__((noreturn)) void kmain(void) {
+__noreturn void kmain(void) {
     zero_bss();
     init_kmalloc();
     /* init_slab_cache(); */
@@ -60,8 +60,8 @@ __attribute__((noreturn)) void kmain(void) {
         panic("failed to initialize virtual memory\n");
 
     init_rtc();
-    if (launch_first_task(idle_task)) panic("failed to create idle task\n");
+    if (launch_first_task(idle_task))
+        panic("failed to create idle task\n");
 
     halt_cpu();
 }
-

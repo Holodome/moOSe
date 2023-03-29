@@ -6,7 +6,7 @@
 #include <kthread.h>
 #include <string.h>
 #include <assert.h>
-#include <errno.h>
+#include <fs/posix.h>
 #include <kstdio.h>
 #include <sched/spinlock.h>
 

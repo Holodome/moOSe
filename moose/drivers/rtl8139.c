@@ -10,7 +10,7 @@
 #include <assert.h>
 #include <param.h>
 #include <bitops.h>
-#include <errno.h>
+#include <fs/posix.h>
 #include <string.h>
 
 #define RTL_REG_MAC0            0x00

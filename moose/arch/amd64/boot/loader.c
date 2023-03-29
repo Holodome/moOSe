@@ -4,7 +4,10 @@
 // (usize sized types) and it makes no difference
 #include "../../../drivers/ata.c"
 #include "../../../drivers/disk.c"
-#include "../device.c"
+#include "../blk_device.c"
+#include "../ctype.c"
+#include "../drivers/tty.c"
+#include "../drivers/vga.c"
 #include "../errno.c"
 #include "../fs/fat.c"
 #include "../mm/kmalloc.c"
@@ -13,26 +16,34 @@
 #include <mbr.h>
 
 extern void print(const char *s);
-void __panic(void) { __builtin_unreachable(); }
-int kprintf(const char *fmt __attribute__((unused)), ...) { return 0; }
-void *vsbrk(intptr_t inc __attribute__((unused))) { return NULL; }
+void __panic(void) {
+    __builtin_unreachable();
+}
+int kprintf(const char *fmt, ...) {
+    print(fmt);
+    return 0;
+}
+void *vsbrk(intptr_t inc __unused) {
+    return NULL;
+}
+int __udivmoddi4() {
+    return 0;
+}
 
 int load_kernel(void) {
     init_kmalloc();
-    int result = init_disk();
-    if (result)
-        return result;
+    init_disk();
 
-    struct pfatfs fs = {.device = disk_part_dev};
+    struct fatfs fs = {.dev = disk_part_dev};
 
-    result = pfatfs_mount(&fs);
+    int result = fatfs_mount(&fs);
     if (result != 0) {
         print("failed to mount");
         return result;
     }
 
-    struct pfatfs_file file;
-    result = pfatfs_open(&fs, "kernel.bin", &file);
+    struct fatfs_file file;
+    result = fatfs_open(&fs, "kernel.bin", &file);
     if (result != 0) {
         print("failed to open");
         return result;
@@ -41,7 +52,7 @@ int load_kernel(void) {
     uintptr_t addr = 0x100000;
     u32 iterations = (file.size + 511) / 512;
     for (; iterations--; addr += 512) {
-        result = pfatfs_read(&fs, &file, (void *)addr, 512);
+        result = fatfs_read(&fs, &file, (void *)addr, 512);
         if (result < 0) {
             print("failed to read");
             return result;
