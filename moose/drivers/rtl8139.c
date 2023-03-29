@@ -45,7 +45,7 @@ static struct {
     spinlock_t lock;
 } rtl8139;
 
-__attribute__((used)) static void rtl8139_receive(void) {
+static void rtl8139_receive(void) {
     u8 frame[ETH_FRAME_MAX_SIZE];
 
     // check that rx buffer is not empty
@@ -94,8 +94,6 @@ static void rtl8139_handler(struct registers_state *regs
 }
 
 static void read_mac_addr(u8 *mac_addr) {
-    expects(mac_addr != NULL);
-
     u32 mac1 = port_in32(rtl8139.io_addr + RTL_REG_MAC0);
     u32 mac2 = port_in32(rtl8139.io_addr + RTL_REG_MAC0 + 4);
 

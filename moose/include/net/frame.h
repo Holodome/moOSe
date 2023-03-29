@@ -12,13 +12,24 @@
 #define MAX_HEADER_SIZE 256
 #define FRAME_BUFFER_SIZE (ETH_PAYLOAD_MAX_SIZE + MAX_HEADER_SIZE)
 
-enum link_type { LINK_TYPE_ETH };
+enum link_type {
+    LINK_TYPE_ETH
+};
 
-enum inet_type { INET_TYPE_IPV4, INET_TYPE_ARP };
+enum inet_type {
+    INET_TYPE_IPV4,
+    INET_TYPE_ARP
+};
 
-enum transport_type { TRANSPORT_TYPE_UDP, TRANSPORT_TYPE_ICMP };
+enum transport_type {
+    TRANSPORT_TYPE_UDP,
+    TRANSPORT_TYPE_ICMP
+};
 
-enum frame_type { SEND_FRAME, RECEIVE_FRAME };
+enum frame_type {
+    SEND_FRAME,
+    RECEIVE_FRAME
+};
 
 struct net_frame {
     enum frame_type type;

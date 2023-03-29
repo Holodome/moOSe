@@ -3,9 +3,16 @@
 #include <fs/vfs.h>
 #include <types.h>
 
-enum fatfs_kind { PFATFS_FAT12, PFATFS_FAT16, PFATFS_FAT32 };
+enum fatfs_kind {
+    PFATFS_FAT12,
+    PFATFS_FAT16,
+    PFATFS_FAT32
+};
 
-enum fatfs_file_type { FATFS_FILE_REG, FATFS_FILE_DIR };
+enum fatfs_file_type {
+    FATFS_FILE_REG,
+    FATFS_FILE_DIR
+};
 
 // Archive
 #define PFATFS_FATTR_ARCH 0x1
