@@ -42,7 +42,6 @@ $(TARGET_IMG): moose/moose.img
 qemu: all
 	$(QEMU) -d guest_errors \
 	-m 4g \
-	-monitor stdio \
 	-device pci-bridge,id=bridge1,bus=pci.0,chassis_nr=4 \
 	-device rtl8139,netdev=moose0,bus=pci.0 -netdev user,id=moose0 \
 	-hda $(TARGET_IMG)

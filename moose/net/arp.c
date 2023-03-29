@@ -1,17 +1,17 @@
+#include <arch/jiffies.h>
+#include <endian.h>
+#include <fs/posix.h>
+#include <kstdio.h>
+#include <list.h>
+#include <mm/kmalloc.h>
 #include <net/arp.h>
-#include <net/inet.h>
 #include <net/eth.h>
 #include <net/frame.h>
-#include <arch/jiffies.h>
-#include <mm/kmalloc.h>
+#include <net/inet.h>
 #include <sched/spinlock.h>
 #include <string.h>
-#include <endian.h>
-#include <kstdio.h>
-#include <fs/posix.h>
-#include <list.h>
 
-#define ARP_CACHE_SIZE    256
+#define ARP_CACHE_SIZE 256
 #define ARP_TIMEOUT_MSECS 15000
 
 struct arp_cache_entry {
@@ -76,8 +76,8 @@ static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
         }
     }
 
-    entry = list_next_or_null(&free_list, &free_list,
-                              struct arp_cache_entry, list);
+    entry =
+        list_next_or_null(&free_list, &free_list, struct arp_cache_entry, list);
     if (entry == NULL) {
         spin_unlock_irqrestore(&cache->lock, flags);
         return;
@@ -170,7 +170,7 @@ void arp_receive_frame(struct net_frame *frame) {
     // hw type must be Ethernet, protocols ipv4, ipv6 only
     if (header->hw_type != ETH_HW_TYPE ||
         !(header->protocol_type == ETH_TYPE_IPV4 ||
-        header->protocol_type == ETH_TYPE_IPV6)) {
+          header->protocol_type == ETH_TYPE_IPV6)) {
         kprintf("arp supports only ethernet link, and ipv4/ipv6\n");
         return;
     }
@@ -192,9 +192,8 @@ void arp_receive_frame(struct net_frame *frame) {
 }
 
 void debug_clear_arp_cache(void) {
-    struct arp_cache_entry *entry =
-        list_next_or_null(&cache->entries, &cache->entries,
-                          struct arp_cache_entry, list);
+    struct arp_cache_entry *entry = list_next_or_null(
+        &cache->entries, &cache->entries, struct arp_cache_entry, list);
     while (entry) {
         list_remove(&entry->list);
         list_add(&entry->list, &free_list);

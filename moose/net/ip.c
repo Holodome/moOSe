@@ -1,16 +1,16 @@
-#include <net/ip.h>
+#include <assert.h>
+#include <endian.h>
+#include <fs/posix.h>
+#include <kstdio.h>
+#include <mm/kmalloc.h>
+#include <mm/kmem.h>
 #include <net/arp.h>
 #include <net/eth.h>
-#include <net/udp.h>
-#include <net/inet.h>
-#include <net/icmp.h>
 #include <net/frame.h>
-#include <endian.h>
-#include <assert.h>
-#include <mm/kmem.h>
-#include <mm/kmalloc.h>
-#include <kstdio.h>
-#include <fs/posix.h>
+#include <net/icmp.h>
+#include <net/inet.h>
+#include <net/ip.h>
+#include <net/udp.h>
 #include <string.h>
 
 static int is_local_ip_addr(u8 *ip_addr) {
@@ -69,7 +69,8 @@ void ipv4_receive_frame(struct net_frame *frame) {
         case IP_PROTOCOL_ICMP:
             icmp_receive_frame(frame);
             break;
-        case IP_PROTOCOL_TCP: break;
+        case IP_PROTOCOL_TCP:
+            break;
         case IP_PROTOCOL_UDP:
             udp_receive_frame(frame);
             break;

@@ -1,29 +1,29 @@
-#include <drivers/rtl8139.h>
-#include <drivers/pci.h>
 #include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
-#include <net/netdaemon.h>
-#include <net/inet.h>
-#include <net/eth.h>
-#include <sched/spinlock.h>
-#include <kstdio.h>
 #include <assert.h>
-#include <param.h>
 #include <bitops.h>
+#include <drivers/pci.h>
+#include <drivers/rtl8139.h>
 #include <fs/posix.h>
+#include <kstdio.h>
+#include <net/eth.h>
+#include <net/inet.h>
+#include <net/netdaemon.h>
+#include <param.h>
+#include <sched/spinlock.h>
 #include <string.h>
 
-#define RTL_REG_MAC0            0x00
-#define TRL_REG_TX_STATUS       0x10
-#define RTL_REG_TX_ADDR         0x20
-#define RTL_REG_RX_BUFFER       0x30
-#define RTL_REG_CMD		0x37
-#define RTL_REG_CAPR            0x38
-#define RTL_REG_INT_MASK        0x3c
-#define RTL_REG_INT_STATUS      0x3e
-#define RTL_REG_TX_CONFIG       0x40
-#define RTL_REG_RX_CONFIG       0x44
-#define RTL_REG_CONFIG1         0x52
+#define RTL_REG_MAC0 0x00
+#define TRL_REG_TX_STATUS 0x10
+#define RTL_REG_TX_ADDR 0x20
+#define RTL_REG_RX_BUFFER 0x30
+#define RTL_REG_CMD 0x37
+#define RTL_REG_CAPR 0x38
+#define RTL_REG_INT_MASK 0x3c
+#define RTL_REG_INT_STATUS 0x3e
+#define RTL_REG_TX_CONFIG 0x40
+#define RTL_REG_RX_CONFIG 0x44
+#define RTL_REG_CONFIG1 0x52
 
 #define RTL_ROK BIT(0)
 #define RTL_RER BIT(1)
@@ -58,7 +58,8 @@ __attribute__((used)) static void rtl8139_receive(void) {
         if (rx_ptr + frame_size >= rtl8139.rx_buffer + RX_BUFFER_SIZE) {
             u16 part_size = (rtl8139.rx_buffer + RX_BUFFER_SIZE) - rx_ptr;
             memcpy(frame, rx_ptr, part_size);
-            memcpy(frame + part_size, rtl8139.rx_buffer, frame_size - part_size);
+            memcpy(frame + part_size, rtl8139.rx_buffer,
+                   frame_size - part_size);
         } else {
             memcpy(frame, rx_ptr, frame_size);
         }
@@ -107,7 +108,8 @@ static void read_mac_addr(u8 *mac_addr) {
 }
 
 int init_rtl8139(u8 *mac_addr) {
-    struct pci_device *dev = get_pci_device(RTL8139_VENDOR_ID, RTL8139_DEVICE_ID);
+    struct pci_device *dev =
+        get_pci_device(RTL8139_VENDOR_ID, RTL8139_DEVICE_ID);
     if (dev == NULL) {
         kprintf("rtl8139 is not connected to pci bus\n");
         return -EIO;
@@ -143,10 +145,12 @@ int init_rtl8139(u8 *mac_addr) {
 
     // soft reset
     port_out8(io_addr + RTL_REG_CMD, 0x10);
-    while((port_in8(io_addr + RTL_REG_CMD) & 0x10) != 0) {}
+    while ((port_in8(io_addr + RTL_REG_CMD) & 0x10) != 0) {
+    }
 
     // set rx buffer
-    port_out32(io_addr + RTL_REG_RX_BUFFER, ADDR_TO_PHYS((u64)rtl8139.rx_buffer));
+    port_out32(io_addr + RTL_REG_RX_BUFFER,
+               ADDR_TO_PHYS((u64)rtl8139.rx_buffer));
 
     // enable rx and tx interrupts (bit 0 and 2)
     port_out16(io_addr + RTL_REG_INT_MASK, RTL_ROK | RTL_TOK);

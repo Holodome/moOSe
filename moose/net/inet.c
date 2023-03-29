@@ -1,20 +1,20 @@
-#include <net/inet.h>
-#include <kstdio.h>
 #include <drivers/rtl8139.h>
-#include <net/netdaemon.h>
-#include <net/frame.h>
-#include <net/arp.h>
 #include <endian.h>
+#include <kstdio.h>
+#include <net/arp.h>
+#include <net/frame.h>
+#include <net/inet.h>
+#include <net/netdaemon.h>
 #include <string.h>
 
 struct nic nic;
 
-static u8 nic_ip_addr[4] =  {10, 0, 2, 15};
-u8 gateway_ip_addr[4] =     {10, 0, 2, 2};
-u8 dns_ip_addr[4] =         {10, 0, 2, 3};
-u8 local_net_ip_addr[4] =   {10, 0, 2, 0};
-u8 local_net_mask[4] =      {255, 255, 255, 0};
-u8 broadcast_mac_addr[6] =  {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+static u8 nic_ip_addr[4] = {10, 0, 2, 15};
+u8 gateway_ip_addr[4] = {10, 0, 2, 2};
+u8 dns_ip_addr[4] = {10, 0, 2, 3};
+u8 local_net_ip_addr[4] = {10, 0, 2, 0};
+u8 local_net_mask[4] = {255, 255, 255, 0};
+u8 broadcast_mac_addr[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 int init_inet(void) {
     int rc;
@@ -42,7 +42,7 @@ u16 inet_checksum(void *data, size_t size) {
     u16 *ptr = data;
     u32 sum = 0;
 
-    while(size > 1)  {
+    while (size > 1) {
         sum += htobe16(*ptr++);
         size -= 2;
     }
@@ -56,16 +56,13 @@ u16 inet_checksum(void *data, size_t size) {
 }
 
 void debug_print_mac_addr(u8 *mac_addr) {
-    kprintf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
-            mac_addr[0], mac_addr[1],
-            mac_addr[2], mac_addr[3],
-            mac_addr[4], mac_addr[5]);
+    kprintf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", mac_addr[0], mac_addr[1],
+            mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
 }
 
 void debug_print_ip_addr(u8 *ip_addr) {
-    kprintf("IP: %d.%d.%d.%d\n",
-            ip_addr[0], ip_addr[1],
-            ip_addr[2], ip_addr[3]);
+    kprintf("IP: %d.%d.%d.%d\n", ip_addr[0], ip_addr[1], ip_addr[2],
+            ip_addr[3]);
 }
 
 void debug_print_frame_hexdump(void *frame, size_t size) {

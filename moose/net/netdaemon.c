@@ -1,14 +1,14 @@
-#include <net/netdaemon.h>
-#include <net/frame.h>
-#include <net/inet.h>
-#include <net/eth.h>
-#include <mm/kmalloc.h>
-#include <kthread.h>
-#include <string.h>
 #include <assert.h>
 #include <fs/posix.h>
 #include <kstdio.h>
+#include <kthread.h>
+#include <mm/kmalloc.h>
+#include <net/eth.h>
+#include <net/frame.h>
+#include <net/inet.h>
+#include <net/netdaemon.h>
 #include <sched/spinlock.h>
+#include <string.h>
 
 #define QUEUE_SIZE 32
 

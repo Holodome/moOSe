@@ -12,7 +12,8 @@ int spin_trylock(spinlock_t *lock) {
 
 void spin_lock(spinlock_t *lock) {
     int old = 0;
-    while (!atomic_try_cmpxchg_acquire(&lock->atomic, &old, 1)) spinloop_hint();
+    while (!atomic_try_cmpxchg_acquire(&lock->atomic, &old, 1))
+        spinloop_hint();
 }
 
 void spin_unlock(spinlock_t *lock) {

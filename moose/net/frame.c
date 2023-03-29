@@ -1,10 +1,10 @@
-#include <net/frame.h>
+#include <fs/posix.h>
 #include <mm/kmalloc.h>
+#include <net/frame.h>
 #include <net/inet.h>
+#include <panic.h>
 #include <sched/spinlock.h>
 #include <string.h>
-#include <panic.h>
-#include <fs/posix.h>
 
 #define FREE_FRAMES_COUNT 32
 

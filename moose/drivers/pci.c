@@ -1,13 +1,13 @@
 #include <arch/amd64/asm.h>
 #include <arch/amd64/cpu.h>
 #include <drivers/pci.h>
+#include <fs/posix.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
 #include <mm/resource.h>
-#include <fs/posix.h>
 
 #define PCI_CONFIG_ADDRESS 0xcf8
-#define PCI_CONFIG_DATA    0xcfc
+#define PCI_CONFIG_DATA 0xcfc
 
 // bit 31
 #define PCI_ENABLE_BIT 0x80000000
@@ -90,7 +90,7 @@ static void read_common_header(struct pci_device *device) {
 }
 
 static void init_device(struct pci_device *device, struct pci_bus *bus,
-                                        u8 device_idx, u8 func_idx) {
+                        u8 device_idx, u8 func_idx) {
     u8 bus_idx = bus->index;
     device->device_index = device_idx;
     device->func_index = func_idx;
@@ -238,7 +238,8 @@ static void debug_print_device(struct pci_device *device) {
     kprintf("DEV: bus=%d, dev=%d, func=%d, vendor=%x, devid=%x, "
             "class=%#x, subclass=%#x\n",
             device->bus->index, device->device_index, device->func_index,
-            device->vendor, device->device, device->class_code, device->subclass);
+            device->vendor, device->device, device->class_code,
+            device->subclass);
 }
 
 void debug_print_bus(struct pci_bus *bus) {

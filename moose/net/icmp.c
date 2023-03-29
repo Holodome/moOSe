@@ -1,9 +1,9 @@
-#include <net/icmp.h>
-#include <net/ip.h>
-#include <net/inet.h>
-#include <net/frame.h>
 #include <endian.h>
 #include <kstdio.h>
+#include <net/frame.h>
+#include <net/icmp.h>
+#include <net/inet.h>
+#include <net/ip.h>
 #include <string.h>
 
 #define ICMP_CONTROL_SEQ_BASE 0x0a
@@ -20,7 +20,8 @@ int icmp_send_echo_request(struct net_frame *frame, u8 *ip_addr) {
     for (int i = 0; i < ICMP_CONTROL_SEQ_SIZE; i++)
         control_seq[i] = ICMP_CONTROL_SEQ_BASE + i;
 
-    header->checksum = htobe16(inet_checksum(header, get_net_frame_size(frame)));
+    header->checksum =
+        htobe16(inet_checksum(header, get_net_frame_size(frame)));
 
     memcpy(&frame->icmp_header, frame->head, sizeof(*header));
     frame->transport_type = TRANSPORT_TYPE_ICMP;

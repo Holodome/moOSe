@@ -1,7 +1,7 @@
-#include <net/interface.h>
-#include <mm/kmalloc.h>
-#include <string.h>
 #include <list.h>
+#include <mm/kmalloc.h>
+#include <net/interface.h>
+#include <string.h>
 
 LIST_HEAD(interfaces);
 

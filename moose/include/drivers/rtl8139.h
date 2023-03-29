@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <net/frame.h>
+#include <types.h>
 
 #define RTL8139_VENDOR_ID 0x10ec
 #define RTL8139_DEVICE_ID 0x8139

@@ -1,18 +1,18 @@
 #include <arch/cpu.h>
 #include <blk_device.h>
 #include <drivers/disk.h>
-#include <idle.h>
-#include <shell.h>
 #include <drivers/pci.h>
+#include <fs/ext2.h>
+#include <fs/vfs.h>
+#include <idle.h>
 #include <kstdio.h>
 #include <net/arp.h>
 #include <net/icmp.h>
 #include <net/inet.h>
 #include <net/netdaemon.h>
 #include <net/udp.h>
+#include <shell.h>
 #include <string.h>
-#include <fs/ext2.h>
-#include <fs/vfs.h>
 
 __attribute__((noreturn)) void other_task(void) {
     for (;;)
@@ -65,7 +65,6 @@ void idle_task(void) {
 
     udp_send_frame(frame, gateway_ip_addr, 80, 80);
     release_net_frame(frame);
-
 
     print_blk_device(disk_part_dev);
     print_blk_device(disk_part1_dev);

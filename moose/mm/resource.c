@@ -1,8 +1,8 @@
 #include <arch/amd64/virtmem.h>
-#include <mm/resource.h>
-#include <mm/kmalloc.h>
 #include <bitops.h>
 #include <kstdio.h>
+#include <mm/kmalloc.h>
+#include <mm/resource.h>
 #include <param.h>
 
 LIST_HEAD(port_regions);
@@ -15,8 +15,7 @@ static struct resource *request_region(u64 base, u64 size,
 
     struct resource *res;
     list_for_each_entry(res, regions, list) {
-        if (base < res->base + res->size &&
-            base + size > res->base) {
+        if (base < res->base + res->size && base + size > res->base) {
             if (base == res->base && size == res->size)
                 return res;
 
@@ -57,7 +56,7 @@ struct resource *request_mem_region(u64 base, u64 size) {
     base = base & ~(PAGE_SIZE - 1);
     size = align_po2(size, PAGE_SIZE);
     if (map_virtual_region(base, MMIO_VIRTUAL_BASE + base,
-                       size >> PAGE_SIZE_BITS)) {
+                           size >> PAGE_SIZE_BITS)) {
         release_region(res);
         return NULL;
     }
