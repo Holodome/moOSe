@@ -36,7 +36,7 @@ int ipv4_send_frame(struct net_frame *frame, u8 *ip_addr, u8 protocol) {
     // version
     header->version_ihl |= (4 << IHL_BITS);
     header->dscp_ecn = 0;
-    header->total_len = htobe16(get_net_frame_size(frame));
+    header->total_len = htobe16(frame->size);
     header->id = 0;
     header->ttl = 64;
     header->protocol = protocol;
@@ -47,7 +47,7 @@ int ipv4_send_frame(struct net_frame *frame, u8 *ip_addr, u8 protocol) {
     header->checksum = htobe16(header->checksum);
 
     memcpy(&frame->ipv4_header, frame->head, sizeof(*header));
-    frame->inet_type = INET_TYPE_IPV4;
+    frame->inet_kind = INET_KIND_IPV4;
 
     return eth_send_frame(frame, dst_mac, ETH_TYPE_IPV4);
 }
@@ -62,6 +62,7 @@ void ipv4_receive_frame(struct net_frame *frame) {
     u8 version = header->version_ihl >> IHL_BITS;
 
     memcpy(&frame->ipv4_header, frame->head, sizeof(*header));
+    frame->inet_kind = INET_KIND_IPV4;
     push_net_frame_head(frame, ihl * 4);
 
     if (version == IPV4_VERSION) {

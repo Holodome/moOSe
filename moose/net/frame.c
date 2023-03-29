@@ -1,8 +1,8 @@
+#include <assert.h>
 #include <fs/posix.h>
 #include <mm/kmalloc.h>
 #include <net/frame.h>
 #include <net/inet.h>
-#include <panic.h>
 #include <sched/spinlock.h>
 #include <string.h>
 
@@ -17,7 +17,6 @@ static struct net_frame *alloc_net_frame(void) {
     if (frame == NULL)
         return NULL;
 
-    memset(frame, 0, sizeof(*frame));
     frame->buffer = frame + 1;
 
     return frame;
@@ -35,26 +34,7 @@ int init_net_frames(void) {
     return 0;
 }
 
-static void init_net_frame(struct net_frame *frame, enum frame_type type) {
-    void *buffer = frame->buffer;
-    memset(frame->buffer, 0, FRAME_BUFFER_SIZE);
-    memset(frame, 0, sizeof(*frame));
-    frame->buffer = buffer;
-
-    switch (type) {
-    case SEND_FRAME:
-        frame->head = frame->buffer + MAX_HEADER_SIZE;
-        frame->payload = frame->head;
-        break;
-    case RECEIVE_FRAME:
-        frame->head = frame->buffer;
-        break;
-    default:
-        panic("unsupported frame type\n");
-    }
-}
-
-struct net_frame *get_free_net_frame(enum frame_type type) {
+static struct net_frame *get_empty_net_frame(void) {
     u64 flags;
     spin_lock_irqsave(&lock, flags);
 
@@ -66,9 +46,34 @@ struct net_frame *get_free_net_frame(enum frame_type type) {
     }
 
     list_remove(&frame->list);
-    init_net_frame(frame, type);
-
     spin_unlock_irqrestore(&lock, flags);
+
+    void *buffer = frame->buffer;
+    memset(frame->buffer, 0, FRAME_BUFFER_SIZE);
+    memset(frame, 0, sizeof(*frame));
+    frame->buffer = buffer;
+
+    return frame;
+}
+
+struct net_frame *get_empty_send_net_frame(void) {
+    struct net_frame *frame = get_empty_net_frame();
+    if (frame == NULL)
+        return NULL;
+
+    frame->head = frame->buffer + MAX_HEADER_SIZE;
+    frame->payload = frame->head;
+
+    return frame;
+}
+
+struct net_frame *get_empty_receive_net_frame(void) {
+    struct net_frame *frame = get_empty_net_frame();
+    if (frame == NULL)
+        return NULL;
+
+    frame->head = frame->buffer;
+
     return frame;
 }
 
@@ -80,19 +85,17 @@ void release_net_frame(struct net_frame *frame) {
 }
 
 void push_net_frame_head(struct net_frame *frame, size_t offset) {
+    expects(frame->size >= offset);
     frame->head += offset;
     frame->size -= offset;
 }
 
 void pull_net_frame_head(struct net_frame *frame, size_t offset) {
+    expects(frame->head - offset >= frame->buffer);
     frame->head -= offset;
     frame->size += offset;
 }
 
 void inc_net_frame_size(struct net_frame *frame, size_t increment) {
     frame->size += increment;
-}
-
-size_t get_net_frame_size(struct net_frame *frame) {
-    return frame->size;
 }

@@ -17,7 +17,7 @@ struct net_frame;
 struct nic {
     u8 mac_addr[6];
     u8 ip_addr[4];
-    void (*send_frame)(struct net_frame *frame);
+    void (*send_frame)(void *frame, size_t size);
 };
 
 extern struct nic nic;

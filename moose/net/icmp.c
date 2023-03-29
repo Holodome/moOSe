@@ -7,7 +7,7 @@
 #include <string.h>
 
 #define ICMP_CONTROL_SEQ_BASE 0x0a
-#define ICMP_CONTROL_SEQ_SIZE 0
+#define ICMP_CONTROL_SEQ_SIZE 32
 
 int icmp_send_echo_request(struct net_frame *frame, u8 *ip_addr) {
     pull_net_frame_head(frame, sizeof(struct icmp_header));
@@ -20,11 +20,10 @@ int icmp_send_echo_request(struct net_frame *frame, u8 *ip_addr) {
     for (int i = 0; i < ICMP_CONTROL_SEQ_SIZE; i++)
         control_seq[i] = ICMP_CONTROL_SEQ_BASE + i;
 
-    header->checksum =
-        htobe16(inet_checksum(header, get_net_frame_size(frame)));
+    header->checksum = htobe16(inet_checksum(header, frame->size));
 
     memcpy(&frame->icmp_header, frame->head, sizeof(*header));
-    frame->transport_type = TRANSPORT_TYPE_ICMP;
+    frame->transport_kind = TRANSPORT_KIND_ICMP;
 
     kprintf("icmp request to host ");
     debug_print_ip_addr(ip_addr);
@@ -33,7 +32,7 @@ int icmp_send_echo_request(struct net_frame *frame, u8 *ip_addr) {
 }
 
 static void icmp_send_echo_reply(struct net_frame *frame) {
-    struct net_frame *reply_frame = get_free_net_frame(SEND_FRAME);
+    struct net_frame *reply_frame = get_empty_send_net_frame();
     if (reply_frame == NULL)
         return;
 
@@ -45,12 +44,13 @@ static void icmp_send_echo_reply(struct net_frame *frame) {
     header->type = ICMP_ECHO_REPLY;
     header->checksum = 0;
     header->checksum =
-        htobe16(inet_checksum(reply_frame->head, get_net_frame_size(frame)));
+        htobe16(inet_checksum(reply_frame->head, reply_frame->size));
 
     memcpy(&reply_frame->icmp_header, reply_frame->head, sizeof(*header));
-    reply_frame->transport_type = TRANSPORT_TYPE_ICMP;
+    reply_frame->transport_kind = TRANSPORT_KIND_ICMP;
 
-    ipv4_send_frame(frame, frame->ipv4_header.src_ip, IP_PROTOCOL_ICMP);
+    ipv4_send_frame(reply_frame, frame->ipv4_header.src_ip, IP_PROTOCOL_ICMP);
+    release_net_frame(reply_frame);
 }
 
 void icmp_receive_frame(struct net_frame *frame) {
@@ -83,5 +83,5 @@ void icmp_receive_frame(struct net_frame *frame) {
     }
 
     memcpy(&frame->icmp_header, header, sizeof(*header));
-    frame->transport_type = TRANSPORT_TYPE_ICMP;
+    frame->transport_kind = TRANSPORT_KIND_ICMP;
 }

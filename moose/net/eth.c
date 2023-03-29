@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <endian.h>
 #include <kstdio.h>
 #include <net/arp.h>
@@ -16,12 +15,10 @@ int eth_send_frame(struct net_frame *frame, u8 *dst_mac_addr, u16 eth_type) {
     memcpy(header->src_mac, nic.mac_addr, sizeof(header->src_mac));
     header->eth_type = htobe16(eth_type);
 
-    size_t frame_size = get_net_frame_size(frame);
     // pad frame with zeros, to be at least mininum size
-    if (frame_size < ETH_FRAME_MIN_SIZE) {
-        memset(frame->head + frame_size, 0, ETH_FRAME_MIN_SIZE - frame_size);
-        inc_net_frame_size(frame, ETH_FRAME_MIN_SIZE - frame_size);
-        frame_size = ETH_FRAME_MIN_SIZE;
+    if (frame->size < ETH_FRAME_MIN_SIZE) {
+        memset(frame->head + frame->size, 0, ETH_FRAME_MIN_SIZE - frame->size);
+        frame->size = ETH_FRAME_MIN_SIZE;
     }
 
 #if 0
@@ -29,21 +26,23 @@ int eth_send_frame(struct net_frame *frame, u8 *dst_mac_addr, u16 eth_type) {
 #endif
 
     memcpy(&frame->eth_header, frame->head, sizeof(*header));
-    frame->link_type = LINK_TYPE_ETH;
-    nic.send_frame(frame);
+    frame->link_kind = LINK_KIND_ETH;
+    nic.send_frame(frame->head, frame->size);
 
     return 0;
 }
 
 void eth_receive_frame(struct net_frame *frame) {
-    size_t size = get_net_frame_size(frame);
-    expects(size <= ETH_FRAME_MAX_SIZE);
+    if (frame->size > ETH_FRAME_MAX_SIZE) {
+        kprintf("eth receive error: invalid frame size\n");
+        return;
+    }
 
 #if 0
     debug_print_frame_hexdump(frame->head, frame->size);
 #endif
 
-    frame->link_type = LINK_TYPE_ETH;
+    frame->link_kind = LINK_KIND_ETH;
 
     struct eth_header *header = frame->head;
     memcpy(&frame->eth_header, frame->head, sizeof(*header));

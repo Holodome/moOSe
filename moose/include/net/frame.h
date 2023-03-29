@@ -12,40 +12,33 @@
 #define MAX_HEADER_SIZE 256
 #define FRAME_BUFFER_SIZE (ETH_PAYLOAD_MAX_SIZE + MAX_HEADER_SIZE)
 
-enum link_type {
-    LINK_TYPE_ETH
+enum link_kind {
+    LINK_KIND_ETH
 };
 
-enum inet_type {
-    INET_TYPE_IPV4,
-    INET_TYPE_ARP
+enum inet_kind {
+    INET_KIND_IPV4,
+    INET_KIND_ARP
 };
 
-enum transport_type {
-    TRANSPORT_TYPE_UDP,
-    TRANSPORT_TYPE_ICMP
-};
-
-enum frame_type {
-    SEND_FRAME,
-    RECEIVE_FRAME
+enum transport_kind {
+    TRANSPORT_KIND_UDP,
+    TRANSPORT_KIND_ICMP
 };
 
 struct net_frame {
-    enum frame_type type;
-
-    enum link_type link_type;
+    enum link_kind link_kind;
     union {
         struct eth_header eth_header;
     };
 
-    enum inet_type inet_type;
+    enum inet_kind inet_kind;
     union {
         struct ipv4_header ipv4_header;
         struct arp_header arp_header;
     };
 
-    enum transport_type transport_type;
+    enum transport_kind transport_kind;
     union {
         struct udp_header udp_header;
         struct icmp_header icmp_header;
@@ -63,10 +56,10 @@ struct net_frame {
 };
 
 int init_net_frames(void);
-struct net_frame *get_free_net_frame(enum frame_type type);
+struct net_frame *get_empty_send_net_frame(void);
+struct net_frame *get_empty_receive_net_frame(void);
 void release_net_frame(struct net_frame *frame);
 
 void push_net_frame_head(struct net_frame *frame, size_t offset);
 void pull_net_frame_head(struct net_frame *frame, size_t offset);
 void inc_net_frame_size(struct net_frame *frame, size_t increment);
-size_t get_net_frame_size(struct net_frame *frame);

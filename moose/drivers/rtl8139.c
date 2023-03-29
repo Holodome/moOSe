@@ -6,7 +6,6 @@
 #include <drivers/rtl8139.h>
 #include <fs/posix.h>
 #include <kstdio.h>
-#include <net/eth.h>
 #include <net/inet.h>
 #include <net/netdaemon.h>
 #include <param.h>
@@ -135,7 +134,7 @@ int init_rtl8139(u8 *mac_addr) {
 
     // pci bus mastering
     u32 command = read_pci_config_u16(dev->bdf, PCI_COMMAND);
-    command |= (1 << 2);
+    command |= BIT(2);
     write_pci_config_u16(dev->bdf, PCI_COMMAND, command);
 
     // power on device
@@ -158,7 +157,7 @@ int init_rtl8139(u8 *mac_addr) {
 
     // disable loopback
     u32 tx_config = port_in32(io_addr + RTL_REG_TX_CONFIG);
-    tx_config &= ~((1 << 17) | (1 << 18));
+    tx_config &= ~(BIT(17) | BIT(18));
     port_out32(io_addr + RTL_REG_TX_CONFIG, tx_config);
 
     port_out8(io_addr + RTL_REG_CMD, 0x0c);
@@ -169,14 +168,16 @@ int init_rtl8139(u8 *mac_addr) {
     return 0;
 }
 
-void rtl8139_send(struct net_frame *frame) {
-    size_t size = get_net_frame_size(frame);
-    expects(size <= ETH_FRAME_MAX_SIZE);
+void rtl8139_send(void *frame, size_t size) {
+    if (size > ETH_FRAME_MAX_SIZE) {
+        kprintf("rtl8139 send error: invalid frame size\n");
+        return;
+    }
 
     u64 flags;
     spin_lock_irqsave(&rtl8139.lock, flags);
 
-    memcpy(rtl8139.tx_buffer, frame->head, size);
+    memcpy(rtl8139.tx_buffer, frame, size);
 
     u8 tx_offset = sizeof(u32) * rtl8139.tx_index++;
     port_out32(rtl8139.io_addr + RTL_REG_TX_ADDR + tx_offset,

@@ -94,7 +94,7 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
     if (arp_cache_get(ip_addr, mac_addr) == 0)
         return 0;
 
-    struct net_frame *frame = get_free_net_frame(SEND_FRAME);
+    struct net_frame *frame = get_empty_send_net_frame();
     if (frame == NULL)
         return -ENOMEM;
 
@@ -132,14 +132,14 @@ int arp_send_request(struct net_frame *frame, u8 *ip_addr) {
     memset(header->dst_mac, 0, 6);
     memcpy(header->dst_ip, ip_addr, 4);
 
-    frame->inet_type = INET_TYPE_ARP;
+    frame->inet_kind = INET_KIND_ARP;
     memcpy(&frame->arp_header, frame->head, sizeof(*header));
 
     return eth_send_frame(frame, broadcast_mac_addr, ETH_TYPE_ARP);
 }
 
 static int arp_send_reply(struct net_frame *frame) {
-    struct net_frame *reply_frame = get_free_net_frame(SEND_FRAME);
+    struct net_frame *reply_frame = get_empty_send_net_frame();
     if (reply_frame == NULL)
         return -ENOMEM;
 
@@ -156,9 +156,12 @@ static int arp_send_reply(struct net_frame *frame) {
     reply_header->operation = htobe16(ARP_REPLY);
 
     memcpy(&reply_frame->arp_header, reply_header, sizeof(*reply_header));
-    reply_frame->inet_type = INET_TYPE_ARP;
+    reply_frame->inet_kind = INET_KIND_ARP;
 
-    return eth_send_frame(reply_frame, reply_header->dst_mac, ETH_TYPE_ARP);
+    int err = eth_send_frame(reply_frame, reply_header->dst_mac, ETH_TYPE_ARP);
+    release_net_frame(reply_frame);
+
+    return err;
 }
 
 void arp_receive_frame(struct net_frame *frame) {
@@ -176,7 +179,7 @@ void arp_receive_frame(struct net_frame *frame) {
     }
 
     memcpy(&frame->arp_header, frame->head, sizeof(*header));
-    frame->inet_type = INET_TYPE_ARP;
+    frame->inet_kind = INET_KIND_ARP;
 
     switch (header->operation) {
     case ARP_REQUEST:
@@ -188,16 +191,15 @@ void arp_receive_frame(struct net_frame *frame) {
     case ARP_REPLY:
         arp_cache_add(header->src_ip, header->src_mac);
         break;
+    default:
+        kprintf("unsupported arp operation\n");
     }
 }
 
 void debug_clear_arp_cache(void) {
-    struct arp_cache_entry *entry = list_next_or_null(
-        &cache->entries, &cache->entries, struct arp_cache_entry, list);
-    while (entry) {
+    struct arp_cache_entry *entry, *temp;
+    list_for_each_entry_safe(entry, temp, &cache->entries, list) {
         list_remove(&entry->list);
         list_add(&entry->list, &free_list);
-        entry = list_next_or_null(&cache->entries, &cache->entries,
-                                  struct arp_cache_entry, list);
     }
 }

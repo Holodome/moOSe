@@ -13,12 +13,12 @@ int udp_send_frame(struct net_frame *frame, u8 *dst_ip_addr, u16 src_port,
 
     header->src_port = htobe16(src_port);
     header->dst_port = htobe16(dst_port);
-    header->len = get_net_frame_size(frame);
+    header->len = frame->size;
     header->checksum = 0;
     header->checksum = htobe16(inet_checksum(header, header->len));
 
     memcpy(&frame->udp_header, frame->head, sizeof(*header));
-    frame->transport_type = TRANSPORT_TYPE_UDP;
+    frame->transport_kind = TRANSPORT_KIND_UDP;
 
     return ipv4_send_frame(frame, dst_ip_addr, IP_PROTOCOL_UDP);
 }
@@ -35,7 +35,7 @@ void udp_receive_frame(struct net_frame *frame) {
     frame->payload_size = frame->size;
 
     memcpy(&frame->udp_header, header, sizeof(*header));
-    frame->transport_type = TRANSPORT_TYPE_UDP;
+    frame->transport_kind = TRANSPORT_KIND_UDP;
 
     kprintf("UDP payload:\n");
     debug_print_frame_hexdump(frame->payload, frame->payload_size);

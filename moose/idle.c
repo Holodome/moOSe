@@ -48,11 +48,11 @@ void idle_task(void) {
     kprintf("dns ");
     debug_print_mac_addr(mac_addr);
 
-    struct net_frame *frame = get_free_net_frame(SEND_FRAME);
+    struct net_frame *frame = get_empty_send_net_frame();
     icmp_send_echo_request(frame, gateway_ip_addr);
     release_net_frame(frame);
 
-    frame = get_free_net_frame(SEND_FRAME);
+    frame = get_empty_send_net_frame();
     char *message = "Hello world!";
     memcpy(frame->payload, message, strlen(message));
     frame->payload_size = strlen(message);

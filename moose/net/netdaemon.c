@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <fs/posix.h>
 #include <kstdio.h>
 #include <kthread.h>
@@ -12,13 +11,8 @@
 
 #define QUEUE_SIZE 32
 
-struct queue_entry {
-    struct net_frame *frame;
-    int is_free;
-};
-
 struct daemon_queue {
-    struct queue_entry entries[QUEUE_SIZE];
+    struct net_frame **frames;
     spinlock_t lock;
 };
 
@@ -29,13 +23,10 @@ __attribute__((noreturn)) static void net_daemon_task(void) {
     for (;;) {
         spin_lock_irqsave(&queue->lock, flags);
         for (int i = 0; i < QUEUE_SIZE; i++) {
-            struct queue_entry *entry = &queue->entries[i];
-            if (!entry->is_free) {
-                eth_receive_frame(entry->frame);
-
-                release_net_frame(entry->frame);
-                entry->frame = NULL;
-                entry->is_free = 1;
+            if (queue->frames[i]) {
+                eth_receive_frame(queue->frames[i]);
+                release_net_frame(queue->frames[i]);
+                queue->frames[i] = NULL;
             }
         }
         spin_unlock_irqrestore(&queue->lock, flags);
@@ -47,8 +38,11 @@ int init_net_daemon(void) {
     if (queue == NULL)
         return -ENOMEM;
 
-    for (int i = 0; i < QUEUE_SIZE; i++)
-        queue->entries[i].is_free = 1;
+    queue->frames = kzalloc(sizeof(struct net_frame *) * QUEUE_SIZE);
+    if (queue->frames == NULL) {
+        kfree(queue);
+        return -ENOMEM;
+    }
 
     spin_lock_init(&queue->lock);
 
@@ -60,29 +54,34 @@ int init_net_daemon(void) {
     return 0;
 }
 
-int net_daemon_add_frame(void *data, size_t size) {
-    u64 flags;
-    spin_lock_irqsave(&queue->lock, flags);
+void net_daemon_add_frame(void *data, size_t size) {
+    if (size > ETH_FRAME_MAX_SIZE) {
+        kprintf("net daemon add frame error: invalid frame size\n");
+        return;
+    }
 
-    expects(size <= ETH_FRAME_MAX_SIZE);
-    struct net_frame *frame = get_free_net_frame(RECEIVE_FRAME);
-    if (frame == NULL)
-        return -ENOMEM;
+    struct net_frame *frame = get_empty_receive_net_frame();
+    if (frame == NULL) {
+        kprintf("failed to get empty net frame\n");
+        return;
+    }
 
     memcpy(frame->buffer, data, size);
     frame->size = size;
 
+    u64 flags;
+    spin_lock_irqsave(&queue->lock, flags);
+
     for (int i = 0; i < QUEUE_SIZE; i++) {
-        struct queue_entry *entry = &queue->entries[i];
-        if (entry->is_free) {
-            entry->frame = frame;
-            entry->is_free = 0;
+        if (queue->frames[i] == NULL) {
+            queue->frames[i] = frame;
             spin_unlock_irqrestore(&queue->lock, flags);
-            return 0;
+            return;
         }
     }
 
     spin_unlock_irqrestore(&queue->lock, flags);
 
-    return -1;
+    release_net_frame(frame);
+    kprintf("failed to add net frame to daemon queue\n");
 }

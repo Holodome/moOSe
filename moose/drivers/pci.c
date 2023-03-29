@@ -1,5 +1,6 @@
 #include <arch/amd64/asm.h>
 #include <arch/amd64/cpu.h>
+#include <bitops.h>
 #include <drivers/pci.h>
 #include <fs/posix.h>
 #include <kstdio.h>
@@ -9,8 +10,7 @@
 #define PCI_CONFIG_ADDRESS 0xcf8
 #define PCI_CONFIG_DATA 0xcfc
 
-// bit 31
-#define PCI_ENABLE_BIT 0x80000000
+#define PCI_ENABLE_BIT BIT(31)
 #define PCI_DEVICE_NOT_EXIST 0xffff
 
 #define PCI_BRIDGE_CLASS 0x6
