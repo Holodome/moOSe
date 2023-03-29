@@ -170,11 +170,18 @@ struct pml4_table *get_pml4_table(void) {
     return root_table;
 }
 
+static size_t get_total_kernel_size(void) {
+    extern char __start;
+    extern char __end;
+    return &__end - &__start;
+}
+
 int init_virt_mem(const struct mem_range *ranges, size_t ranges_size) {
     root_table = (struct pml4_table *)PML4_BASE_ADDR;
 
     // preallocate kernel physical space
-    if (alloc_region(KERNEL_PHYSICAL_BASE, KERNEL_SIZE >> PAGE_SIZE_BITS))
+    if (alloc_region(KERNEL_PHYSICAL_BASE,
+                     get_total_kernel_size() >> PAGE_SIZE_BITS))
         return -1;
 
     // preallocate currently used page tables
