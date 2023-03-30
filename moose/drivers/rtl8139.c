@@ -130,7 +130,7 @@ int init_rtl8139(u8 *mac_addr) {
     }
 
     if (res == NULL) {
-        release_pci_device_resources(dev);
+        release_pci_device(dev);
         return -EIO;
     }
 
@@ -176,6 +176,10 @@ int init_rtl8139(u8 *mac_addr) {
     register_isr(isr, rtl8139_handler);
 
     return 0;
+}
+
+void destroy_rtl8139(void) {
+    release_pci_device(rtl8139.dev);
 }
 
 void rtl8139_send(const void *frame, size_t size) {

@@ -7,6 +7,7 @@
 #include <idle.h>
 #include <kstdio.h>
 #include <net/arp.h>
+#include <net/frame.h>
 #include <net/icmp.h>
 #include <net/inet.h>
 #include <net/netdaemon.h>

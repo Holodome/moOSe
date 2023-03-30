@@ -34,15 +34,11 @@ __attribute__((noreturn)) static void net_daemon_task(void) {
 }
 
 int init_net_daemon(void) {
-    queue = kzalloc(sizeof(*queue));
+    queue = kzalloc(sizeof(*queue) + sizeof(struct net_frame *) * QUEUE_SIZE);
     if (queue == NULL)
         return -ENOMEM;
 
-    queue->frames = kzalloc(sizeof(struct net_frame *) * QUEUE_SIZE);
-    if (queue->frames == NULL) {
-        kfree(queue);
-        return -ENOMEM;
-    }
+    queue->frames = (struct net_frame **)(queue + 1);
 
     spin_lock_init(&queue->lock);
 
@@ -55,7 +51,7 @@ int init_net_daemon(void) {
     return 0;
 }
 
-void net_daemon_add_frame(void *data, size_t size) {
+void net_daemon_add_frame(const void *data, size_t size) {
     if (size > ETH_FRAME_MAX_SIZE) {
         kprintf("net daemon add frame error: invalid frame size\n");
         return;

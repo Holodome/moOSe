@@ -17,23 +17,32 @@ u8 local_net_mask[4] = {255, 255, 255, 0};
 u8 broadcast_mac_addr[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 int init_inet(void) {
-    int rc;
-    if ((rc = init_net_frames()))
-        return rc;
+    int err;
+    if ((err = init_net_frames()))
+        return err;
 
-    if ((rc = init_rtl8139(nic.mac_addr)))
-        return rc;
+    if ((err = init_rtl8139(nic.mac_addr))) {
+        destroy_net_frames();
+        return err;
+    }
 
     memcpy(nic.ip_addr, nic_ip_addr, 4);
     debug_print_mac_addr(nic.mac_addr);
 
     nic.send_frame = rtl8139_send;
 
-    if ((rc = init_arp_cache()))
-        return rc;
+    if ((err = init_arp_cache())) {
+        destroy_rtl8139();
+        destroy_net_frames();
+        return err;
+    }
 
-    if ((rc = init_net_daemon()))
-        return rc;
+    if ((err = init_net_daemon())) {
+        destroy_arp_cache();
+        destroy_rtl8139();
+        destroy_net_frames();
+        return err;
+    }
 
     return 0;
 }

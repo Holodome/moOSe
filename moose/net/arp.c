@@ -53,12 +53,11 @@ void destroy_arp_cache(void) {
     struct arp_cache_entry *entry;
     struct arp_cache_entry *temp;
     list_for_each_entry_safe(entry, temp, &free_list, list) {
-        list_remove(&entry->list);
         kfree(entry);
     }
+    init_list_head(&free_list);
 
     list_for_each_entry_safe(entry, temp, &cache->entries, list) {
-        list_remove(&entry->list);
         kfree(entry);
     }
 
@@ -101,11 +100,12 @@ static void arp_cache_add(const u8 *ip_addr, const u8 *mac_addr) {
         return;
     }
     list_remove(&entry->list);
+    list_add(&entry->list, &cache->entries);
+
+    spin_unlock_irqrestore(&cache->lock, flags);
 
     memcpy(entry->ip_addr, ip_addr, 4);
     memcpy(entry->mac_addr, mac_addr, 6);
-    list_add(&entry->list, &cache->entries);
-    spin_unlock_irqrestore(&cache->lock, flags);
 }
 
 int arp_get_mac(const u8 *ip_addr, u8 *mac_addr) {

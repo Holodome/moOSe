@@ -127,6 +127,10 @@ static struct pci_bus *scan_bus(u8 bus_idx) {
 
             struct pci_device *device = kzalloc(sizeof(*device));
             if (device == NULL) {
+                struct pci_device *dev, *temp;
+                list_for_each_entry_safe(dev, temp, &bus->devices, list) {
+                    kfree(dev);
+                }
                 kfree(bus);
                 return NULL;
             }
@@ -137,6 +141,10 @@ static struct pci_bus *scan_bus(u8 bus_idx) {
             if (is_pci_bridge(device)) {
                 struct pci_bus *sub_bus = scan_bus(device->secondary_bus);
                 if (sub_bus == NULL) {
+                    struct pci_device *dev, *temp;
+                    list_for_each_entry_safe(dev, temp, &bus->devices, list) {
+                        kfree(dev);
+                    }
                     kfree(bus);
                     return NULL;
                 }
@@ -164,7 +172,7 @@ int init_pci(void) {
     return 0;
 }
 
-void release_pci_device_resources(struct pci_device *device) {
+void release_pci_device(struct pci_device *device) {
     for (size_t i = 0; i < device->resource_count; i++) {
         struct resource *res = device->resources[i];
         if (res->kind == MEMORY_RESOURCE)
@@ -218,7 +226,7 @@ int enable_pci_device(struct pci_device *device) {
         }
 
         if (res == NULL) {
-            release_pci_device_resources(device);
+            release_pci_device(device);
             return -EIO;
         }
 

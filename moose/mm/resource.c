@@ -10,8 +10,10 @@ LIST_HEAD(mem_regions);
 
 static struct resource *request_region(u64 base, u64 size,
                                        struct list_head *regions) {
-    if (size == 0)
+    if (size == 0) {
+        kprintf("resource region must be greater than 0\n");
         return NULL;
+    }
 
     struct resource *res;
     list_for_each_entry(res, regions, list) {
@@ -19,6 +21,7 @@ static struct resource *request_region(u64 base, u64 size,
             if (base == res->base && size == res->size)
                 return res;
 
+            kprintf("requested region overlaps with another resource\n");
             return NULL;
         }
     }
@@ -69,8 +72,8 @@ struct resource *request_mem_region(u64 base, u64 size) {
 }
 
 void release_mem_region(struct resource *res) {
-    release_region(res);
     u64 base = res->base & ~(PAGE_SIZE - 1);
     u64 size = align_po2(res->size, PAGE_SIZE);
+    release_region(res);
     unmap_virtual_region(base, size);
 }

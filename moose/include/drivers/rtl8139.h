@@ -7,4 +7,6 @@
 #define RTL8139_DEVICE_ID 0x8139
 
 int init_rtl8139(u8 *mac_addr);
+void destroy_rtl8139(void);
+
 void rtl8139_send(const void *frame, size_t size);

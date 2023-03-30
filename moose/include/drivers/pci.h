@@ -80,7 +80,7 @@ struct pci_device {
 
 int init_pci(void);
 int enable_pci_device(struct pci_device *device);
-void release_pci_device_resources(struct pci_device *device);
+void release_pci_device(struct pci_device *device);
 
 struct pci_bus *get_root_bus(void);
 struct pci_device *get_pci_device(u16 vendor, u16 device);
