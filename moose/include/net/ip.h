@@ -2,13 +2,6 @@
 
 #include <types.h>
 
-#define VERSION_BITS 4
-#define IHL_BITS 4
-#define DSCP_BITS 6
-#define ECN_BITS 2
-#define FLAGS_BITS 3
-#define FRAGMENT_BITS 13
-
 #define IPV4_VERSION 4
 #define IPV6_VERSION 6
 
@@ -34,6 +27,6 @@ struct ipv4_header {
     u8 dst_ip[4];
 } __attribute__((packed));
 
-int ipv4_send_frame(struct net_frame *frame, u8 *ip_addr, u8 protocol);
+void ipv4_send_frame(struct net_frame *frame, const u8 *ip_addr, u8 protocol);
 void ipv4_receive_frame(struct net_frame *frame);
 void ipv6_receive_frame(struct net_frame *frame);

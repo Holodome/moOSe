@@ -120,9 +120,19 @@ int init_rtl8139(u8 *mac_addr) {
 
     spin_lock_init(&rtl8139.lock);
 
-    // io port resource
-    struct resource *res = dev->resources[0];
-    expects(res != NULL);
+    // find io port resource
+    struct resource *res = NULL;
+    for (size_t i = 0; i < dev->resource_count; i++) {
+        if (dev->resources[i]->kind == PORT_RESOURCE) {
+            res = dev->resources[i];
+            break;
+        }
+    }
+
+    if (res == NULL) {
+        release_pci_device_resources(dev);
+        return -EIO;
+    }
 
     u32 io_addr = res->base;
 
@@ -168,7 +178,7 @@ int init_rtl8139(u8 *mac_addr) {
     return 0;
 }
 
-void rtl8139_send(void *frame, size_t size) {
+void rtl8139_send(const void *frame, size_t size) {
     if (size > ETH_FRAME_MAX_SIZE) {
         kprintf("rtl8139 send error: invalid frame size\n");
         return;

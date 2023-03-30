@@ -56,6 +56,8 @@ struct net_frame {
 };
 
 int init_net_frames(void);
+void destroy_net_frames(void);
+
 struct net_frame *get_empty_send_net_frame(void);
 struct net_frame *get_empty_receive_net_frame(void);
 void release_net_frame(struct net_frame *frame);

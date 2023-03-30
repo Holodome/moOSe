@@ -33,21 +33,39 @@ int init_arp_cache(void) {
     if (cache == NULL)
         return -ENOMEM;
 
+    init_list_head(&cache->entries);
+    spin_lock_init(&cache->lock);
+
     for (size_t i = 0; i < ARP_CACHE_SIZE; i++) {
         struct arp_cache_entry *entry = kmalloc(sizeof(*entry));
-        if (entry == NULL)
+        if (entry == NULL) {
+            destroy_arp_cache();
             return -ENOMEM;
+        }
 
         list_add(&entry->list, &free_list);
     }
 
-    init_list_head(&cache->entries);
-    spin_lock_init(&cache->lock);
-
     return 0;
 }
 
-static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
+void destroy_arp_cache(void) {
+    struct arp_cache_entry *entry;
+    struct arp_cache_entry *temp;
+    list_for_each_entry_safe(entry, temp, &free_list, list) {
+        list_remove(&entry->list);
+        kfree(entry);
+    }
+
+    list_for_each_entry_safe(entry, temp, &cache->entries, list) {
+        list_remove(&entry->list);
+        kfree(entry);
+    }
+
+    kfree(cache);
+}
+
+static int arp_cache_get(const u8 *ip_addr, u8 *mac_addr) {
     u64 flags;
     spin_lock_irqsave(&cache->lock, flags);
 
@@ -64,7 +82,7 @@ static int arp_cache_get(u8 *ip_addr, u8 *mac_addr) {
     return -1;
 }
 
-static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
+static void arp_cache_add(const u8 *ip_addr, const u8 *mac_addr) {
     u64 flags;
     spin_lock_irqsave(&cache->lock, flags);
 
@@ -76,9 +94,9 @@ static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
         }
     }
 
-    entry =
-        list_next_or_null(&free_list, &free_list, struct arp_cache_entry, list);
+    entry = list_first_or_null(&free_list, struct arp_cache_entry, list);
     if (entry == NULL) {
+        kprintf("failed to add arp cache entry\n");
         spin_unlock_irqrestore(&cache->lock, flags);
         return;
     }
@@ -90,7 +108,7 @@ static void arp_cache_add(u8 *ip_addr, u8 *mac_addr) {
     spin_unlock_irqrestore(&cache->lock, flags);
 }
 
-int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
+int arp_get_mac(const u8 *ip_addr, u8 *mac_addr) {
     if (arp_cache_get(ip_addr, mac_addr) == 0)
         return 0;
 
@@ -98,9 +116,7 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
     if (frame == NULL)
         return -ENOMEM;
 
-    int err = arp_send_request(frame, ip_addr);
-    if (err)
-        return err;
+    arp_send_request(frame, ip_addr);
 
     int found = 0;
     memcpy(mac_addr, broadcast_mac_addr, 6);
@@ -111,14 +127,10 @@ int arp_get_mac(u8 *ip_addr, u8 *mac_addr) {
     }
 
     release_net_frame(frame);
-
-    if (found)
-        return 0;
-
-    return -1;
+    return found ? 0 : -1;
 }
 
-int arp_send_request(struct net_frame *frame, u8 *ip_addr) {
+void arp_send_request(struct net_frame *frame, const u8 *ip_addr) {
     pull_net_frame_head(frame, sizeof(struct arp_header));
     struct arp_header *header = frame->head;
 
@@ -135,13 +147,15 @@ int arp_send_request(struct net_frame *frame, u8 *ip_addr) {
     frame->inet_kind = INET_KIND_ARP;
     memcpy(&frame->arp_header, frame->head, sizeof(*header));
 
-    return eth_send_frame(frame, broadcast_mac_addr, ETH_TYPE_ARP);
+    eth_send_frame(frame, broadcast_mac_addr, ETH_TYPE_ARP);
 }
 
-static int arp_send_reply(struct net_frame *frame) {
+static void arp_send_reply(struct net_frame *frame) {
     struct net_frame *reply_frame = get_empty_send_net_frame();
-    if (reply_frame == NULL)
-        return -ENOMEM;
+    if (reply_frame == NULL) {
+        kprintf("failed to get empty net frame\n");
+        return;
+    }
 
     pull_net_frame_head(reply_frame, sizeof(struct arp_header));
     struct arp_header *header = frame->head;
@@ -158,10 +172,8 @@ static int arp_send_reply(struct net_frame *frame) {
     memcpy(&reply_frame->arp_header, reply_header, sizeof(*reply_header));
     reply_frame->inet_kind = INET_KIND_ARP;
 
-    int err = eth_send_frame(reply_frame, reply_header->dst_mac, ETH_TYPE_ARP);
+    eth_send_frame(reply_frame, reply_header->dst_mac, ETH_TYPE_ARP);
     release_net_frame(reply_frame);
-
-    return err;
 }
 
 void arp_receive_frame(struct net_frame *frame) {

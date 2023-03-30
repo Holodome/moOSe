@@ -6,8 +6,8 @@
 #include <net/udp.h>
 #include <string.h>
 
-int udp_send_frame(struct net_frame *frame, u8 *dst_ip_addr, u16 src_port,
-                   u16 dst_port) {
+void udp_send_frame(struct net_frame *frame, const u8 *dst_ip_addr,
+                    u16 src_port, u16 dst_port) {
     pull_net_frame_head(frame, sizeof(struct udp_header));
     struct udp_header *header = frame->head;
 
@@ -20,7 +20,7 @@ int udp_send_frame(struct net_frame *frame, u8 *dst_ip_addr, u16 src_port,
     memcpy(&frame->udp_header, frame->head, sizeof(*header));
     frame->transport_kind = TRANSPORT_KIND_UDP;
 
-    return ipv4_send_frame(frame, dst_ip_addr, IP_PROTOCOL_UDP);
+    ipv4_send_frame(frame, dst_ip_addr, IP_PROTOCOL_UDP);
 }
 
 void udp_receive_frame(struct net_frame *frame) {

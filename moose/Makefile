@@ -16,7 +16,8 @@ KERNEL_OBJS := $(D)/arch/amd64/kstart.o $(D)/kstdio.o $(D)/drivers/vga.o \
 	$(D)/drivers/pci.o $(D)/mm/resource.o $(D)/drivers/rtl8139.o $(D)/net/ip.o \
 	$(D)/net/arp.o $(D)/net/inet.o $(D)/net/eth.o $(D)/net/netdaemon.o \
 	$(D)/sched/spinlock.o $(D)/net/icmp.o $(D)/net/udp.o $(D)/net/frame.o \
-	$(D)/net/interface.o $(D)/fs/vfs.o $(D)/arch/refcount.o $(D)/fs/ext2.o
+	$(D)/net/interface.o $(D)/fs/vfs.o $(D)/arch/refcount.o $(D)/fs/ext2.o \
+	$(D)/sched/rwlock.o
 
 KERNEL_BOOT_OBJS := $(D)/arch/amd64/kboot.o $(D)/arch/amd64/long.o
 KERNEL_BOOT_LINK := $(D)/arch/amd64/kernel-boot.ld.out

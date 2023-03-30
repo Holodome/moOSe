@@ -22,16 +22,31 @@ static struct net_frame *alloc_net_frame(void) {
     return frame;
 }
 
+static void free_net_frame(struct net_frame *frame) {
+    kfree(frame);
+}
+
 int init_net_frames(void) {
     for (size_t i = 0; i < FREE_FRAMES_COUNT; i++) {
         struct net_frame *frame = alloc_net_frame();
-        if (frame == NULL)
+        if (frame == NULL) {
+            destroy_net_frames();
             return -ENOMEM;
+        }
 
         list_add(&frame->list, &free_list);
     }
 
     return 0;
+}
+
+void destroy_net_frames(void) {
+    struct net_frame *frame;
+    struct net_frame *temp;
+    list_for_each_entry_safe(frame, temp, &free_list, list) {
+        list_remove(&frame->list);
+        free_net_frame(frame);
+    }
 }
 
 static struct net_frame *get_empty_net_frame(void) {

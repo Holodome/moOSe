@@ -17,7 +17,7 @@ struct net_frame;
 struct nic {
     u8 mac_addr[6];
     u8 ip_addr[4];
-    void (*send_frame)(void *frame, size_t size);
+    void (*send_frame)(const void *frame, size_t size);
 };
 
 extern struct nic nic;
@@ -29,7 +29,7 @@ extern u8 local_net_ip_addr[4];
 extern u8 broadcast_mac_addr[6];
 
 int init_inet(void);
-u16 inet_checksum(void *data, size_t size);
-void debug_print_frame_hexdump(void *frame, size_t size);
-void debug_print_mac_addr(u8 *mac_addr);
-void debug_print_ip_addr(u8 *ip_addr);
+u16 inet_checksum(const void *data, size_t size);
+void debug_print_frame_hexdump(const void *frame, size_t size);
+void debug_print_mac_addr(const u8 *mac_addr);
+void debug_print_ip_addr(const u8 *ip_addr);

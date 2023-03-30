@@ -1,9 +1,5 @@
-#include <assert.h>
 #include <endian.h>
-#include <fs/posix.h>
 #include <kstdio.h>
-#include <mm/kmalloc.h>
-#include <mm/kmem.h>
 #include <net/arp.h>
 #include <net/eth.h>
 #include <net/frame.h>
@@ -13,7 +9,14 @@
 #include <net/udp.h>
 #include <string.h>
 
-static int is_local_ip_addr(u8 *ip_addr) {
+#define VERSION_BITS 4
+#define IHL_BITS 4
+#define DSCP_BITS 6
+#define ECN_BITS 2
+#define FLAGS_BITS 3
+#define FRAGMENT_BITS 13
+
+static int is_local_ip_addr(const u8 *ip_addr) {
     u8 temp[4];
     memcpy(temp, ip_addr, 4);
     for (u8 i = 0; i < 4; i++)
@@ -22,11 +25,14 @@ static int is_local_ip_addr(u8 *ip_addr) {
     return memcmp(temp, local_net_ip_addr, 4) == 0;
 }
 
-int ipv4_send_frame(struct net_frame *frame, u8 *ip_addr, u8 protocol) {
+void ipv4_send_frame(struct net_frame *frame, const u8 *ip_addr, u8 protocol) {
     u8 dst_mac[6];
-    u8 *src_mac = is_local_ip_addr(ip_addr) ? ip_addr : gateway_ip_addr;
-    if (arp_get_mac(src_mac, dst_mac))
-        return -1;
+    const u8 *src_mac = is_local_ip_addr(ip_addr) ? ip_addr : gateway_ip_addr;
+    if (arp_get_mac(src_mac, dst_mac)) {
+        kprintf("failed to get mac addr for ip ");
+        debug_print_ip_addr(ip_addr);
+        return;
+    }
 
     pull_net_frame_head(frame, sizeof(struct ipv4_header));
     struct ipv4_header *header = frame->head;
@@ -49,7 +55,7 @@ int ipv4_send_frame(struct net_frame *frame, u8 *ip_addr, u8 protocol) {
     memcpy(&frame->ipv4_header, frame->head, sizeof(*header));
     frame->inet_kind = INET_KIND_IPV4;
 
-    return eth_send_frame(frame, dst_mac, ETH_TYPE_IPV4);
+    eth_send_frame(frame, dst_mac, ETH_TYPE_IPV4);
 }
 
 void ipv4_receive_frame(struct net_frame *frame) {

@@ -3,10 +3,16 @@
 #include <list.h>
 #include <types.h>
 
+enum resource_kind {
+    PORT_RESOURCE,
+    MEMORY_RESOURCE
+};
+
 struct resource {
     u64 base;
     u64 size;
     struct list_head list;
+    enum resource_kind kind;
 };
 
 struct resource *request_port_region(u64 base, u64 size);

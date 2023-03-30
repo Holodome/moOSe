@@ -14,5 +14,5 @@ struct icmp_header {
     u32 rest;
 } __attribute__((packed));
 
-int icmp_send_echo_request(struct net_frame *frame, u8 *ip_addr);
+void icmp_send_echo_request(struct net_frame *frame, const u8 *ip_addr);
 void icmp_receive_frame(struct net_frame *frame);

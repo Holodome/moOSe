@@ -75,14 +75,16 @@ struct pci_device {
     u8 interrupt_pin;
 
     struct resource *resources[PCI_BARS_COUNT];
+    size_t resource_count;
 };
 
 int init_pci(void);
 int enable_pci_device(struct pci_device *device);
+void release_pci_device_resources(struct pci_device *device);
+
 struct pci_bus *get_root_bus(void);
 struct pci_device *get_pci_device(u16 vendor, u16 device);
 
-// bdf - (bus, device, function) encoded in u32
 u32 read_pci_config_u32(u32 bdf, u8 offset);
 u16 read_pci_config_u16(u32 bdf, u8 offset);
 u8 read_pci_config_u8(u32 bdf, u8 offset);

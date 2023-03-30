@@ -47,6 +47,7 @@ int init_net_daemon(void) {
     spin_lock_init(&queue->lock);
 
     if (launch_task(net_daemon_task)) {
+        kfree(queue->frames);
         kfree(queue);
         return -1;
     }

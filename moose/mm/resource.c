@@ -41,7 +41,9 @@ static void release_region(struct resource *res) {
 }
 
 struct resource *request_port_region(u64 base, u64 size) {
-    return request_region(base, size, &port_regions);
+    struct resource *res = request_region(base, size, &port_regions);
+    res->kind = PORT_RESOURCE;
+    return res;
 }
 
 void release_port_region(struct resource *res) {
@@ -60,6 +62,8 @@ struct resource *request_mem_region(u64 base, u64 size) {
         release_region(res);
         return NULL;
     }
+
+    res->kind = MEMORY_RESOURCE;
 
     return res;
 }

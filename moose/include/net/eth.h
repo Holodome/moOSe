@@ -10,5 +10,6 @@ struct eth_header {
     u16 eth_type;
 } __attribute((packed));
 
-int eth_send_frame(struct net_frame *frame, u8 *dst_mac_addr, u16 eth_type);
+void eth_send_frame(struct net_frame *frame, const u8 *dst_mac_addr,
+                    u16 eth_type);
 void eth_receive_frame(struct net_frame *frame);

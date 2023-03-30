@@ -9,7 +9,7 @@
 #define ICMP_CONTROL_SEQ_BASE 0x0a
 #define ICMP_CONTROL_SEQ_SIZE 32
 
-int icmp_send_echo_request(struct net_frame *frame, u8 *ip_addr) {
+void icmp_send_echo_request(struct net_frame *frame, const u8 *ip_addr) {
     pull_net_frame_head(frame, sizeof(struct icmp_header));
     struct icmp_header *header = frame->head;
 
@@ -28,7 +28,7 @@ int icmp_send_echo_request(struct net_frame *frame, u8 *ip_addr) {
     kprintf("icmp request to host ");
     debug_print_ip_addr(ip_addr);
 
-    return ipv4_send_frame(frame, ip_addr, IP_PROTOCOL_ICMP);
+    ipv4_send_frame(frame, ip_addr, IP_PROTOCOL_ICMP);
 }
 
 static void icmp_send_echo_reply(struct net_frame *frame) {

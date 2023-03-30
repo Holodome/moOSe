@@ -38,8 +38,8 @@ int init_inet(void) {
     return 0;
 }
 
-u16 inet_checksum(void *data, size_t size) {
-    u16 *ptr = data;
+u16 inet_checksum(const void *data, size_t size) {
+    const u16 *ptr = data;
     u32 sum = 0;
 
     while (size > 1) {
@@ -55,18 +55,18 @@ u16 inet_checksum(void *data, size_t size) {
     return ~sum;
 }
 
-void debug_print_mac_addr(u8 *mac_addr) {
+void debug_print_mac_addr(const u8 *mac_addr) {
     kprintf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", mac_addr[0], mac_addr[1],
             mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
 }
 
-void debug_print_ip_addr(u8 *ip_addr) {
+void debug_print_ip_addr(const u8 *ip_addr) {
     kprintf("IP: %d.%d.%d.%d\n", ip_addr[0], ip_addr[1], ip_addr[2],
             ip_addr[3]);
 }
 
-void debug_print_frame_hexdump(void *frame, size_t size) {
-    u8 *data = frame;
+void debug_print_frame_hexdump(const void *frame, size_t size) {
+    const u8 *data = frame;
     size_t dump_lines = size / 16;
     if (size % 16 != 0)
         dump_lines++;

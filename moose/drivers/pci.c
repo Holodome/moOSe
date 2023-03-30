@@ -126,16 +126,20 @@ static struct pci_bus *scan_bus(u8 bus_idx) {
                 continue;
 
             struct pci_device *device = kzalloc(sizeof(*device));
-            if (device == NULL)
+            if (device == NULL) {
+                kfree(bus);
                 return NULL;
+            }
 
             init_device(device, bus, device_idx, func_idx);
             list_add_tail(&device->list, &bus->devices);
 
             if (is_pci_bridge(device)) {
                 struct pci_bus *sub_bus = scan_bus(device->secondary_bus);
-                if (sub_bus == NULL)
+                if (sub_bus == NULL) {
+                    kfree(bus);
                     return NULL;
+                }
 
                 sub_bus->bridge = device;
                 sub_bus->parent = bus;
@@ -160,6 +164,17 @@ int init_pci(void) {
     return 0;
 }
 
+void release_pci_device_resources(struct pci_device *device) {
+    for (size_t i = 0; i < device->resource_count; i++) {
+        struct resource *res = device->resources[i];
+        if (res->kind == MEMORY_RESOURCE)
+            release_mem_region(res);
+        else
+            release_port_region(res);
+    }
+    device->resource_count = 0;
+}
+
 int enable_pci_device(struct pci_device *device) {
     u8 bars_count = PCI_BARS_COUNT;
     if (is_pci_bridge(device))
@@ -170,7 +185,8 @@ int enable_pci_device(struct pci_device *device) {
     u8 func_idx = device->func_index;
     u32 bdf = BDF(bus_idx, device_idx, func_idx);
 
-    for (u8 bar_idx = 0, res_idx = 0; bar_idx < bars_count; bar_idx++) {
+    device->resource_count = 0;
+    for (u8 bar_idx = 0; bar_idx < bars_count; bar_idx++) {
         u8 bar_offset = PCI_BASE_ADDRESS_0 + bar_idx * sizeof(u32);
         u64 bar = read_pci_config_u32(bdf, bar_offset);
 
@@ -201,10 +217,12 @@ int enable_pci_device(struct pci_device *device) {
             res = request_mem_region(addr, size);
         }
 
-        if (res == NULL)
+        if (res == NULL) {
+            release_pci_device_resources(device);
             return -EIO;
+        }
 
-        device->resources[res_idx++] = res;
+        device->resources[device->resource_count++] = res;
     }
 
     return 0;

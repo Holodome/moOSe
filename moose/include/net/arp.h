@@ -22,7 +22,9 @@ struct arp_header {
 } __attribute((packed));
 
 int init_arp_cache(void);
-int arp_send_request(struct net_frame *frame, u8 *ip_addr);
+void destroy_arp_cache(void);
+
+void arp_send_request(struct net_frame *frame, const u8 *ip_addr);
 void arp_receive_frame(struct net_frame *frame);
-int arp_get_mac(u8 *ip_addr, u8 *mac_addr);
+int arp_get_mac(const u8 *ip_addr, u8 *mac_addr);
 void debug_clear_arp_cache(void);

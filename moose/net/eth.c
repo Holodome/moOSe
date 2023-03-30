@@ -7,7 +7,8 @@
 #include <net/ip.h>
 #include <string.h>
 
-int eth_send_frame(struct net_frame *frame, u8 *dst_mac_addr, u16 eth_type) {
+void eth_send_frame(struct net_frame *frame, const u8 *dst_mac_addr,
+                    u16 eth_type) {
     pull_net_frame_head(frame, sizeof(struct eth_header));
     struct eth_header *header = frame->head;
 
@@ -28,8 +29,6 @@ int eth_send_frame(struct net_frame *frame, u8 *dst_mac_addr, u16 eth_type) {
     memcpy(&frame->eth_header, frame->head, sizeof(*header));
     frame->link_kind = LINK_KIND_ETH;
     nic.send_frame(frame->head, frame->size);
-
-    return 0;
 }
 
 void eth_receive_frame(struct net_frame *frame) {
