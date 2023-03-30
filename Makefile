@@ -20,7 +20,7 @@ LDFLAGS = -Map $(subst .elf,.map,$@)
 
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles \
 			-Wl,-r -Imoose/include -Os -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
-			-mcmodel=large -fno-strict-overflow -g -Wno-sign-compare
+			-mcmodel=large -fno-strict-overflow -Wno-sign-compare
 
 ifneq ($(DEBUG),)
 	ASFLAGS += -g
@@ -45,10 +45,6 @@ qemu: all
 	-device pci-bridge,id=bridge1,bus=pci.0,chassis_nr=4 \
 	-device rtl8139,netdev=moose0,bus=pci.0 -netdev user,id=moose0 \
 	-hda $(TARGET_IMG)
-
-qemu-debug: all
-	$(QEMU) -s -S -fda moose.img -d guest_errors & 
-  	$(GDB) -ex "target remote localhost:1234" -ex "symbol-file moose/arch/amd64/boot/stage2.elf"
 
 format:
 	$(Q)find . \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} \;
@@ -86,4 +82,4 @@ include moose/Makefile
 %.i: %.c
 	$(Q)$(CC) $(CFLAGS) -E -o $@ $^
 
-.PHONY: qemu qemu-debug all clean format
+.PHONY: qemu all clean format

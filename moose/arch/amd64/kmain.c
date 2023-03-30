@@ -14,17 +14,17 @@
 #include <types.h>
 
 static void zero_bss(void) {
-    extern volatile u64 *__bss_start;
-    extern volatile u64 *__bss_end;
-    volatile u64 *p = __bss_start;
-    while (p != __bss_end)
+    extern u64 __bss_start;
+    extern u64 __bss_end;
+    // NOTE: Do this instead of memset because we know that address is aligned
+    u64 *p = &__bss_start;
+    while (p < &__bss_end)
         *p++ = 0;
 }
 
 __noreturn void kmain(void) {
     zero_bss();
     init_kmalloc();
-    /* init_slab_cache(); */
     kputs("running moOSe kernel");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 

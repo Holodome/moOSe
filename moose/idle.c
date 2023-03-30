@@ -10,7 +10,6 @@
 #include <net/frame.h>
 #include <net/icmp.h>
 #include <net/inet.h>
-#include <net/netdaemon.h>
 #include <net/udp.h>
 #include <shell.h>
 #include <string.h>
