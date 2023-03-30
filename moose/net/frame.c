@@ -54,7 +54,7 @@ static struct net_frame *get_empty_net_frame(void) {
     spin_lock_irqsave(&lock, flags);
 
     struct net_frame *frame =
-        list_next_or_null(&free_list, &free_list, struct net_frame, list);
+        list_first_or_null(&free_list, struct net_frame, list);
     if (frame == NULL) {
         spin_unlock_irqrestore(&lock, flags);
         return NULL;

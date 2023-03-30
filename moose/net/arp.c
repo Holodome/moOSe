@@ -8,7 +8,7 @@
 #include <net/eth.h>
 #include <net/frame.h>
 #include <net/inet.h>
-#include <sched/spinlock.h>
+#include <sched/rwlock.h>
 #include <string.h>
 
 #define ARP_CACHE_SIZE 256
@@ -22,7 +22,7 @@ struct arp_cache_entry {
 
 struct arp_cache {
     struct list_head entries;
-    spinlock_t lock;
+    rwlock_t lock;
 };
 
 static LIST_HEAD(free_list);
@@ -34,7 +34,7 @@ int init_arp_cache(void) {
         return -ENOMEM;
 
     init_list_head(&cache->entries);
-    spin_lock_init(&cache->lock);
+    rwlock_init(&cache->lock);
 
     for (size_t i = 0; i < ARP_CACHE_SIZE; i++) {
         struct arp_cache_entry *entry = kmalloc(sizeof(*entry));
@@ -66,29 +66,29 @@ void destroy_arp_cache(void) {
 
 static int arp_cache_get(const u8 *ip_addr, u8 *mac_addr) {
     u64 flags;
-    spin_lock_irqsave(&cache->lock, flags);
+    read_lock_irqsave(&cache->lock, flags);
 
     struct arp_cache_entry *entry;
     list_for_each_entry(entry, &cache->entries, list) {
         if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
             memcpy(mac_addr, entry->mac_addr, 6);
-            spin_unlock_irqrestore(&cache->lock, flags);
+            read_unlock_irqrestore(&cache->lock, flags);
             return 0;
         }
     }
 
-    spin_unlock_irqrestore(&cache->lock, flags);
+    read_unlock_irqrestore(&cache->lock, flags);
     return -1;
 }
 
 static void arp_cache_add(const u8 *ip_addr, const u8 *mac_addr) {
     u64 flags;
-    spin_lock_irqsave(&cache->lock, flags);
+    write_lock_irqsave(&cache->lock, flags);
 
     struct arp_cache_entry *entry;
     list_for_each_entry(entry, &cache->entries, list) {
         if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
-            spin_unlock_irqrestore(&cache->lock, flags);
+            write_unlock_irqrestore(&cache->lock, flags);
             return;
         }
     }
@@ -96,13 +96,13 @@ static void arp_cache_add(const u8 *ip_addr, const u8 *mac_addr) {
     entry = list_first_or_null(&free_list, struct arp_cache_entry, list);
     if (entry == NULL) {
         kprintf("failed to add arp cache entry\n");
-        spin_unlock_irqrestore(&cache->lock, flags);
+        write_unlock_irqrestore(&cache->lock, flags);
         return;
     }
     list_remove(&entry->list);
     list_add(&entry->list, &cache->entries);
 
-    spin_unlock_irqrestore(&cache->lock, flags);
+    write_unlock_irqrestore(&cache->lock, flags);
 
     memcpy(entry->ip_addr, ip_addr, 4);
     memcpy(entry->mac_addr, mac_addr, 6);

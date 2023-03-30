@@ -6,14 +6,14 @@
 #include <net/frame.h>
 #include <net/inet.h>
 #include <net/netdaemon.h>
-#include <sched/spinlock.h>
+#include <sched/rwlock.h>
 #include <string.h>
 
 #define QUEUE_SIZE 32
 
 struct daemon_queue {
     struct net_frame **frames;
-    spinlock_t lock;
+    rwlock_t lock;
 };
 
 static struct daemon_queue *queue;
@@ -21,7 +21,7 @@ static struct daemon_queue *queue;
 __attribute__((noreturn)) static void net_daemon_task(void) {
     u64 flags;
     for (;;) {
-        spin_lock_irqsave(&queue->lock, flags);
+        write_lock_irqsave(&queue->lock, flags);
         for (int i = 0; i < QUEUE_SIZE; i++) {
             if (queue->frames[i]) {
                 eth_receive_frame(queue->frames[i]);
@@ -29,7 +29,7 @@ __attribute__((noreturn)) static void net_daemon_task(void) {
                 queue->frames[i] = NULL;
             }
         }
-        spin_unlock_irqrestore(&queue->lock, flags);
+        write_unlock_irqrestore(&queue->lock, flags);
     }
 }
 
@@ -40,7 +40,7 @@ int init_net_daemon(void) {
 
     queue->frames = (struct net_frame **)(queue + 1);
 
-    spin_lock_init(&queue->lock);
+    rwlock_init(&queue->lock);
 
     if (launch_task(net_daemon_task)) {
         kfree(queue->frames);
@@ -67,17 +67,17 @@ void net_daemon_add_frame(const void *data, size_t size) {
     frame->size = size;
 
     u64 flags;
-    spin_lock_irqsave(&queue->lock, flags);
+    write_lock_irqsave(&queue->lock, flags);
 
     for (int i = 0; i < QUEUE_SIZE; i++) {
         if (queue->frames[i] == NULL) {
             queue->frames[i] = frame;
-            spin_unlock_irqrestore(&queue->lock, flags);
+            write_unlock_irqrestore(&queue->lock, flags);
             return;
         }
     }
 
-    spin_unlock_irqrestore(&queue->lock, flags);
+    write_unlock_irqrestore(&queue->lock, flags);
 
     release_net_frame(frame);
     kprintf("failed to add net frame to daemon queue\n");
