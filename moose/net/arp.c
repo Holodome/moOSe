@@ -1,5 +1,6 @@
 #include <arch/jiffies.h>
 #include <endian.h>
+#include <errno.h>
 #include <fs/posix.h>
 #include <kstdio.h>
 #include <list.h>

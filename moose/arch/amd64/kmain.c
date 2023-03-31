@@ -35,8 +35,8 @@ __noreturn void kmain(void) {
     int usable_region_count = 0;
     for (u32 i = 0; i < memmap_size; ++i) {
         const struct memmap_entry *entry = memmap + i;
-        kprintf("%#016llx-%#016llx: %s(%u)\n", (unsigned long long)entry->base,
-                (unsigned long long)(entry->base + entry->length),
+        kprintf("%#016lx-%#016lx: %s(%u)\n", (unsigned long)entry->base,
+                (unsigned long)(entry->base + entry->length),
                 get_memmap_type_str(entry->type), (unsigned)entry->type);
         usable_region_count += entry->type == MULTIBOOT_MEMORY_AVAILABLE;
     }

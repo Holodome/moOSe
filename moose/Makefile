@@ -50,7 +50,6 @@ KERNEL_OBJS := \
 	$(D)/string.o \
 	$(D)/ctype.o \
 	$(D)/kstdio.o \
-	$(D)/shell.o \
 
 KERNEL_BOOT_OBJS := $(D)/arch/amd64/kboot.o $(D)/arch/amd64/long.o
 KERNEL_BOOT_LINK := $(D)/arch/amd64/kernel-boot.ld.out

@@ -5,7 +5,7 @@
 #include <string.h>
 
 #define FREE_QUEUE_END UINT_MAX
-#define FREE_QUEUE_PTR(_slab) ((u32 *)(((struct slab *)_slab) + 1))
+#define FREE_QUEUE_PTR(_slab) ((u32 *)(((struct slab *)(_slab)) + 1))
 
 #define ALIGNMENT 16
 

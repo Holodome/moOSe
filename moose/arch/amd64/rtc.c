@@ -9,7 +9,23 @@
 #define RATE 8
 #define FREQUENCY (32768 >> (RATE - 1))
 
+#define REG_SECS 0x00
+#define REG_MINS 0x02
+#define REG_HOURS 0x04
+#define REG_DAY 0x08
+#define REG_YEAR 0x09
+
 static volatile u64 jiffies;
+
+static u8 cmos_read(u8 idx) {
+    port_out8(0x70, idx);
+    return port_in8(0x71);
+}
+
+static void cmos_write(u8 idx, u8 data) {
+    port_out8(0x70, idx);
+    port_out8(0x71, data);
+}
 
 static void timer_interrupt(struct registers_state *regs) {
     ++jiffies;

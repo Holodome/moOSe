@@ -4,7 +4,7 @@
 #include <bitops.h>
 #include <drivers/pci.h>
 #include <drivers/rtl8139.h>
-#include <fs/posix.h>
+#include <errno.h>
 #include <kstdio.h>
 #include <net/inet.h>
 #include <net/netdaemon.h>

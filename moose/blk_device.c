@@ -1,4 +1,5 @@
 #include <blk_device.h>
+#include <errno.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
 #include <string.h>

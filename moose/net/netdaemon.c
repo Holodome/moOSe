@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fs/posix.h>
 #include <kstdio.h>
 #include <kthread.h>

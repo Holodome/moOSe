@@ -2,6 +2,7 @@
 #include <blk_device.h>
 #include <ctype.h>
 #include <endian.h>
+#include <errno.h>
 #include <fs/fat.h>
 #include <kstdio.h>
 #include <string.h>
@@ -57,14 +58,6 @@ struct dirent {
     u16 wrt_time;
     u16 wrt_date;
     u32 file_size;
-};
-
-struct ldirent {
-    u16 name[13];
-    u8 ord;
-    u8 attr;
-    u8 type;
-    u8 checksum;
 };
 
 struct fpath_iter {
@@ -556,8 +549,6 @@ static int iter_dir_next(struct fatfs *fs, struct fatfs_file *dir,
         dir->cluster_offset = cluster_offset + PFATFS_DIRENT_SIZE;
         return cluster_to_bytes(fs, cluster) + cluster_offset;
     }
-
-    return 0;
 }
 
 static ssize_t find_empty_dirent_(struct fatfs *fs, u32 start, u32 end) {
@@ -682,8 +673,6 @@ static int find_child(struct fatfs *fs, struct fatfs_file *parent,
             return 0;
         }
     }
-
-    return -ENOENT;
 }
 
 int fatfs_readdir(struct fatfs *fs, struct fatfs_file *dir,
@@ -816,8 +805,6 @@ int fatfs_truncate(struct fatfs *fs, struct fatfs_file *file, size_t length) {
     u32 cluster = get_fat(fs, file->cluster);
     set_fat(fs, file->cluster, PFATFS_FAT_EOF);
 
-    if (result < 0)
-        return result;
     if (PFATFS_IS_FAT_REGULAR(cluster)) {
         for (;;) {
             u32 next_cluster = get_fat(fs, cluster);
@@ -1010,8 +997,6 @@ static int fatfs_renamev(struct fatfs *fs, const char *oldpath,
     read_dirent(fs, old.dirent_loc, &dirent);
 
     init_basename(&dirent, newpath, newpath_length);
-    if (result < 0)
-        return result;
 
     ssize_t new_dirent_loc = add_dirent(fs, &new_dir, &dirent);
     if (new_dirent_loc < 0)
