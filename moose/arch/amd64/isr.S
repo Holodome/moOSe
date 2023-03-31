@@ -23,7 +23,7 @@ isr_common_stub:
     popq %rsi
     popq %rbp
     popq %rax
-    popq %rax
+    popq %rbx
     popq %rdx
     popq %rcx
     popq %rax

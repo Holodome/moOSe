@@ -1,5 +1,7 @@
 #pragma once
 
+#include <types.h>
+
 #define ERRLIST                                                                \
     E(EILSEQ, "Illegal byte sequence")                                         \
     E(EDOM, "Domain error")                                                    \

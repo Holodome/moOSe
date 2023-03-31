@@ -13,6 +13,7 @@
 #include <net/inet.h>
 #include <net/udp.h>
 #include <panic.h>
+#include <time.h>
 #include <string.h>
 
 void idle_task(void) {
@@ -85,6 +86,15 @@ void idle_task(void) {
         }
     }
 
-    for (;;)
-        wait_for_int();
+    for (;;) {
+        /* kprintf("hello\n"); */
+        struct ktm tm;
+        current_time_tm(&tm);
+        (void)tm;
+        print_tm(&tm);
+        /* time_t time = current_time(); */
+        /* kprintf("current time %ld\n", time); */
+        /* wait_for_int(); */
+        asm volatile("nop");
+    }
 }

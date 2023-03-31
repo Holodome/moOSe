@@ -34,14 +34,13 @@ int snprintf(char *buffer, size_t size, const char *fmt, ...) {
 #define NUMBER_BUFFER_SIZE (CHAR_BIT * sizeof(uintmax_t))
 
 static size_t print_number(char *buffer, uintmax_t number, int base) {
-    static const char *charset = "0123456789abcdef";
     size_t counter = 0;
     if (number == 0)
         buffer[counter++] = '0';
 
     while (number > 0) {
         int digit = number % base;
-        buffer[counter++] = charset[digit];
+        buffer[counter++] = "0123456789acbdef"[digit];
         number /= base;
     }
 
