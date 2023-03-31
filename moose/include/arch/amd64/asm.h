@@ -124,16 +124,6 @@ static __forceinline void port_out32a(u32 port, const u32 *array, u64 count) {
                  : "memory");
 }
 
-static __forceinline u8 cmos_read(u8 idx) {
-    port_out8(0x70, idx);
-    return port_in8(0x71);
-}
-
-static __forceinline void cmos_write(u8 idx, u8 data) {
-    port_out8(0x70, idx);
-    port_out8(0x71, data);
-}
-
 static __forceinline u64 read_cpu_flags(void) {
     u64 flags;
     asm volatile("pushf\n"

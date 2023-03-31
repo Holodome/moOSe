@@ -32,3 +32,21 @@ static_assert(sizeof(i32) == 4);
 static_assert(sizeof(u32) == 4);
 static_assert(sizeof(i64) == 8);
 static_assert(sizeof(u64) == 8);
+
+typedef u32 uid_t;
+typedef u32 gid_t;
+typedef u64 ino_t;
+typedef i64 off_t;
+
+typedef u32 blkcnt_t;
+typedef u32 blcksize_t;
+typedef u32 dev_t;
+typedef u16 mode_t;
+typedef u32 nlink_t;
+
+typedef i64 time_t;
+typedef u32 useconds_t;
+typedef i32 iseconds_t;
+typedef u32 clock_t;
+
+typedef i64 off_t;

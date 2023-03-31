@@ -1,3 +1,6 @@
+//
+// RTC (real-time clock)
+//
 #pragma once
 
 #include <types.h>

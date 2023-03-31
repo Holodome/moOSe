@@ -2,6 +2,7 @@
 #include <blk_device.h>
 #include <drivers/disk.h>
 #include <drivers/pci.h>
+#include <errno.h>
 #include <fs/ext2.h>
 #include <fs/vfs.h>
 #include <idle.h>
@@ -12,7 +13,6 @@
 #include <net/inet.h>
 #include <net/udp.h>
 #include <panic.h>
-#include <shell.h>
 #include <string.h>
 
 void idle_task(void) {

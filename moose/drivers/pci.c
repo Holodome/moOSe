@@ -2,6 +2,7 @@
 #include <arch/amd64/cpu.h>
 #include <bitops.h>
 #include <drivers/pci.h>
+#include <errno.h>
 #include <fs/posix.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
