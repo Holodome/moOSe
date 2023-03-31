@@ -69,4 +69,3 @@ void write_unlock(rwlock_t *lock);
         write_unlock(_lock);                                                   \
         irq_restore(_flags);                                                   \
     } while (0)
-

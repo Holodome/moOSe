@@ -24,6 +24,10 @@ static inline int irqs_disabled(void) {
             sti();                                                             \
     } while (0)
 
+static inline void io_wait(void) {
+    port_out32(0x80, 0);
+}
+
 #define halt_cpu()                                                             \
     do {                                                                       \
         cli();                                                                 \

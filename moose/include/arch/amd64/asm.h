@@ -73,12 +73,55 @@ static __forceinline u16 port_in16(u16 port) {
     return result;
 }
 
+static __forceinline u32 port_in32(u16 port) {
+    u32 result;
+    asm volatile("inl %w1, %0" : "=a"(result) : "d"(port));
+    return result;
+}
+
 static __forceinline void port_out8(u16 port, u8 data) {
     asm volatile("out %%al, %%dx" : : "a"(data), "d"(port));
 }
 
 static __forceinline void port_out16(u16 port, u16 data) {
     asm volatile("out %%ax, %%dx" : : "a"(data), "d"(port));
+}
+
+static __forceinline void port_out32(u16 port, u32 data) {
+    asm volatile("outl %0, %w1" : : "a"(data), "d"(port));
+}
+
+static __forceinline void port_in8a(u16 port, u8 *array, u64 count) {
+    asm volatile("rep; insb" : "+D"(array), "+c"(count) : "d"(port));
+}
+
+static __forceinline void port_in16a(u16 port, u16 *array, u64 count) {
+    asm volatile("rep; insw" : "+D"(array), "+c"(count) : "d"(port));
+}
+
+static __forceinline void port_in32a(u16 port, u32 *array, u64 count) {
+    asm volatile("rep; insd" : "+D"(array), "+c"(count) : "d"(port));
+}
+
+static __forceinline void port_out8a(u16 port, const u8 *array, u64 count) {
+    asm volatile("rep; outsb"
+                 : "+S"(array), "+c"(count)
+                 : "d"(port)
+                 : "memory");
+}
+
+static __forceinline void port_out16a(u16 port, const u16 *array, u64 count) {
+    asm volatile("rep; outsw"
+                 : "+S"(array), "+c"(count)
+                 : "d"(port)
+                 : "memory");
+}
+
+static __forceinline void port_out32a(u32 port, const u32 *array, u64 count) {
+    asm volatile("rep; outsd"
+                 : "+S"(array), "+c"(count)
+                 : "d"(port)
+                 : "memory");
 }
 
 static __forceinline u8 cmos_read(u8 idx) {

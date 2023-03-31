@@ -13,5 +13,8 @@
 
 #define FIXUP_ADDR(_mem) ((_mem) + PHYSMEM_VIRTUAL_BASE)
 #define FIXUP_PTR(_ptr) (((void *)(_ptr) + PHYSMEM_VIRTUAL_BASE))
+
 #define ADDR_TO_PHYS(_mem) ((_mem)-PHYSMEM_VIRTUAL_BASE)
 #define PTR_TO_PHYS(_ptr) (((void *)(_ptr)-PHYSMEM_VIRTUAL_BASE))
+
+#define MMIO_VIRTUAL_BASE 0xffffe90000000000

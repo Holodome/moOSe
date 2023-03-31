@@ -40,7 +40,11 @@ $(TARGET_IMG): moose/moose.img
 	$(Q)cp $< $@
 
 qemu: all
-	$(QEMU) -d guest_errors -hda $(TARGET_IMG)
+	$(QEMU) -d guest_errors \
+	-m 4g \
+	-device pci-bridge,id=bridge1,bus=pci.0,chassis_nr=4 \
+	-device rtl8139,netdev=moose0,bus=pci.0 -netdev user,id=moose0 \
+	-hda $(TARGET_IMG)
 
 format:
 	$(Q)find . \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} \;

@@ -87,6 +87,8 @@
 #define BITMAP_STRIDE (sizeof(u64) * CHAR_BIT)
 #define BITS_TO_BITMAP(_bits) DIV_ROUND_UP(_bits, BITMAP_STRIDE)
 
+#define BIT(_x) (1 << (_x))
+
 static inline int test_bit(u64 index, const u64 *bitmap) {
     return (bitmap[index >> 6] & (1l << (index & 0x3f))) != 0;
 }

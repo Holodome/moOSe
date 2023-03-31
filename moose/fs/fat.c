@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <endian.h>
 #include <fs/fat.h>
+#include <kstdio.h>
 #include <string.h>
 
 #define PFATFS_ROOTDIR ((u32)1)
@@ -798,6 +799,7 @@ ssize_t fatfs_write(struct fatfs *fs, struct fatfs_file *file,
         dirent.file_size = file->offset;
         write_dirent(fs, file->dirent_loc, &dirent);
     }
+    kprintf("here %u %u\n", file->size, file->offset);
 
     return cursor - (const char *)buffer;
 }

@@ -4,6 +4,7 @@ D := moose
 OS_IMG := $(D)/moose.img
 
 KERNEL_LINK := $(D)/arch/amd64/kernel.ld.out
+
 KERNEL_OBJS := \
 	$(D)/arch/amd64/kstart.o \
 	$(D)/arch/amd64/kmain.o \
@@ -20,15 +21,28 @@ KERNEL_OBJS := \
 	$(D)/drivers/vga.o \
 	$(D)/drivers/disk.o \
 	$(D)/drivers/tty.o \
+	$(D)/drivers/rtl8139.o \
+	$(D)/drivers/pci.o \
+	$(D)/mm/resource.o \
 	$(D)/mm/physmem.o \
 	$(D)/mm/kmalloc.o \
 	$(D)/mm/vmalloc.o \
 	$(D)/mm/slab.o \
 	$(D)/sched/spinlock.o \
+	$(D)/sched/rwlock.o \
 	$(D)/fs/ext2.o \
 	$(D)/fs/vfs.o \
 	$(D)/fs/fat.o \
 	$(D)/fs/ramfs.o \
+	$(D)/net/ip.o \
+	$(D)/net/arp.o \
+	$(D)/net/inet.o \
+	$(D)/net/eth.o \
+	$(D)/net/netdaemon.o \
+	$(D)/net/icmp.o \
+	$(D)/net/udp.o \
+	$(D)/net/frame.o \
+	$(D)/net/interface.o \
 	$(D)/blk_device.o \
 	$(D)/panic.o \
 	$(D)/kthread.o \
