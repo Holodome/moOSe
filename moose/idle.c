@@ -11,24 +11,21 @@
 #include <net/icmp.h>
 #include <net/inet.h>
 #include <net/udp.h>
+#include <panic.h>
 #include <shell.h>
 #include <string.h>
 
 void idle_task(void) {
     init_disk();
-    init_shell();
 
-    if (init_pci()) {
-        kprintf("failed to initialize pci bus\n");
-        halt_cpu();
-    }
+    if (init_pci())
+        panic("failed to initialize pci bus\n");
+
     struct pci_bus *bus = get_root_bus();
     debug_print_bus(bus);
 
-    if (init_inet()) {
-        kprintf("failed to initialize inet system\n");
-        halt_cpu();
-    }
+    if (init_inet())
+        panic("failed to initialize inet system\n");
 
     u8 mac_addr[6];
     for (int i = 0; i < 5; i++) {
@@ -41,10 +38,9 @@ void idle_task(void) {
         debug_clear_arp_cache();
     }
 
-    if (arp_get_mac(dns_ip_addr, mac_addr)) {
-        kprintf("can't find mac for this ip address\n");
-        halt_cpu();
-    }
+    if (arp_get_mac(dns_ip_addr, mac_addr))
+        panic("can't find mac for this ip address\n");
+
     kprintf("dns ");
     debug_print_mac_addr(mac_addr);
 
