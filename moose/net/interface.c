@@ -1,3 +1,4 @@
+#include <kstdio.h>
 #include <list.h>
 #include <mm/kmalloc.h>
 #include <net/interface.h>
@@ -12,10 +13,11 @@ struct net_interface *create_net_interface(const char *name,
         return NULL;
 
     size_t name_size = strlen(name);
-    if (name_size > IFNAME_SIZE)
-        return NULL;
+    if (name_size > IFNAME_SIZE) {
+        kprintf("interface name was truncated\n");
+    }
 
-    memcpy(net_if->name, name, name_size);
+    strlcpy(net_if->name, name, IFNAME_SIZE);
     net_if->dev = dev;
 
     list_add(&net_if->list, &interfaces);

@@ -1,15 +1,13 @@
 #include <drivers/rtl8139.h>
 #include <endian.h>
+#include <fs/posix.h>
 #include <kstdio.h>
 #include <net/arp.h>
 #include <net/frame.h>
 #include <net/inet.h>
+#include <net/interface.h>
 #include <net/netdaemon.h>
-#include <string.h>
 
-struct nic nic;
-
-static u8 nic_ip_addr[4] = {10, 0, 2, 15};
 u8 gateway_ip_addr[4] = {10, 0, 2, 2};
 u8 dns_ip_addr[4] = {10, 0, 2, 3};
 u8 local_net_ip_addr[4] = {10, 0, 2, 0};
@@ -17,30 +15,40 @@ u8 local_net_mask[4] = {255, 255, 255, 0};
 u8 broadcast_mac_addr[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 int init_inet(void) {
-    int err;
-    if ((err = init_net_frames()))
-        return err;
+    struct net_device *net_dev = create_rtl8139();
+    if (net_dev == NULL) {
+        return -EIO;
+    }
 
-    if ((err = init_rtl8139(nic.mac_addr))) {
-        destroy_net_frames();
+    kprintf("rtl8139 ");
+    debug_print_mac_addr(net_dev->mac_addr);
+
+    struct net_interface *eth0_interface =
+        create_net_interface("eth0", net_dev);
+    if (eth0_interface == NULL) {
+        destroy_rtl8139(net_dev);
+        return -ENOMEM;
+    }
+
+    int err;
+    if ((err = init_net_frames())) {
+        remove_net_interface(eth0_interface);
+        destroy_rtl8139(net_dev);
         return err;
     }
 
-    memcpy(nic.ip_addr, nic_ip_addr, 4);
-    debug_print_mac_addr(nic.mac_addr);
-
-    nic.send_frame = rtl8139_send;
-
     if ((err = init_arp_cache())) {
-        destroy_rtl8139();
         destroy_net_frames();
+        remove_net_interface(eth0_interface);
+        destroy_rtl8139(net_dev);
         return err;
     }
 
     if ((err = init_net_daemon())) {
         destroy_arp_cache();
-        destroy_rtl8139();
         destroy_net_frames();
+        remove_net_interface(eth0_interface);
+        destroy_rtl8139(net_dev);
         return err;
     }
 

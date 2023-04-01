@@ -1,6 +1,7 @@
 #pragma once
 
 #include <types.h>
+#include <net/interface.h>
 
 #define ETH_HW_TYPE 1
 
@@ -24,7 +25,8 @@ struct arp_header {
 int init_arp_cache(void);
 void destroy_arp_cache(void);
 
-void arp_send_request(struct net_frame *frame, const u8 *ip_addr);
-void arp_receive_frame(struct net_frame *frame);
+void arp_send_request(struct net_interface *net_if, struct net_frame *frame,
+                      const u8 *ip_addr);
+void arp_receive_frame(struct net_interface *net_if, struct net_frame *frame);
 int arp_get_mac(const u8 *ip_addr, u8 *mac_addr);
 void debug_clear_arp_cache(void);

@@ -9,7 +9,8 @@ struct net_interface {
     u8 ip_addr[4];
     u8 broadcast_ip_addr[4];
     u8 net_mask[4];
-    char name[IFNAME_SIZE];
+    char name[IFNAME_SIZE + 1];
+
     struct net_device *dev;
     struct list_head list;
 };

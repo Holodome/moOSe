@@ -14,14 +14,6 @@
 
 struct net_frame;
 
-struct nic {
-    u8 mac_addr[6];
-    u8 ip_addr[4];
-    void (*send_frame)(const void *frame, size_t size);
-};
-
-extern struct nic nic;
-
 extern u8 gateway_ip_addr[4];
 extern u8 dns_ip_addr[4];
 extern u8 local_net_mask[4];
