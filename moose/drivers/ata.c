@@ -1,5 +1,6 @@
 #include <arch/amd64/asm.h>
 #include <drivers/ata.h>
+#include <assert.h>
 
 #define PRIMARY_BUS 0x1f0
 #define SECONDARY_BUS 0x170
@@ -24,6 +25,7 @@ static void cache_flush(void) {
 }
 
 static int ata_pio_read(void *buf, u32 lba, u8 sector_count) {
+    expects((uintptr_t)buf % sizeof(u16) == 0);
     u16 *cursor = buf;
     port_out8(PRIMARY_BUS + DRIVE_HEAD_REG, 0xe0);
     port_out8(PRIMARY_BUS + FEAT_REG, 0);

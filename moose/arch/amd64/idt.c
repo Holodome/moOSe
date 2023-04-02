@@ -1,7 +1,10 @@
 #include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
+#include <assert.h>
 #include <kstdio.h>
+#include <kthread.h>
 #include <panic.h>
+#include <sched/spinlock.h>
 
 // Port address for master PIC
 #define PIC1 0x20
@@ -153,26 +156,39 @@ static void eoi(u8 irq) {
     port_out8(PIC1_CMD, PIC_EOI);
 }
 
+static spinlock_t isr_table_lock = SPIN_LOCK_INIT();
+
 void isr_handler(struct registers_state *regs) {
+    expects((uintptr_t)regs % _Alignof(struct registers_state) == 0);
     unsigned no = regs->isr_number;
     if (no < 32) {
         if (no == EXCEPTION_PAGE_FAULT) {
             kprintf("address: %#018lx\n", read_cr2());
         }
         print_registers(regs);
-        _panic("exception %s(%u): %u\n", get_exception_name(no), no,
-               (unsigned)regs->exception_code);
+        if (current)
+            kprintf("current %s\n", current->name);
+        kprintf("exception %s(%u): %u\n", get_exception_name(no), no,
+                (unsigned)regs->exception_code);
+        halt_cpu();
     } else {
-        isr_t *isr = isrs[no];
-        if (isr != NULL)
-            isr(regs);
+        cpuflags_t flags;
+        if (spin_trylock_irqsave(&isr_table_lock, flags)) {
+            isr_t *isr = isrs[no];
+            if (isr != NULL)
+                isr(regs);
+            spin_unlock_irqrestore(&isr_table_lock, flags);
+        }
     }
 
     eoi(no);
 }
 
 void register_isr(int num, isr_t *isr) {
+    cpuflags_t flags;
+    spin_lock_irqsave(&isr_table_lock, flags);
     isrs[IRQ_BASE + num] = isr;
+    spin_unlock_irqrestore(&isr_table_lock, flags);
 }
 
 void init_idt(void) {

@@ -27,10 +27,8 @@ static LIST_HEAD(subheaps);
 
 static void init_subheap(struct subheap *heap) {
     init_list_head(&heap->blocks);
-    init_list_head(&heap->list);
 
     struct mem_block *block = heap->memory;
-    memset(block, 0, sizeof(*block));
     block->size = heap->size - sizeof(struct mem_block);
     list_add(&block->list, &heap->blocks);
 }
@@ -52,7 +50,7 @@ static struct mem_block *subheap_find_best_block(struct subheap *heap,
 
     struct mem_block *node;
     list_for_each_entry(node, &heap->blocks, list) {
-        assert(node->size != 0);
+        expects(node->size != 0);
         if (!node->used && node->size >= size && node->size < best_mem) {
             best_node = node;
             best_mem = node->size;
@@ -93,16 +91,15 @@ void *kmalloc(size_t size) {
         return NULL;
 
     size = align_po2(size, ALIGNMENT);
+    expects(size != 0);
     struct mem_block *node = find_best_block(size);
     if (node == NULL) {
         struct subheap *heap = add_new_subheap(size);
         if (heap) {
             node = subheap_find_best_block(heap, size);
-            assert(node);
+            expects(node);
         }
     }
-
-    assert(size != 0);
 
     // OOM
     if (!node)
@@ -115,8 +112,8 @@ void *kmalloc(size_t size) {
         new_block->size = node->size - size - sizeof(struct mem_block);
         list_add(&new_block->list, &node->list);
         node->size = size;
-        assert(node->size != 0);
-        assert(new_block->size != 0);
+        expects(node->size != 0);
+        expects(new_block->size != 0);
     }
 
     node->used = 1;
@@ -126,7 +123,9 @@ void *kmalloc(size_t size) {
 
 void *kzalloc(size_t size) {
     void *mem = kmalloc(size);
-    memset(mem, 0, size);
+    if (mem)
+        memset(mem, 0, size);
+
     return mem;
 }
 
@@ -152,6 +151,7 @@ void kfree(void *mem) {
 
     struct mem_block *left =
         list_prev_entry_or_null(block, &subheap->blocks, list);
+    expects(left->size);
     if (left && !left->used) {
         left->size += block->size + sizeof(struct mem_block);
         list_remove(&block->list);
@@ -160,6 +160,7 @@ void kfree(void *mem) {
 
     struct mem_block *right =
         list_next_entry_or_null(block, &subheap->blocks, list);
+    expects(right->size);
     if (right && !right->used) {
         block->size += right->size + sizeof(struct mem_block);
         list_remove(&right->list);

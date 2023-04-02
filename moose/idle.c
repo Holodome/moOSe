@@ -1,3 +1,4 @@
+#include <arch/amd64/rtc.h>
 #include <arch/cpu.h>
 #include <blk_device.h>
 #include <drivers/disk.h>
@@ -13,10 +14,11 @@
 #include <net/inet.h>
 #include <net/udp.h>
 #include <panic.h>
-#include <time.h>
 #include <string.h>
+#include <time.h>
 
 void idle_task(void) {
+    init_rtc();
     init_disk();
 
     if (init_pci())
@@ -87,14 +89,8 @@ void idle_task(void) {
     }
 
     for (;;) {
-        /* kprintf("hello\n"); */
         struct ktm tm;
         current_time_tm(&tm);
-        (void)tm;
         print_tm(&tm);
-        /* time_t time = current_time(); */
-        /* kprintf("current time %ld\n", time); */
-        /* wait_for_int(); */
-        asm volatile("nop");
     }
 }

@@ -19,8 +19,8 @@ struct daemon_queue {
 
 static struct daemon_queue *queue;
 
-__attribute__((noreturn)) static void net_daemon_task(void) {
-    u64 flags;
+__noreturn __used static void net_daemon_task(void) {
+    cpuflags_t flags;
     for (;;) {
         write_lock_irqsave(&queue->lock, flags);
         for (int i = 0; i < QUEUE_SIZE; i++) {
@@ -40,11 +40,9 @@ int init_net_daemon(void) {
         return -ENOMEM;
 
     queue->frames = (struct net_frame **)(queue + 1);
-
     rwlock_init(&queue->lock);
 
-    if (launch_task(net_daemon_task)) {
-        kfree(queue->frames);
+    if (launch_task("net", net_daemon_task)) {
         kfree(queue);
         return -1;
     }

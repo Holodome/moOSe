@@ -111,6 +111,4 @@ int map_virtual_region(u64 phys_base, u64 virt_base, size_t size);
 void unmap_virtual_page(u64 virt_addr);
 void unmap_virtual_region(u64 virt_addr, size_t size);
 
-void set_pml4_table(struct pml4_table *table);
-struct pml4_table *get_pml4_table(void);
 void flush_tlb_entry(u64 virt_addr);

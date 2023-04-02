@@ -5,9 +5,10 @@
 // FIXME: Cleanup this include
 #include <arch/amd64/idt.h>
 
-#define KTHREAD_STACK_SIZE (4096 * 4)
+#define KTHREAD_STACK_SIZE (4096 * 16)
 
 struct task {
+    const char *name;
     struct registers_state regs;
     struct kthread_info *info;
     struct list_head list;
@@ -25,7 +26,7 @@ union kthread {
 typedef void task_fn_t(void);
 
 int launch_first_task(task_fn_t *fn);
-int launch_task(task_fn_t *fn);
+int launch_task(const char *name, task_fn_t *fn);
 
 extern volatile struct task *current;
 extern struct list_head tasks;

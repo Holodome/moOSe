@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <ctype.h>
 #include <drivers/tty.h>
 #include <kstdio.h>
@@ -61,6 +62,7 @@ static void print_signed(char *buffer, size_t size, size_t *counter,
 
     char number_buffer[NUMBER_BUFFER_SIZE];
     size_t number_length = print_number(number_buffer, number, 10);
+    expects(number_length < sizeof(number_buffer));
 
     if (opts->width >= number_length)
         opts->width -= number_length;
@@ -466,7 +468,7 @@ int kprintf(const char *fmt, ...) {
 
 int kvprintf(const char *fmt, va_list args) {
     char buffer[256];
-    int count = vsnprintf(buffer, 256, fmt, args);
+    int count = vsnprintf(buffer, sizeof(buffer), fmt, args);
     int write_result = tty_write(buffer, strlen(buffer));
     return write_result < 0 ? write_result : count;
 }
