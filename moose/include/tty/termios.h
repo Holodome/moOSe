@@ -11,7 +11,7 @@ typedef u32 tcflag_t;
 typedef u8 cc_t;
 typedef u32 speed_t;
 
-struct termios {
+struct ktermios {
     tcflag_t c_iflag;
     tcflag_t c_oflag;
     tcflag_t c_cflag;
