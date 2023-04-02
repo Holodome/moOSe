@@ -8,6 +8,7 @@
 #define KTHREAD_STACK_SIZE (4096 * 16)
 
 struct task {
+    int pid;
     const char *name;
     struct registers_state regs;
     struct kthread_info *info;

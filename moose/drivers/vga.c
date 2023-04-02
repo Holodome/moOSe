@@ -1,7 +1,7 @@
 #include <arch/amd64/asm.h>
 #include <assert.h>
 #include <param.h>
-#include <sched/spinlock.h>
+#include <sched/locks.h>
 
 #define WIDTH 80
 #define HEIGHT 25

@@ -28,8 +28,7 @@ KERNEL_OBJS := \
 	$(D)/mm/kmalloc.o \
 	$(D)/mm/vmalloc.o \
 	$(D)/mm/slab.o \
-	$(D)/sched/spinlock.o \
-	$(D)/sched/rwlock.o \
+	$(D)/sched/locks.o \
 	$(D)/fs/ext2.o \
 	$(D)/fs/vfs.o \
 	$(D)/fs/fat.o \
