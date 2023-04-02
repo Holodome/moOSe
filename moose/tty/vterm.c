@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <mm/kmalloc.h>
+#include <string.h>
 #include <tty/console.h>
 #include <tty/vterm.h>
 
@@ -15,7 +16,7 @@ struct vterm *create_vterm(struct console *console) {
         kfree(term);
         return NULL;
     }
-    term->lines = kzalloc(sizeof(*term->lines) * console->height);
+    term->lines = kzalloc(sizeof(*term->lines) * console->height * 2);
     if (!term->lines) {
         kfree(term->cells);
         kfree(term);
@@ -23,6 +24,8 @@ struct vterm *create_vterm(struct console *console) {
     }
     spin_lock_init(&term->lock);
     term->console = console;
+    term->default_bg = CONSOLE_BLACK;
+    term->default_fg = CONSOLE_WHITE;
     refcount_set(&term->refcnt, 1);
 
     console_clear_all(console);
@@ -39,32 +42,36 @@ void release_vterm(struct vterm *term) {
     }
 }
 
+static struct vterm_line *vterm_get_line(struct vterm *term, long n) {
+    return term->lines + term->console->height + n;
+}
+
+static struct vterm_cell *vterm_get_cell(struct vterm *term, long x, long y) {
+    return term->cells + term->console->height * term->console->width +
+           (y * term->console->width) + x;
+}
+
 static void vterm_putc_at(struct vterm *term, int c, size_t x, size_t y) {
-    struct vterm_line *line = term->lines + y;
-    struct vterm_cell *cell = term->cells + y * term->console->width + x;
+    struct vterm_line *line = vterm_get_line(term, y);
+    struct vterm_cell *cell = vterm_get_cell(term, x, y);
 
-    if (!isascii(c))
-        c = ' ';
-
-    cell->bg = CONSOLE_BLACK;
-    cell->fg = CONSOLE_WHITE;
+    cell->bg = term->default_bg;
+    cell->fg = term->default_fg;
     cell->c = c;
     line->is_dirty = 1;
-    if (!iscntrl(c) && line->length < x)
-        line->length = x + 1;
+    /* if (isgraph(c) && line->length < x + 1) */
+    /*     line->length = x + 1; */
 }
 
 static void vterm_flush(struct vterm *term) {
     for (size_t y = 0; y < term->console->height; ++y) {
-        struct vterm_line *line = term->lines + y;
+        struct vterm_line *line = vterm_get_line(term, y);
         if (!line->is_dirty)
             continue;
 
-        for (size_t x = 0; x < line->length; ++x) {
-            struct vterm_cell *cell =
-                term->cells + y * term->console->width + x;
-            console_write(term->console, term->x, term->y, cell->c, cell->bg,
-                          cell->fg);
+        for (size_t x = 0; x < term->console->width; ++x) {
+            const struct vterm_cell *cell = vterm_get_cell(term, x, y);
+            console_write(term->console, x, y, cell->c, cell->bg, cell->fg);
         }
         line->is_dirty = 0;
     }
@@ -72,8 +79,58 @@ static void vterm_flush(struct vterm *term) {
     console_set_cursor(term->console, term->x, term->y);
 }
 
-static void vterm_scroll_down(struct vterm *term, size_t count) {
-    //
+static void __vterm_move_up(struct vterm *term, size_t count) {
+    size_t w = term->console->width;
+    size_t h = term->console->height;
+    memmove(term->lines, term->lines + count,
+            (h * 2 - count) * sizeof(*term->lines));
+    memmove(term->cells, term->cells + count * w,
+            sizeof(*term->cells) * w * (h * 2 - count));
+    for (size_t row = 0; row < h * 2; ++row)
+        term->lines[row].is_dirty = 1;
+
+    for (size_t row = 2 * h - count; row < 2 * h; ++row) {
+        /* term->lines[row].length = 0; */
+        for (size_t col = 0; col < w; ++col) {
+            struct vterm_cell *cell = term->cells + row * w + col;
+            cell->c = ' ';
+            cell->bg = term->default_bg;
+            cell->fg = term->default_fg;
+        }
+    }
+}
+
+static void __vterm_move_down(struct vterm *term, size_t count) {
+    size_t w = term->console->width;
+    size_t h = term->console->height;
+    memmove(term->lines + count, term->lines,
+            (2 * h - count) * sizeof(*term->lines));
+    memmove(term->cells + count * w, term->cells,
+            (2 * h - count) * w * sizeof(*term->cells));
+    vterm_get_line(term, 0)->is_dirty = 1;
+    vterm_get_cell(term, 0, 0)->c = '1';
+    vterm_get_cell(term, 0, 1)->c = '1';
+
+    for (size_t row = 0; row < h * 2; ++row)
+        term->lines[row].is_dirty = 1;
+
+    for (size_t row = 0; row < count; ++row) {
+        /* term->lines[row].length = 0; */
+        for (size_t col = 0; col < w; ++col) {
+            struct vterm_cell *cell = term->cells + row * w + col;
+            cell->c = ' ';
+            cell->bg = term->default_bg;
+            cell->fg = term->default_fg;
+        }
+    }
+}
+
+static void vterm_newline(struct vterm *term) {
+    ++term->y;
+    if (term->y >= term->console->height) {
+        __vterm_move_up(term, 1);
+        --term->y;
+    }
 }
 
 void vterm_write(struct vterm *term, const char *str, size_t count) {
@@ -83,16 +140,38 @@ void vterm_write(struct vterm *term, const char *str, size_t count) {
     for (size_t i = 0; i < count; ++i) {
         int c = str[i];
         if (c == '\n') {
-            ++term->y;
-            if (term->y >= term->console->height) {
-                vterm_scroll_down(term, 1);
-                --term->y;
-            }
+            term->x = 0;
+            vterm_newline(term);
         } else {
             vterm_putc_at(term, c, term->x, term->y);
+            ++term->x;
+            if (term->x >= term->console->width) {
+                term->x = 0;
+                vterm_newline(term);
+            }
         }
     }
 
     vterm_flush(term);
+    spin_unlock_irqrestore(&term->lock, flags);
+}
+
+void vterm_move_up(struct vterm *term, size_t count) {
+    cpuflags_t flags;
+    spin_lock_irqsave(&term->lock, flags);
+
+    __vterm_move_up(term, count);
+    vterm_flush(term);
+
+    spin_unlock_irqrestore(&term->lock, flags);
+}
+
+void vterm_move_down(struct vterm *term, size_t count) {
+    cpuflags_t flags;
+    spin_lock_irqsave(&term->lock, flags);
+
+    __vterm_move_down(term, count);
+    vterm_flush(term);
+
     spin_unlock_irqrestore(&term->lock, flags);
 }
