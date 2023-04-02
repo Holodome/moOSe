@@ -52,4 +52,4 @@ void console_write(struct console *console, size_t x, size_t y, int c,
                    enum console_color bg, enum console_color fg);
 void console_set_cursor(struct console *console, size_t x, size_t y);
 void console_hide_cursor(struct console *console);
-void console_show_cursor(struct console *console);
+void console_show_cursor(struct console *console, size_t x, size_t y);
