@@ -4,7 +4,7 @@
 #include <kstdio.h>
 #include <kthread.h>
 #include <panic.h>
-#include <sched/spinlock.h>
+#include <sched/locks.h>
 
 // Port address for master PIC
 #define PIC1 0x20

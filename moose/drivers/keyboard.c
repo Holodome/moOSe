@@ -4,7 +4,7 @@
 #include <drivers/keyboard.h>
 #include <drivers/vga.h>
 #include <kstdio.h>
-#include <sched/spinlock.h>
+#include <sched/locks.h>
 
 #define PORT 0x60
 #define BACKSPACE 0x0e

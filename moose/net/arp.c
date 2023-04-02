@@ -9,7 +9,7 @@
 #include <net/eth.h>
 #include <net/frame.h>
 #include <net/inet.h>
-#include <sched/rwlock.h>
+#include <sched/locks.h>
 #include <string.h>
 
 #define ARP_CACHE_SIZE 256

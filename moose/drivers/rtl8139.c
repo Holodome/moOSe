@@ -9,7 +9,7 @@
 #include <net/inet.h>
 #include <net/netdaemon.h>
 #include <param.h>
-#include <sched/spinlock.h>
+#include <sched/locks.h>
 #include <string.h>
 
 #define RTL_REG_MAC0 0x00

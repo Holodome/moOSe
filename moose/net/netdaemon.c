@@ -7,7 +7,7 @@
 #include <net/frame.h>
 #include <net/inet.h>
 #include <net/netdaemon.h>
-#include <sched/rwlock.h>
+#include <sched/locks.h>
 #include <string.h>
 
 #define QUEUE_SIZE 32

@@ -1,12 +1,14 @@
 #include <arch/cpu.h>
 #include <kthread.h>
 #include <mm/kmalloc.h>
-#include <sched/spinlock.h>
+#include <sched/locks.h>
 
 extern void bootstrap_task(u64 rsp, u64 rip);
 
 LIST_HEAD(tasks);
-volatile struct task *current;
+static int pid_counter = 1;
+struct task current_proxy = {.pid = 0};
+volatile struct task *current = &current_proxy;
 
 static struct task *create_task(void (*fn)(void)) {
     struct task *task = kzalloc(sizeof(*task) + sizeof(union kthread));
@@ -20,6 +22,7 @@ static struct task *create_task(void (*fn)(void)) {
     task->regs.rflags = read_cpu_flags();
     task->regs.ursp = stack_end;
     task->regs.uss = 16;
+    task->pid = pid_counter++;
 
     return task;
 }
