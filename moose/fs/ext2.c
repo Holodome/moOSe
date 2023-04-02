@@ -666,8 +666,8 @@ int ext2_mount(struct superblock *sb) {
 
 // 0 - success
 // 1 - no entries left
-int ext2_read_dentry_at(struct ext2_inode *ei, struct superblock *sb,
-                        off_t *offset, struct ext2_dentry1 *ed) {
+static int ext2_read_dentry_at(struct ext2_inode *ei, struct superblock *sb,
+                               off_t *offset, struct ext2_dentry1 *ed) {
     if (*offset >= ei->i_size)
         return 1;
     size_t read =
