@@ -39,19 +39,6 @@ static void set_cursor(u16 cursor) {
     port_out8(PORT_DAT, cursor & 0xff);
 }
 
-#if 0 
-void console_get_cursor(u32 *x, u32 *y) {
-    u16 cursor = get_cursor();
-    *y = cursor / WIDTH;
-    *x = cursor % WIDTH;
-}
-
-void console_set_cursor(u32 x, u32 y) {
-    u16 cursor = y * WIDTH + x;
-    set_cursor(cursor);
-}
-#endif
-
 static void set_char(u16 offset, int symb) {
     expects(offset < (WIDTH * HEIGHT));
     volatile u8 *slot = TEXTBUF + offset * 2;

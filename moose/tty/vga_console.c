@@ -17,18 +17,13 @@ static void vga_clear(struct console *console, size_t x, size_t y,
                       size_t length);
 static void vga_write(struct console *console, size_t x, size_t y, int c,
                       enum console_color bg, enum console_color fg);
-static void vga_flush(struct console *console __unused, size_t x __unused,
-                      size_t y __unused, size_t width __unused,
-                      size_t height __unused) {
-}
 static void vga_set_cursor(struct console *console, size_t x, size_t y);
 static void vga_hide_cursor(struct console *console);
-static void vga_show_cursor(struct console *console);
+static void vga_show_cursor(struct console *console, size_t x, size_t y);
 
-const static struct console_ops ops = {.release = vga_release,
+static const struct console_ops ops = {.release = vga_release,
                                        .clear = vga_clear,
                                        .write = vga_write,
-                                       .flush = vga_flush,
                                        .set_cursor = vga_set_cursor,
                                        .hide_cursor = vga_hide_cursor,
                                        .show_cursor = vga_show_cursor};
@@ -80,15 +75,6 @@ static void vga_write(struct console *console, size_t x, size_t y, int c,
 
     u16 *at = vga->buffer + idx;
     *at = ((bg & 0x7) << 12) | (fg << 8) | c;
-    console->x = x + 1;
-    console->y = y;
-
-    if (console->x >= console->width) {
-        console->x = 0;
-        ++console->y;
-        if (console->y >= console->height)
-            console->y = 0;
-    }
 
     spin_unlock_irqrestore(&vga->lock, flags);
 }
@@ -116,6 +102,6 @@ static void vga_hide_cursor(struct console *console) {
     spin_unlock_irqrestore(&vga->lock, flags);
 }
 
-static void vga_show_cursor(struct console *console) {
-    vga_set_cursor(console, console->x, console->y);
+static void vga_show_cursor(struct console *console, size_t x, size_t y) {
+    vga_set_cursor(console, x, y);
 }
