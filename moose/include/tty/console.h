@@ -6,6 +6,7 @@
 
 struct console;
 
+// NOTE: These are designed to map 1 to 1 to VGA colors
 enum console_color {
     CONSOLE_BLACK,
     CONSOLE_BLUE,
@@ -29,10 +30,12 @@ struct console_ops {
     void (*release)(struct console *console);
     void (*clear)(struct console *console, size_t x, size_t y, size_t length);
     void (*write)(struct console *console, size_t x, size_t y, int c,
-                     enum console_color bg, enum console_color fg);
+                  enum console_color bg, enum console_color fg);
     void (*flush)(struct console *console, size_t x, size_t y, size_t width,
                   size_t height);
     void (*set_cursor)(struct console *console, size_t x, size_t y);
+    void (*hide_cursor)(struct console *console);
+    void (*show_cursor)(struct console *console);
 };
 
 struct console {
@@ -53,4 +56,4 @@ void console_write2(struct console *console, size_t x, size_t y, int c,
 void console_write1(struct console *console, size_t x, size_t y, int c);
 void console_write(struct console *console, int c);
 void console_flush(struct console *console, size_t x, size_t y, size_t width,
-         size_t height);
+                   size_t height);
