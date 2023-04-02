@@ -4,6 +4,14 @@
 #include <param.h>
 
 extern void print(const char *s);
+int kprintf(const char *str __unused, ...) {
+    print(str);
+    return 0;
+}
+void __panic(void) {
+    for (;;)
+        ;
+}
 
 int load_kernel(void) {
     char buffer[512];
@@ -15,8 +23,7 @@ int load_kernel(void) {
     size_t kernel_offset = partition.addr;
 
     uintptr_t cursor = KERNEL_PHYSICAL_BASE;
-    for (; kernel_size--; cursor += sizeof(buffer))
-        ata_read_block(kernel_offset++, (void *)cursor);
+    ata_pio_read((void *)cursor, kernel_offset, kernel_size);
 
     return 0;
 }

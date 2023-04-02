@@ -3,7 +3,7 @@
 
 void __panic(void) {
     dump_registers();
-    ___panic();
+    halt_cpu();
 }
 
 void ___panic(void) {

@@ -2,6 +2,8 @@
 
 #include <arch/amd64/asm.h>
 
+typedef u64 cpuflags_t;
+
 static inline void irq_disable(void) {
     cli();
 }

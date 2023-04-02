@@ -1,5 +1,7 @@
 #include <arch/amd64/asm.h>
+#include <assert.h>
 #include <param.h>
+#include <sched/spinlock.h>
 
 #define WIDTH 80
 #define HEIGHT 25
@@ -12,6 +14,8 @@
 
 #define CTL_CURSOR_HI 14
 #define CTL_CURSOR_LO 15
+
+static spinlock_t lock = SPIN_LOCK_INIT();
 
 u32 console_get_width(void) {
     return WIDTH;
@@ -49,6 +53,7 @@ void console_set_cursor(u32 x, u32 y) {
 #endif
 
 static void set_char(u16 offset, int symb) {
+    expects(offset < (WIDTH * HEIGHT));
     volatile u8 *slot = TEXTBUF + offset * 2;
     *slot++ = symb;
     *slot = WHITE_ON_BLACK;
@@ -70,7 +75,11 @@ static u16 scroll_line(void) {
 }
 
 ssize_t vga_write(const void *buf_, size_t buf_size) {
+    cpuflags_t flags;
+    spin_lock_irqsave(&lock, flags);
     u16 cursor = get_cursor();
+    if (cursor > WIDTH * HEIGHT)
+        cursor = 0;
     const char *buf = buf_;
     for (size_t i = 0; i < buf_size; ++i) {
         int c = buf[i];
@@ -86,19 +95,29 @@ ssize_t vga_write(const void *buf_, size_t buf_size) {
         }
     }
 
+    if (cursor >= WIDTH * HEIGHT)
+        cursor = scroll_line();
+
     set_cursor(cursor);
+    spin_unlock_irqrestore(&lock, flags);
     return buf_size;
 }
 
 void vga_clear(void) {
+    cpuflags_t flags;
+    spin_lock_irqsave(&lock, flags);
     for (u16 i = 0; i < WIDTH * HEIGHT; ++i)
         set_char(i, ' ');
 
     set_cursor(0);
+    spin_unlock_irqrestore(&lock, flags);
 }
 
 void vga_backspace(void) {
+    cpuflags_t flags;
+    spin_lock_irqsave(&lock, flags);
     u16 cursor = get_cursor() - 1;
     set_char(cursor, ' ');
     set_cursor(cursor);
+    spin_unlock_irqrestore(&lock, flags);
 }

@@ -7,6 +7,7 @@
 #include <idle.h>
 #include <kstdio.h>
 #include <kthread.h>
+#include <assert.h>
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
@@ -42,8 +43,9 @@ __noreturn void kmain(void) {
     }
 
     init_idt();
-    init_keyboard();
+    kprintf("initialized idt\n");
     struct mem_range *ranges = kmalloc(usable_region_count * sizeof(*ranges));
+    expects(ranges);
     for (u32 i = 0, j = 0; i < memmap_size; ++i) {
         const struct memmap_entry *entry = memmap + i;
         if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
@@ -53,13 +55,15 @@ __noreturn void kmain(void) {
         }
     }
 
+    kprintf("usabe region count = %d\n", usable_region_count);
     if (init_phys_mem(ranges, usable_region_count))
         panic("failed to initialize physical memory\n");
+    kprintf("initialized physical allocator\n");
 
     if (init_virt_mem(ranges, usable_region_count))
         panic("failed to initialize virtual memory\n");
+    kprintf("initialized virtual allocator\n");
 
-    init_rtc();
     if (launch_first_task(idle_task))
         panic("failed to create idle task\n");
 

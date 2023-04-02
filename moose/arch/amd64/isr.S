@@ -17,12 +17,13 @@ isr_common_stub:
     pushq %rdi
 
     mov %rsp, %rdi
+	cld
     call isr_handler
 
     popq %rdi
     popq %rsi
     popq %rbp
-    popq %rax
+	addq $8, %rsp
     popq %rbx
     popq %rdx
     popq %rcx

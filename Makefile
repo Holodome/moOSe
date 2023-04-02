@@ -20,12 +20,7 @@ LDFLAGS = -Map $(subst .elf,.map,$@)
 
 CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles \
 		  -Wl,-r -Imoose/include -Os -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
-		  -mcmodel=large -fno-strict-overflow -Wno-sign-compare 
-
-ifneq ($(DEBUG),)
-	ASFLAGS += -g
-	CFLAGS += -ggdb -O0
-endif
+		  -mcmodel=large -fno-strict-overflow -Wno-sign-compare -g
 
 TARGET_IMG := moose.img
 
@@ -41,7 +36,6 @@ $(TARGET_IMG): moose/moose.img
 
 qemu: all
 	$(QEMU) -d guest_errors \
-	-m 4g \
 	-device pci-bridge,id=bridge1,bus=pci.0,chassis_nr=4 \
 	-device rtl8139,netdev=moose0,bus=pci.0 -netdev user,id=moose0 \
 	-drive file=$(TARGET_IMG),format=raw,index=0,if=ide

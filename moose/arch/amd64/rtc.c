@@ -3,6 +3,7 @@
 #include <arch/amd64/rtc.h>
 #include <arch/cpu.h>
 #include <assert.h>
+#include <kstdio.h>
 #include <kthread.h>
 #include <string.h>
 #include <time.h>
@@ -34,6 +35,7 @@ static void cmos_write(u8 idx, u8 data) {
 static void timer_interrupt(struct registers_state *regs) {
     ++jiffies;
     (void)cmos_read(0x8c);
+
     if (!current)
         return;
 
@@ -58,6 +60,9 @@ void init_rtc(void) {
     u8 rate = RATE;
 
     irq_disable();
+    port_out8(0x70, 0x8a);
+    port_out8(0x71, 0x20);
+
     prev = cmos_read(0x8b);
     cmos_write(0x8b, prev | 0x40);
     // register frequency
