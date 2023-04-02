@@ -31,18 +31,14 @@ struct console_ops {
     void (*clear)(struct console *console, size_t x, size_t y, size_t length);
     void (*write)(struct console *console, size_t x, size_t y, int c,
                   enum console_color bg, enum console_color fg);
-    void (*flush)(struct console *console, size_t x, size_t y, size_t width,
-                  size_t height);
     void (*set_cursor)(struct console *console, size_t x, size_t y);
+    void (*show_cursor)(struct console *console, size_t x, size_t y);
     void (*hide_cursor)(struct console *console);
-    void (*show_cursor)(struct console *console);
 };
 
 struct console {
     refcount_t refcnt;
     size_t width, height;
-    size_t x, y;
-    enum console_color default_bg, default_fg;
 
     void *private;
     const struct console_ops *ops;
@@ -51,9 +47,9 @@ struct console {
 struct console *create_empty_console(void);
 void console_release(struct console *console);
 void console_clear(struct console *console, size_t x, size_t y, size_t length);
-void console_write2(struct console *console, size_t x, size_t y, int c,
-                    enum console_color bg, enum console_color fg);
-void console_write1(struct console *console, size_t x, size_t y, int c);
-void console_write(struct console *console, int c);
-void console_flush(struct console *console, size_t x, size_t y, size_t width,
-                   size_t height);
+void console_clear_all(struct console *console);
+void console_write(struct console *console, size_t x, size_t y, int c,
+                   enum console_color bg, enum console_color fg);
+void console_set_cursor(struct console *console, size_t x, size_t y);
+void console_hide_cursor(struct console *console);
+void console_show_cursor(struct console *console);

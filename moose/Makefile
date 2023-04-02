@@ -42,6 +42,9 @@ KERNEL_OBJS := \
 	$(D)/net/udp.o \
 	$(D)/net/frame.o \
 	$(D)/net/interface.o \
+	$(D)/tty/console.o \
+	$(D)/tty/vga_console.o \
+	$(D)/tty/vterm.o \
 	$(D)/blk_device.o \
 	$(D)/panic.o \
 	$(D)/kthread.o \
