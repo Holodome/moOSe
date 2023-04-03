@@ -11,7 +11,7 @@
 
 static LIST_HEAD(free_list);
 
-static spinlock_t lock = SPIN_LOCK_INIT();
+static spinlock_t lock = INIT_SPIN_LOCK();
 
 static struct net_frame *alloc_net_frame(void) {
     struct net_frame *frame = kmalloc(sizeof(*frame) + FRAME_BUFFER_SIZE);

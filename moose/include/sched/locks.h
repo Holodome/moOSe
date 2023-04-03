@@ -50,10 +50,10 @@ typedef struct spinlock {
     atomic_t atomic;
 } spinlock_t;
 
-#define SPIN_LOCK_INIT()                                                       \
-    { ATOMIC_INIT(0) }
+#define INIT_SPIN_LOCK()                                                       \
+    { INIT_ATOMIC(0) }
 
-void spin_lock_init(spinlock_t *lock);
+void init_spin_lock(spinlock_t *lock);
 int spin_trylock(spinlock_t *lock);
 void spin_lock(spinlock_t *lock);
 void spin_unlock(spinlock_t *lock);
@@ -69,29 +69,6 @@ int spin_is_locked(spinlock_t *lock);
 #define spin_trylock_irqsave(_lock, _flags)                                    \
     __trylock_irqsave(spin_trylock, _lock, _flags)
 
-typedef struct recursive_spinlock {
-    spinlock_t lock;
-    int pid;
-    int count;
-} recursive_spinlock_t;
-
-void recursive_spin_lock_init(recursive_spinlock_t *lock);
-int recursive_spin_trylock(recursive_spinlock_t *lock);
-void recursive_spin_lock(recursive_spinlock_t *lock);
-void recursive_spin_unlock(recursive_spinlock_t *lock);
-int recursive_spin_is_locked(recursive_spinlock_t *lock);
-
-#define recursive_spin_lock_irq(_lock) __lock_irq(recursive_spin_lock, _lock)
-#define recursive_spin_lock_irqsave(_lock, _flags)                             \
-    __lock_irqsave(spin_lock, _lock, _flags)
-#define recursive_spin_unlock_irq(_lock)                                       \
-    __unlock_irq(recursive_spin_unlock, _lock)
-#define recursive_spin_unlock_irqrestore(_lock, _flags)                        \
-    __unlock_irqrestore(recursive_spin_unlock, _lock, _flags)
-#define recursive_spin_trylock_irq(_lock)                                      \
-    __trylock_irq(recursive_spin_trylock, _lock)
-#define recursive_spin_trylock_irqsave(_lock, _flags)
-
 typedef struct rwlock {
     spinlock_t lock;
     int readers;
@@ -99,10 +76,10 @@ typedef struct rwlock {
     int is_writing;
 } rwlock_t;
 
-#define RWLOCK_INIT()                                                          \
-    { SPINLOCK_INIT(), 0, 0, 0 }
+#define INIT_RWLOCK()                                                          \
+    { INIT_SPINLOCK(), 0, 0, 0 }
 
-void rwlock_init(rwlock_t *lock);
+void init_rwlock(rwlock_t *lock);
 
 void read_lock(rwlock_t *lock);
 void read_unlock(rwlock_t *lock);
