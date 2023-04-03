@@ -10,9 +10,18 @@
 int alloc_virtual_page(u64 virt_addr) {
     ssize_t addr = alloc_page();
     if (addr < 0)
-        return 1;
+        return -1;
 
     map_virtual_page(addr, virt_addr);
+
+    return 0;
+}
+
+int alloc_virtual_pages(u64 virt_addr, size_t page_count) {
+    for (; page_count; --page_count, virt_addr += PAGE_SIZE) {
+        if (alloc_virtual_page(virt_addr))
+            return -1;
+    }
 
     return 0;
 }
@@ -23,6 +32,11 @@ void free_virtual_page(u64 virt_addr) {
         free_page(pt_entry->addr);
         unmap_virtual_page(virt_addr);
     }
+}
+
+void free_virtual_pages(u64 virt_addr, size_t page_count) {
+    for (; page_count; --page_count, virt_addr += PAGE_SIZE) 
+        free_virtual_page(virt_addr);
 }
 
 static ssize_t alloc_page_table(void) {
