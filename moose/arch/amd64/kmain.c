@@ -3,11 +3,11 @@
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
 #include <arch/cpu.h>
+#include <assert.h>
 #include <drivers/keyboard.h>
 #include <idle.h>
 #include <kstdio.h>
 #include <kthread.h>
-#include <assert.h>
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
@@ -23,27 +23,17 @@ static void zero_bss(void) {
         *p++ = 0;
 }
 
-__noreturn void kmain(void) {
-    zero_bss();
-    init_kmalloc();
-    kputs("running moOSe kernel");
-    kprintf("build %s %s\n", __DATE__, __TIME__);
-
+static void init_memory(void) {
     const struct memmap_entry *memmap;
     u32 memmap_size;
     get_memmap(&memmap, &memmap_size);
-    kprintf("Bios-provided physical RAM map:\n");
     int usable_region_count = 0;
     for (u32 i = 0; i < memmap_size; ++i) {
         const struct memmap_entry *entry = memmap + i;
-        kprintf("%#016lx-%#016lx: %s(%u)\n", (unsigned long)entry->base,
-                (unsigned long)(entry->base + entry->length),
-                get_memmap_type_str(entry->type), (unsigned)entry->type);
         usable_region_count += entry->type == MULTIBOOT_MEMORY_AVAILABLE;
     }
 
     init_idt();
-    kprintf("initialized idt\n");
     struct mem_range *ranges = kmalloc(usable_region_count * sizeof(*ranges));
     expects(ranges);
     for (u32 i = 0, j = 0; i < memmap_size; ++i) {
@@ -55,14 +45,21 @@ __noreturn void kmain(void) {
         }
     }
 
-    kprintf("usabe region count = %d\n", usable_region_count);
     if (init_phys_mem(ranges, usable_region_count))
         panic("failed to initialize physical memory\n");
-    kprintf("initialized physical allocator\n");
 
     if (init_virt_mem(ranges, usable_region_count))
         panic("failed to initialize virtual memory\n");
-    kprintf("initialized virtual allocator\n");
+}
+
+__noreturn void kmain(void) {
+    zero_bss();
+    init_kmalloc();
+    init_kstdio();
+    kprintf("running moOSe kernel\n");
+    kprintf("build %s %s\n", __DATE__, __TIME__);
+
+    init_memory();
 
     if (launch_first_task(idle_task))
         panic("failed to create idle task\n");

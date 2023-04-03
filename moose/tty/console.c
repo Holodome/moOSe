@@ -13,6 +13,7 @@ struct console *create_empty_console(void) {
 
 void console_release(struct console *console) {
     if (refcount_dec_and_test(&console->refcnt)) {
+        if (console->ops->release)
         console->ops->release(console);
         kfree(console);
     }

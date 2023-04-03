@@ -59,8 +59,6 @@ static void vterm_putc_at(struct vterm *term, int c, size_t x, size_t y) {
     cell->fg = term->default_fg;
     cell->c = c;
     line->is_dirty = 1;
-    /* if (isgraph(c) && line->length < x + 1) */
-    /*     line->length = x + 1; */
 }
 
 static void vterm_flush(struct vterm *term) {
@@ -90,32 +88,6 @@ static void __vterm_move_up(struct vterm *term, size_t count) {
         term->lines[row].is_dirty = 1;
 
     for (size_t row = 2 * h - count; row < 2 * h; ++row) {
-        /* term->lines[row].length = 0; */
-        for (size_t col = 0; col < w; ++col) {
-            struct vterm_cell *cell = term->cells + row * w + col;
-            cell->c = ' ';
-            cell->bg = term->default_bg;
-            cell->fg = term->default_fg;
-        }
-    }
-}
-
-static void __vterm_move_down(struct vterm *term, size_t count) {
-    size_t w = term->console->width;
-    size_t h = term->console->height;
-    memmove(term->lines + count, term->lines,
-            (2 * h - count) * sizeof(*term->lines));
-    memmove(term->cells + count * w, term->cells,
-            (2 * h - count) * w * sizeof(*term->cells));
-    vterm_get_line(term, 0)->is_dirty = 1;
-    vterm_get_cell(term, 0, 0)->c = '1';
-    vterm_get_cell(term, 0, 1)->c = '1';
-
-    for (size_t row = 0; row < h * 2; ++row)
-        term->lines[row].is_dirty = 1;
-
-    for (size_t row = 0; row < count; ++row) {
-        /* term->lines[row].length = 0; */
         for (size_t col = 0; col < w; ++col) {
             struct vterm_cell *cell = term->cells + row * w + col;
             cell->c = ' ';
@@ -156,22 +128,3 @@ void vterm_write(struct vterm *term, const char *str, size_t count) {
     spin_unlock_irqrestore(&term->lock, flags);
 }
 
-void vterm_move_up(struct vterm *term, size_t count) {
-    cpuflags_t flags;
-    spin_lock_irqsave(&term->lock, flags);
-
-    __vterm_move_up(term, count);
-    vterm_flush(term);
-
-    spin_unlock_irqrestore(&term->lock, flags);
-}
-
-void vterm_move_down(struct vterm *term, size_t count) {
-    cpuflags_t flags;
-    spin_lock_irqsave(&term->lock, flags);
-
-    __vterm_move_down(term, count);
-    vterm_flush(term);
-
-    spin_unlock_irqrestore(&term->lock, flags);
-}
