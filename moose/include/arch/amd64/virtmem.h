@@ -102,7 +102,9 @@ struct page_table {
 int init_virt_mem(const struct mem_range *ranges, size_t ranges_size);
 
 int alloc_virtual_page(u64 virt_addr);
+int alloc_virtual_pages(u64 virt_addr, size_t page_count);
 void free_virtual_page(u64 virt_addr);
+void free_virtual_pages(u64 virt_addr, size_t page_count);
 
 struct pt_entry *get_page_entry(u64 virt_addr);
 

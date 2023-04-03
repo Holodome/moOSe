@@ -1,11 +1,14 @@
+#include <arch/amd64/virtmem.h>
 #include <assert.h>
 #include <bitops.h>
 #include <list.h>
 #include <mm/kmalloc.h>
-#include <mm/vmalloc.h>
 #include <param.h>
 #include <sched/locks.h>
 #include <string.h>
+
+#define BRK_BASE ((uintptr_t)0xffffc90000000000llu)
+#define BRK_LIMIT ((uintptr_t)0xffffe8ffffffffffllu)
 
 #define INITIAL_HEAP_SIZE (1 << 19)
 #define ALIGNMENT 16
@@ -27,8 +30,38 @@ struct subheap {
 static struct {
     struct list_head subheaps;
     spinlock_t lock;
+    uintptr_t pbrk;
+    uintptr_t plimit;
 } kmalloc_state = {.subheaps = INIT_LIST_HEAD(kmalloc_state.subheaps),
-                   .lock = INIT_SPIN_LOCK()};
+                   .lock = INIT_SPIN_LOCK(),
+                   .pbrk = BRK_BASE,
+                   .plimit = BRK_BASE};
+
+// expand-only version of sbrk
+static void *sbrk(intptr_t increment) {
+    uintptr_t pbrk = kmalloc_state.pbrk;
+    uintptr_t plimit = kmalloc_state.plimit;
+    uintptr_t prev_pbrk = pbrk;
+    if (pbrk + increment < BRK_BASE || pbrk + increment > BRK_LIMIT)
+        return NULL;
+
+    if (pbrk + increment > plimit) {
+        size_t alloc_size = pbrk + increment - plimit;
+        size_t alloc_page_count =
+            align_po2(alloc_size, PAGE_SIZE) >> PAGE_SIZE_BITS;
+
+        if (alloc_virtual_pages(plimit, alloc_page_count))
+            return NULL;
+
+        plimit += alloc_page_count << PAGE_SIZE_BITS;
+    }
+
+    pbrk += increment;
+    kmalloc_state.pbrk = pbrk;
+    kmalloc_state.plimit = plimit;
+
+    return (void *)prev_pbrk;
+}
 
 static void init_subheap(struct subheap *heap) {
     init_list_head(&heap->blocks);
@@ -78,7 +111,7 @@ static struct mem_block *find_best_block(size_t size) {
 static struct subheap *add_new_subheap(size_t min_size) {
     min_size += sizeof(struct mem_block) + sizeof(struct subheap);
     size_t size = align_po2(min_size, PAGE_SIZE);
-    void *new_memory = vsbrk(size);
+    void *new_memory = sbrk(size);
     if (!new_memory)
         return NULL;
 

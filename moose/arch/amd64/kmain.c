@@ -1,6 +1,5 @@
 #include <arch/amd64/idt.h>
 #include <arch/amd64/memmap.h>
-#include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
 #include <arch/cpu.h>
 #include <assert.h>
