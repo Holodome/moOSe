@@ -16,10 +16,6 @@ typedef struct atomic {
 #define INIT_ATOMIC(_x)                                                        \
     { (_x) }
 
-static inline void atomic_init(atomic_t *a) {
-    __atomic_store_n(&a->v, 0, __ATOMIC_RELAXED);
-}
-
 static inline int atomic_read(const atomic_t *a) {
     return __atomic_load_n(&a->v, __ATOMIC_RELAXED);
 }

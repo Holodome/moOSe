@@ -3,7 +3,7 @@
 #include <sched/locks.h>
 
 void init_spin_lock(spinlock_t *spinlock) {
-    atomic_init(&spinlock->atomic);
+    atomic_set(&spinlock->atomic, 0);
 }
 
 int spin_trylock(spinlock_t *lock) {
