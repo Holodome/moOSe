@@ -161,4 +161,3 @@ time_t current_time(void) {
 void current_time_tm(struct ktm *tm) {
     rtc_read_tm(tm);
 }
-

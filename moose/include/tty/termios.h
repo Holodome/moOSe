@@ -165,4 +165,3 @@ struct ktermios {
 #define TCSANOW 0
 #define TCSADRAIN 1
 #define TCSAFLUSH 2
-
