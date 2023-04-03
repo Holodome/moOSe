@@ -17,7 +17,6 @@ KERNEL_OBJS := \
 	$(D)/arch/amd64/asm.o \
 	$(D)/arch/refcount.o \
 	$(D)/drivers/ata.o \
-	$(D)/drivers/keyboard.o \
 	$(D)/drivers/disk.o \
 	$(D)/drivers/rtl8139.o \
 	$(D)/drivers/pci.o \
