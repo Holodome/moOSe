@@ -4,7 +4,6 @@
 #include <arch/amd64/virtmem.h>
 #include <arch/cpu.h>
 #include <assert.h>
-#include <drivers/keyboard.h>
 #include <idle.h>
 #include <kstdio.h>
 #include <kthread.h>
@@ -46,10 +45,10 @@ static void init_memory(void) {
     }
 
     if (init_phys_mem(ranges, usable_region_count))
-        panic("failed to initialize physical memory\n");
+        panic("failed to initialize physical memory");
 
     if (init_virt_mem(ranges, usable_region_count))
-        panic("failed to initialize virtual memory\n");
+        panic("failed to initialize virtual memory");
 }
 
 __noreturn void kmain(void) {
@@ -62,7 +61,7 @@ __noreturn void kmain(void) {
     init_memory();
 
     if (launch_first_task(idle_task))
-        panic("failed to create idle task\n");
+        panic("failed to create idle task");
 
     halt_cpu();
 }
