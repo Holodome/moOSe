@@ -127,4 +127,3 @@ void vterm_write(struct vterm *term, const char *str, size_t count) {
     vterm_flush(term);
     spin_unlock_irqrestore(&term->lock, flags);
 }
-

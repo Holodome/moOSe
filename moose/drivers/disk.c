@@ -2,8 +2,8 @@
 #include <drivers/ata.h>
 #include <drivers/disk.h>
 #include <mbr.h>
-#include <string.h>
 #include <panic.h>
+#include <string.h>
 
 static struct blk_device disk_dev_;
 struct blk_device *disk_dev = &disk_dev_;
@@ -52,7 +52,7 @@ void init_disk(void) {
     disk_dev->block_size_log = 9;
     disk_dev->read_block = disk_read_block;
     disk_dev->write_block = disk_write_block;
-    if (init_blk_device(disk_dev)) 
+    if (init_blk_device(disk_dev))
         panic("Failed to initialize sda");
 
     struct mbr_partition partition;

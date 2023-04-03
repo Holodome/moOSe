@@ -48,4 +48,3 @@ int launch_task(const char *name, void (*fn)(void)) {
     list_add(&task->list, &tasks);
     return 0;
 }
-

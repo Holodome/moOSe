@@ -100,4 +100,3 @@ void write_unlock(rwlock_t *lock);
 #define write_unlock_irq(_lock) __unlock_irq(write_unlock, _lock)
 #define write_unlock_irqrestore(_lock, _flags)                                 \
     __unlock_irqrestore(write_unlock, _lock, _flags)
-

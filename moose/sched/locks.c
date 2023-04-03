@@ -73,4 +73,3 @@ void write_unlock(rwlock_t *lock) {
     lock->is_writing = 0;
     spin_unlock(&lock->lock);
 }
-
