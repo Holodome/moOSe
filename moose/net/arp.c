@@ -35,7 +35,7 @@ int init_arp_cache(void) {
         return -ENOMEM;
 
     init_list_head(&cache->entries);
-    rwlock_init(&cache->lock);
+    init_rwlock(&cache->lock);
 
     for (size_t i = 0; i < ARP_CACHE_SIZE; i++) {
         struct arp_cache_entry *entry = kmalloc(sizeof(*entry));

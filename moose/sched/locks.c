@@ -2,7 +2,7 @@
 #include <kthread.h>
 #include <sched/locks.h>
 
-void spin_lock_init(spinlock_t *spinlock) {
+void init_spin_lock(spinlock_t *spinlock) {
     atomic_init(&spinlock->atomic);
 }
 
@@ -26,8 +26,8 @@ int spin_is_locked(spinlock_t *spinlock) {
     return atomic_read(&spinlock->atomic);
 }
 
-void rwlock_init(rwlock_t *lock) {
-    spin_lock_init(&lock->lock);
+void init_rwlock(rwlock_t *lock) {
+    init_spin_lock(&lock->lock);
     lock->readers = 0;
     lock->writers = 0;
     lock->is_writing = 0;
@@ -74,38 +74,3 @@ void write_unlock(rwlock_t *lock) {
     spin_unlock(&lock->lock);
 }
 
-int recursive_spin_trylock(recursive_spinlock_t *lock) {
-    spin_lock(&lock->lock);
-    if (lock->count <= 0) {
-        lock->pid = current->pid;
-        lock->count = 1;
-        spin_unlock(&lock->lock);
-        return 1;
-    }
-    if (lock->pid == current->pid) {
-        lock->count++;
-        spin_unlock(&lock->lock);
-        return 1;
-    }
-    // somebody has the lock and it's not us! return fail
-    spin_unlock(&lock->lock);
-    return 0;
-}
-
-void recursive_spin_lock(recursive_spinlock_t *lock) {
-    while (!recursive_spin_trylock(lock))
-        spinloop_hint();
-}
-
-void recursive_spin_unlock(recursive_spinlock_t *lock) {
-    spin_lock(&lock->lock);
-    if (--lock->count <= 0)
-        lock->count = 0;
-    spin_unlock(&lock->lock);
-}
-
-void recursive_spinlock_init(recursive_spinlock_t *lock) {
-    spin_lock_init(&lock->lock);
-    lock->pid = -1;
-    lock->count = 0;
-}

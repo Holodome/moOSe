@@ -156,7 +156,7 @@ static void eoi(u8 irq) {
     port_out8(PIC1_CMD, PIC_EOI);
 }
 
-static spinlock_t isr_table_lock = SPIN_LOCK_INIT();
+static spinlock_t isr_table_lock = INIT_SPIN_LOCK();
 
 void isr_handler(struct registers_state *regs) {
     expects((uintptr_t)regs % _Alignof(struct registers_state) == 0);

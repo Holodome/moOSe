@@ -33,7 +33,7 @@ int vga_init_console(struct console *console) {
     if (!vga)
         return -ENOMEM;
 
-    spin_lock_init(&vga->lock);
+    init_spin_lock(&vga->lock);
     // TODO: ioremap
     vga->buffer = FIXUP_PTR((u8 *)0xb8000);
     memset(vga->buffer, 0, 80 * 25 * 2);

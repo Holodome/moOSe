@@ -6,9 +6,9 @@ struct list_head {
     struct list_head *next, *prev;
 };
 
-#define LIST_HEAD_INIT(_name)                                                  \
+#define INIT_LIST_HEAD(_name)                                                  \
     { &(_name), &(_name) }
-#define LIST_HEAD(_name) struct list_head _name = LIST_HEAD_INIT(_name)
+#define LIST_HEAD(_name) struct list_head _name = INIT_LIST_HEAD(_name)
 
 static inline void init_list_head(struct list_head *head) {
     head->next = head;

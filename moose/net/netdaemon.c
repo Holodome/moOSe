@@ -40,7 +40,7 @@ int init_net_daemon(void) {
         return -ENOMEM;
 
     queue->frames = (struct net_frame **)(queue + 1);
-    rwlock_init(&queue->lock);
+    init_rwlock(&queue->lock);
 
     if (launch_task("net", net_daemon_task)) {
         kfree(queue);

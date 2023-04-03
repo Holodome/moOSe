@@ -4,6 +4,7 @@
 #include <mm/kmalloc.h>
 #include <mm/vmalloc.h>
 #include <param.h>
+#include <sched/locks.h>
 #include <string.h>
 
 #define INITIAL_HEAP_SIZE (1 << 19)
@@ -23,11 +24,14 @@ struct subheap {
     struct list_head list;
 } __aligned(ALIGNMENT);
 
-static LIST_HEAD(subheaps);
+static struct {
+    struct list_head subheaps;
+    spinlock_t lock;
+} kmalloc_state = {.subheaps = INIT_LIST_HEAD(kmalloc_state.subheaps),
+                   .lock = INIT_SPIN_LOCK()};
 
 static void init_subheap(struct subheap *heap) {
     init_list_head(&heap->blocks);
-
     struct mem_block *block = heap->memory;
     block->size = heap->size - sizeof(struct mem_block);
     list_add(&block->list, &heap->blocks);
@@ -40,7 +44,7 @@ void init_kmalloc(void) {
         .size = INITIAL_HEAP_SIZE,
     };
     init_subheap(&initial_subheap);
-    list_add(&initial_subheap.list, &subheaps);
+    list_add(&initial_subheap.list, &kmalloc_state.subheaps);
 }
 
 static struct mem_block *subheap_find_best_block(struct subheap *heap,
@@ -62,7 +66,7 @@ static struct mem_block *subheap_find_best_block(struct subheap *heap,
 
 static struct mem_block *find_best_block(size_t size) {
     struct subheap *heap;
-    list_for_each_entry(heap, &subheaps, list) {
+    list_for_each_entry(heap, &kmalloc_state.subheaps, list) {
         struct mem_block *block = subheap_find_best_block(heap, size);
         if (block)
             return block;
@@ -82,7 +86,7 @@ static struct subheap *add_new_subheap(size_t min_size) {
     subheap->memory = subheap + 1;
     subheap->size = size - sizeof(struct subheap);
     init_subheap(subheap);
-    list_add(&subheap->list, &subheaps);
+    list_add(&subheap->list, &kmalloc_state.subheaps);
     return subheap;
 }
 
@@ -92,6 +96,9 @@ void *kmalloc(size_t size) {
 
     size = align_po2(size, ALIGNMENT);
     expects(size != 0);
+
+    cpuflags_t flags;
+    spin_lock_irqsave(&kmalloc_state.lock, flags);
     struct mem_block *node = find_best_block(size);
     if (node == NULL) {
         struct subheap *heap = add_new_subheap(size);
@@ -102,8 +109,10 @@ void *kmalloc(size_t size) {
     }
 
     // OOM
-    if (!node)
+    if (!node) {
+        spin_unlock_irqrestore(&kmalloc_state.lock, flags);
         return NULL;
+    }
 
     void *result = node + 1;
     if (node->size > size + sizeof(struct mem_block)) {
@@ -117,6 +126,7 @@ void *kmalloc(size_t size) {
     }
 
     node->used = 1;
+    spin_unlock_irqrestore(&kmalloc_state.lock, flags);
 
     return result;
 }
@@ -132,7 +142,7 @@ void *kzalloc(size_t size) {
 static struct subheap *find_block_heap(struct mem_block *block) {
     uintptr_t block_addr = (uintptr_t)block;
     struct subheap *heap;
-    list_for_each_entry(heap, &subheaps, list) {
+    list_for_each_entry(heap, &kmalloc_state.subheaps, list) {
         if (block_addr >= (uintptr_t)heap->memory &&
             block_addr < (uintptr_t)heap->memory + heap->size)
             return heap;
@@ -143,6 +153,9 @@ static struct subheap *find_block_heap(struct mem_block *block) {
 void kfree(void *mem) {
     if (mem == NULL)
         return;
+
+    cpuflags_t flags;
+    spin_lock_irqsave(&kmalloc_state.lock, flags);
 
     struct mem_block *block = (struct mem_block *)mem - 1;
     block->used = 0;
@@ -165,6 +178,8 @@ void kfree(void *mem) {
         block->size += right->size + sizeof(struct mem_block);
         list_remove(&right->list);
     }
+
+    spin_unlock_irqrestore(&kmalloc_state.lock, flags);
 }
 
 char *kstrdup(const char *str) {
@@ -173,20 +188,9 @@ char *kstrdup(const char *str) {
 
     size_t len = strlen(str);
     void *memory = kmalloc(len + 1);
-    strcpy(memory, str);
+    if (memory)
+        strcpy(memory, str);
+
     return memory;
 }
 
-#ifndef __i386__
-extern int kprintf(const char *, ...);
-void print_malloc_info(void) {
-    struct subheap *heap;
-    struct mem_block *node;
-    list_for_each_entry(heap, &subheaps, list) {
-        kprintf("subheap %p-%p\n", heap->memory, heap->memory + heap->size);
-        list_for_each_entry(node, &heap->blocks, list) {
-            kprintf("block %p-%p\n", node + 1, node + 1 + node->size);
-        }
-    }
-}
-#endif

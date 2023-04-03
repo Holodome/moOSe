@@ -118,7 +118,7 @@ int init_rtl8139(u8 *mac_addr) {
         return rc;
     }
 
-    spin_lock_init(&rtl8139.lock);
+    init_spin_lock(&rtl8139.lock);
 
     // find io port resource
     struct resource *res = NULL;

@@ -13,7 +13,7 @@ typedef struct atomic {
     int v;
 } atomic_t;
 
-#define ATOMIC_INIT(_x)                                                        \
+#define INIT_ATOMIC(_x)                                                        \
     { (_x) }
 
 static inline void atomic_init(atomic_t *a) {

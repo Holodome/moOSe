@@ -13,9 +13,9 @@
 static LIST_HEAD(caches);
 
 static struct slab_cache cache_cache = {
-    .slabs_full = LIST_HEAD_INIT(cache_cache.slabs_full),
-    .slabs_partial = LIST_HEAD_INIT(cache_cache.slabs_partial),
-    .slabs_free = LIST_HEAD_INIT(cache_cache.slabs_free),
+    .slabs_full = INIT_LIST_HEAD(cache_cache.slabs_full),
+    .slabs_partial = INIT_LIST_HEAD(cache_cache.slabs_partial),
+    .slabs_free = INIT_LIST_HEAD(cache_cache.slabs_free),
     .obj_size = sizeof(struct slab_cache),
     .name = "slab_cache"};
 

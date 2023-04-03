@@ -22,7 +22,7 @@ struct vterm *create_vterm(struct console *console) {
         kfree(term);
         return NULL;
     }
-    spin_lock_init(&term->lock);
+    init_spin_lock(&term->lock);
     term->console = console;
     term->default_bg = CONSOLE_BLACK;
     term->default_fg = CONSOLE_WHITE;
