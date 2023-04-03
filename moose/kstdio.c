@@ -1,8 +1,9 @@
 #include <assert.h>
 #include <ctype.h>
-#include <drivers/tty.h>
 #include <kstdio.h>
 #include <string.h>
+#include <tty/vga_console.h>
+#include <tty/vterm.h>
 
 struct printf_opts {
     size_t width;
@@ -457,6 +458,11 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
     return (int)counter;
 }
 
+static struct {
+    int is_initialized;
+    struct vterm *term;
+} kstdio_state;
+
 int kprintf(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -467,22 +473,33 @@ int kprintf(const char *fmt, ...) {
 }
 
 int kvprintf(const char *fmt, va_list args) {
+    if (!kstdio_state.is_initialized)
+        return 0;
+
     char buffer[256];
     int count = vsnprintf(buffer, sizeof(buffer), fmt, args);
-    int write_result = tty_write(buffer, strlen(buffer));
-    return write_result < 0 ? write_result : count;
+    vterm_write(kstdio_state.term, buffer, strlen(buffer));
+    return count;
 }
 
-int kputc(int c) {
-    return tty_write((char *)&c, 1);
-}
+int init_kstdio(void) {
+    struct console *console = create_empty_console();
+    if (!console)
+        return -1;
 
-int kputs(const char *str) {
-    size_t len = strlen(str);
-    int result = tty_write(str, len);
-    if (result < 0)
-        return result;
+    if (vga_init_console(console)) {
+        console_release(console);
+        return -1;
+    }
 
-    kputc('\n');
-    return (int)len;
+    struct vterm *term = create_vterm(console);
+    if (!term) {
+        console_release(console);
+        return -1;
+    }
+
+    kstdio_state.is_initialized = 1;
+    kstdio_state.term = term;
+
+    return 0;
 }

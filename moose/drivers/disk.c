@@ -58,7 +58,6 @@ void init_disk(void) {
     struct mbr_partition partition;
     blk_read(disk_dev, MBR_PARTITION_OFFSET, &partition, sizeof(partition));
     partition_start = partition.addr;
-    kprintf("sda1 start=%u size=%u\n", partition_start, partition.size);
 
     strlcpy(disk_part_dev->name, "sda1", sizeof(disk_dev->name));
     disk_part_dev->block_size = 512;
@@ -72,7 +71,6 @@ void init_disk(void) {
     blk_read(disk_dev, MBR_PARTITION_OFFSET + MBR_PARTITION_SIZE, &partition,
              sizeof(partition));
     partition1_start = partition.addr;
-    kprintf("sda2 start=%u size=%u\n", partition1_start, partition.size);
 
     strlcpy(disk_part1_dev->name, "sda2", sizeof(disk_dev->name));
     disk_part1_dev->block_size = 512;

@@ -2,10 +2,12 @@
 #include <arch/amd64/idt.h>
 #include <arch/cpu.h>
 #include <drivers/keyboard.h>
-#include <drivers/vga.h>
 #include <kstdio.h>
 #include <sched/locks.h>
 
+// TODO: Think of how this should be properly implemented as not it is unusable
+// and unscalable
+#if 0
 #define PORT 0x60
 #define BACKSPACE 0x0e
 #define ENTER 0x1c
@@ -82,3 +84,4 @@ ssize_t keyboard_read(void *buffer, size_t count) {
 
     return result;
 }
+#endif

@@ -234,7 +234,7 @@ static void ext2_error_(struct superblock *sb, const char *func_name,
     va_start(args, fmt);
     kprintf("ext2 error in %s: ", func_name);
     kvprintf(fmt, args);
-    kputc('\n');
+    kprintf("\n");
     va_end(args);
 }
 
