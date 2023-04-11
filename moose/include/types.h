@@ -50,3 +50,5 @@ typedef i32 iseconds_t;
 typedef u32 clock_t;
 
 typedef i64 off_t;
+typedef u32 pid_t;
+typedef u64 bitmap_t;
