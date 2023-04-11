@@ -286,7 +286,7 @@ __used static ssize_t ext2_alloc_ino(struct superblock *sb, int is_dir) {
     if (desc == NULL)
         return -ENOSPC;
 
-    u64 bitmap[ext2->group_inode_bitmap_size];
+    bitmap_t bitmap[ext2->group_inode_bitmap_size];
     blk_read(sb->dev, desc->bg_inode_bitmap << sb->blk_sz_bits, bitmap,
              sizeof(bitmap));
 

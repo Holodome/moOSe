@@ -89,19 +89,19 @@
 
 #define BIT(_x) (1 << (_x))
 
-static inline int test_bit(u64 index, const u64 *bitmap) {
+static inline int test_bit(u64 index, const bitmap_t *bitmap) {
     return (bitmap[index >> 6] & (1l << (index & 0x3f))) != 0;
 }
 
-static inline void set_bit(u64 index, u64 *bitmap) {
+static inline void set_bit(u64 index, bitmap_t *bitmap) {
     bitmap[index >> 6] |= (1l << (index & 0x3f));
 }
 
-static inline void clear_bit(u64 index, u64 *bitmap) {
+static inline void clear_bit(u64 index, bitmap_t *bitmap) {
     bitmap[index >> 6] &= ~(1l << (index & 0x3f));
 }
 
-static inline u64 bitmap_first_clear(const u64 *bitmap, u64 bit_count) {
+static inline u64 bitmap_first_clear(const bitmap_t *bitmap, u64 bit_count) {
     u64 found = 0;
     for (size_t i = 0; i < bit_count && !found; i += BITMAP_STRIDE) {
         u64 biti = bit_scan_forward(bitmap[i / BITMAP_STRIDE]);
