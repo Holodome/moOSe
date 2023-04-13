@@ -1,6 +1,7 @@
 #include <arch/amd64/asm.h>
 #include <arch/cpu.h>
 #include <kstdio.h>
+#include <param.h>
 
 struct registers {
     u64 rdi;
@@ -46,4 +47,12 @@ void dump_registers(void) {
     struct registers regs;
     get_registers(&regs);
     print_registers(&regs);
+}
+
+void init_process_registers(struct process_registers *regs, void (*fn)(void *),
+                            void *arg, u64 stack_end) {
+    regs->rip = (u64)fn;
+    regs->rflags = read_cpu_flags();
+    regs->rsp = stack_end;
+    regs->rdi = (u64)arg;
 }

@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <idle.h>
 #include <kstdio.h>
-#include <kthread.h>
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
@@ -59,8 +58,8 @@ __noreturn void kmain(void) {
 
     init_memory();
 
-    if (launch_first_task(idle_task))
-        panic("failed to create idle task");
+    /* if (launch_first_task(idle_task)) */
+    /*     panic("failed to create idle task"); */
 
     halt_cpu();
 }

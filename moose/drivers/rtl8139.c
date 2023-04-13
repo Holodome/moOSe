@@ -72,8 +72,8 @@ static void rtl8139_receive(void) {
     }
 }
 
-static void rtl8139_handler(struct registers_state *regs
-                            __attribute__((unused))) {
+static void rtl8139_handler(struct isr_context *regs
+                            __unused) {
     u16 isr = port_in16(rtl8139.io_addr + RTL_REG_INT_STATUS);
 
     if (isr & RTL_RER || isr & RTL_TER) {

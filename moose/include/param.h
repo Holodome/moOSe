@@ -18,3 +18,6 @@
 #define PTR_TO_PHYS(_ptr) (((void *)(_ptr)-PHYSMEM_VIRTUAL_BASE))
 
 #define MMIO_VIRTUAL_BASE 0xffffe90000000000
+
+#define KERNEL_CS 8
+#define KERNEL_DS 16

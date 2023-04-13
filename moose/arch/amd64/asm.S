@@ -43,3 +43,22 @@ bootstrap_task:
     pushq %rsi
     retq
 
+/* rdi - current, rsi - new */
+switch_process:
+	pushfq
+	pushq %rbp
+	/* save current stack */
+	movq %rsp, 0(%rdi)
+	/* save exit point for current process */
+	movq my_label(%rip), %rax
+	movq %rax, 8(%rdi)
+	/* load new stack */
+	movq 0(%rsi), %rsp
+	/* imitate call to jump to current process exit */
+	pushq 8(%rsi)
+	jmp switch_to
+my_label:
+	popq %rbp
+	popfq
+
+	retq 

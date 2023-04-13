@@ -1,10 +1,11 @@
 #include <arch/amd64/asm.h>
+#include <arch/amd64/cpu.h>
 #include <arch/amd64/idt.h>
 #include <assert.h>
 #include <kstdio.h>
-#include <kthread.h>
 #include <panic.h>
 #include <sched/locks.h>
+#include <sched/process.h>
 
 // Port address for master PIC
 #define PIC1 0x20
@@ -41,7 +42,7 @@ static void load_idt(void) {
     asm volatile("lidt %0\n" : : "m"(idt_reg));
 }
 
-__used static void print_registers(const struct registers_state *r) {
+__used static void print_registers(const struct isr_context *r) {
     kprintf("exception_code: %u, isr: %u\n", (unsigned)r->exception_code,
             (unsigned)r->isr_number);
     kprintf("rdi: %#018lx rsi: %#018lx rbp: %#018lx\n", r->rdi, r->rsi, r->rbp);
@@ -158,30 +159,29 @@ static void eoi(u8 irq) {
 
 static spinlock_t isr_table_lock = INIT_SPIN_LOCK();
 
-void isr_handler(struct registers_state *regs) {
-    expects((uintptr_t)regs % _Alignof(struct registers_state) == 0);
+void isr_handler(struct isr_context *regs) {
+    expects((uintptr_t)regs % _Alignof(struct isr_context) == 0);
     unsigned no = regs->isr_number;
     if (no < 32) {
         if (no == EXCEPTION_PAGE_FAULT) {
             kprintf("address: %#018lx\n", read_cr2());
         }
         print_registers(regs);
-        if (current)
-            kprintf("current %s\n", current->name);
         kprintf("exception %s(%u): %u\n", get_exception_name(no), no,
                 (unsigned)regs->exception_code);
         halt_cpu();
     } else {
-        cpuflags_t flags;
-        if (spin_trylock_irqsave(&isr_table_lock, flags)) {
-            isr_t *isr = isrs[no];
-            if (isr != NULL)
-                isr(regs);
-            spin_unlock_irqrestore(&isr_table_lock, flags);
-        }
+        isr_t *isr = isrs[no];
+        if (isr != NULL)
+            isr(regs);
     }
 
     eoi(no);
+
+    if (get_current()->needs_resched) {
+        get_current()->needs_resched = 0;
+        schedule();
+    }
 }
 
 void register_isr(int num, isr_t *isr) {
