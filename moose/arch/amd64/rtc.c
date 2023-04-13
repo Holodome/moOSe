@@ -29,7 +29,7 @@ static void cmos_write(u8 idx, u8 data) {
     port_out8(0x71, data);
 }
 
-static void timer_interrupt(struct isr_context *regs __unused) {
+static void timer_interrupt(struct registers_state *) {
     ++jiffies;
     (void)cmos_read(0x8c);
 

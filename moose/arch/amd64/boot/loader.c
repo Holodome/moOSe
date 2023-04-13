@@ -4,7 +4,7 @@
 #include <param.h>
 
 extern void print(const char *s);
-int kprintf(const char *str __unused, ...) {
+int kprintf(const char *str , ...) {
     print(str);
     return 0;
 }

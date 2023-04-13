@@ -25,7 +25,9 @@ struct ipv4_header {
     u16 checksum;
     u8 src_ip[4];
     u8 dst_ip[4];
-} __attribute__((packed));
+};
+
+static_assert(sizeof(struct ipv4_header) == 20);
 
 void ipv4_send_frame(struct net_frame *frame, const u8 *ip_addr, u8 protocol);
 void ipv4_receive_frame(struct net_frame *frame);

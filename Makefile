@@ -18,9 +18,11 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(subst .o,.d,$@)
 ASFLAGS = -msyntax=att --warn --fatal-warnings
 LDFLAGS = -Map $(subst .elf,.map,$@)
 
-CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles \
-		  -Wl,-r -Imoose -Os -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
-		  -mcmodel=large -mno-red-zone -fno-strict-overflow -Wno-sign-compare -g
+CFLAGS  = -Imoose \
+		  -Wall -Werror -Wextra -Wno-sign-compare -Wpacked \
+		  -Os -g -std=gnu11 -fno-strict-aliasing -fno-strict-overflow \
+		  -ffreestanding -nostdlib -nostartfiles \
+		  -Wl,-r -mno-sse -mno-sse2 -mno-sse3 -mcmodel=large -mno-red-zone 
 
 TARGET_IMG := moose.img
 

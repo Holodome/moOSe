@@ -13,7 +13,9 @@ struct memmap_entry {
     u64 length;
     u32 type;
     u32 acpi;
-} __packed;
+} ;
+
+static_assert(sizeof(struct memmap_entry) == 24);
 
 void get_memmap(const struct memmap_entry **map, u32 *count);
 const char *get_memmap_type_str(u32 type);

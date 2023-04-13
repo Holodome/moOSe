@@ -14,7 +14,6 @@ KERNEL_OBJS := \
 	$(D)/arch/amd64/rtc.o \
 	$(D)/arch/amd64/virtmem.o \
 	$(D)/arch/amd64/cpu.o \
-	$(D)/arch/amd64/asm.o \
 	$(D)/arch/amd64/delay.o \
 	$(D)/arch/refcount.o \
 	$(D)/drivers/ata.o \
