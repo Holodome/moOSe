@@ -43,7 +43,7 @@ qemu: all
 	-drive file=$(TARGET_IMG),format=raw,index=0,if=ide
 
 format:
-	$(Q)find . \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} \;
+	$(Q)find moose \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} \;
 
 clean:
 	$(Q)rm -f $(shell find . -name "*.o" \

@@ -1,8 +1,8 @@
-#include <mm/kmalloc.h>
 #include <arch/amd64/virtmem.h>
 #include <assert.h>
 #include <bitops.h>
 #include <list.h>
+#include <mm/kmalloc.h>
 #include <param.h>
 #include <sched/locks.h>
 #include <string.h>
@@ -130,8 +130,7 @@ void *kmalloc(size_t size) {
     size = align_po2(size, ALIGNMENT);
     expects(size != 0);
 
-    cpuflags_t flags;
-    spin_lock_irqsave(&kmalloc_state.lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&kmalloc_state.lock);
     struct mem_block *node = find_best_block(size);
     if (node == NULL) {
         struct subheap *heap = add_new_subheap(size);
@@ -187,8 +186,7 @@ void kfree(void *mem) {
     if (mem == NULL)
         return;
 
-    cpuflags_t flags;
-    spin_lock_irqsave(&kmalloc_state.lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&kmalloc_state.lock);
 
     struct mem_block *block = (struct mem_block *)mem - 1;
     block->used = 0;

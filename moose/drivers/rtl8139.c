@@ -187,8 +187,7 @@ void rtl8139_send(const void *frame, size_t size) {
         return;
     }
 
-    u64 flags;
-    spin_lock_irqsave(&rtl8139.lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&rtl8139.lock);
 
     memcpy(rtl8139.tx_buffer, frame, size);
 

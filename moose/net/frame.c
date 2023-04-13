@@ -1,10 +1,10 @@
-#include <net/frame.h>
 #include <assert.h>
 #include <errno.h>
 #include <mm/kmalloc.h>
+#include <net/frame.h>
+#include <net/inet.h>
 #include <sched/locks.h>
 #include <string.h>
-#include <net/inet.h>
 
 #define FREE_FRAMES_COUNT 32
 
@@ -50,8 +50,7 @@ void destroy_net_frames(void) {
 }
 
 static struct net_frame *get_empty_net_frame(void) {
-    u64 flags;
-    spin_lock_irqsave(&lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&lock);
 
     struct net_frame *frame =
         list_first_or_null(&free_list, struct net_frame, list);
@@ -93,8 +92,7 @@ struct net_frame *get_empty_receive_net_frame(void) {
 }
 
 void release_net_frame(struct net_frame *frame) {
-    u64 flags;
-    spin_lock_irqsave(&lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&lock);
     list_add(&frame->list, &free_list);
     spin_unlock_irqrestore(&lock, flags);
 }

@@ -51,8 +51,7 @@ void launch_process(const char *name, void (*function)(void *), void *arg) {
     process->stack.info.p = process;
     process->pid = alloc_pid(__scheduler);
 
-    cpuflags_t flags;
-    spin_lock_irqsave(&__scheduler->lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&__scheduler->lock);
     list_add(&process->list, &__scheduler->process_list);
     spin_unlock_irqrestore(&__scheduler->lock, flags);
 }

@@ -3,8 +3,8 @@
 #include <arch/cpu.h>
 #include <bitops.h>
 #include <list.h>
-#include <types.h>
 #include <sched/locks.h>
+#include <types.h>
 
 #define MAX_PROCESSES 256
 #define PROCESS_MAX_FILES 256
@@ -65,4 +65,3 @@ void exit_current(void);
 void preempt_disable(void);
 void preempt_enable(void);
 int get_preempt_count(void);
-

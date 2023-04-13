@@ -32,4 +32,3 @@ void mutex_unlock(mutex_t *lock) {
 int mutex_is_locked(mutex_t *lock) {
     return __atomic_load_n(&lock->holder, __ATOMIC_RELAXED) != NULL;
 }
-

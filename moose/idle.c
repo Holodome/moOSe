@@ -1,5 +1,5 @@
-#include <arch/cpu.h>
 #include <arch/amd64/rtc.h>
+#include <arch/cpu.h>
 #include <drivers/disk.h>
 
 void idle_task(void) {

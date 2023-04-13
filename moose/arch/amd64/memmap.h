@@ -13,7 +13,7 @@ struct memmap_entry {
     u64 length;
     u32 type;
     u32 acpi;
-} ;
+};
 
 static_assert(sizeof(struct memmap_entry) == 24);
 

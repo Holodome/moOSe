@@ -1,9 +1,9 @@
-#include <mm/physmem.h>
 #include <arch/amd64/types.h>
 #include <assert.h>
 #include <bitops.h>
-#include <param.h>
 #include <mm/kmalloc.h>
+#include <mm/physmem.h>
+#include <param.h>
 
 struct free_area {
     u32 size;

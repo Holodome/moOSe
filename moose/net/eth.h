@@ -8,7 +8,7 @@ struct eth_header {
     u8 dst_mac[6];
     u8 src_mac[6];
     u16 eth_type;
-} ;
+};
 
 static_assert(sizeof(struct eth_header) == 14);
 
