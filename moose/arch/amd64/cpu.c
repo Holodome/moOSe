@@ -1,8 +1,8 @@
+#include <arch/amd64/asm.h>
 #include <arch/cpu.h>
 #include <kstdio.h>
-#include <arch/amd64/asm.h>
 
-struct registers {
+struct debug_registers {
     u64 rdi;
     u64 rsi;
     u64 rbp;
@@ -27,11 +27,46 @@ struct registers {
     u64 cr3;
 };
 
-static_assert(sizeof(struct registers) == 0xa8);
+static_assert(sizeof(struct debug_registers) == 0xa8);
 
-extern void get_registers(struct registers *regs) __used;
+static __noinline __naked void
+get_registers(struct debug_registers *) {
+    asm("pushq %rax\n"
+        "movq %rdi, %rax\n"
+        "movq %rdi, 0x0(%rax)\n"
+        "movq %rsi, 0x8(%rax)\n"
+        "movq %rbp, 0x10(%rax)\n"
+        "movq %rsp, 0x18(%rax)\n"
+        "movq %rbx, 0x20(%rax)\n"
+        "movq %rdx, 0x28(%rax)\n"
+        "movq %rcx, 0x30(%rax)\n"
+        "movq %rax, 0x38(%rax)\n"
+        "movq %r8, 0x40(%rax)\n"
+        "movq %r9, 0x48(%rax)\n"
+        "movq %r10, 0x50(%rax)\n"
+        "movq %r11, 0x58(%rax)\n"
+        "movq %r12, 0x60(%rax)\n"
+        "movq %r13, 0x68(%rax)\n"
+        "movq %r14, 0x70(%rax)\n"
+        "movq %r15, 0x78(%rax)\n"
+        "pushq %rbx\n"
+        "leaq 0(%rip), %rbx\n"
+        "movq %rbx, 0x80(%rax)\n"
+        "pushfq\n"
+        "popq %rbx\n"
+        "movq %rbx, 0x88(%rax)\n"
+        "movq %cr0, %rbx\n"
+        "movq %rbx, 0x90(%rax)\n"
+        "movq %cr2, %rbx\n"
+        "movq %rbx, 0x98(%rax)\n"
+        "movq %cr3, %rbx\n"
+        "movq %rbx, 0xa0(%rax)\n"
+        "popq %rbx\n"
+        "popq %rax\n"
+        "retq\n");
+}
 
-static void print_registers(const struct registers *r) {
+static void print_registers(const struct debug_registers *r) {
     kprintf("rip: %#018lx rflags: %#018lx\n", r->rip, r->rflags);
     kprintf("rdi: %#018lx rsi: %#018lx rbp: %#018lx\n", r->rdi, r->rsi, r->rbp);
     kprintf("rsp: %#018lx rbx: %#018lx rdx: %#018lx\n", r->rsp, r->rbx, r->rdx);
@@ -43,12 +78,12 @@ static void print_registers(const struct registers *r) {
 }
 
 void dump_registers(void) {
-    struct registers regs;
+    struct debug_registers regs;
     get_registers(&regs);
     print_registers(&regs);
 }
 
-void init_process_registers(struct process_registers *regs, void (*fn)(void *),
+void init_process_registers(struct registers_state *regs, void (*fn)(void *),
                             void *arg, u64 stack_end) {
     regs->rip = (u64)fn;
     regs->rflags = read_cpu_flags();

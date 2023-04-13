@@ -101,87 +101,87 @@ static void eoi(u8 irq) {
 
 // TODO: These should send signal to current process if we are
 // in user mode and panic the kernel otherwise
-// TODO: Print isr_context instead of registers that panic gets
+// TODO: Print registers_state instead of registers that panic gets
 
-static void division_by_zero_handler(struct isr_context *ctx __unused) {
+static void division_by_zero_handler(struct registers_state *) {
     panic("division by zero");
 }
 
-static void illegal_instruction_handler(struct isr_context *ctx __unused) {
+static void illegal_instruction_handler(struct registers_state *) {
     panic("illegal instruction");
 }
 
-static void unknown_interrupt_handler(struct isr_context *ctx __unused) {
+static void unknown_interrupt_handler(struct registers_state *) {
     panic("unknown error");
 }
 
-static void page_fault_handler(struct isr_context *ctx __unused) {
+static void page_fault_handler(struct registers_state *) {
     kprintf("address: %#018lx\n", read_cr2());
     panic("page fault");
 }
 
-static void debug_exception_handler(struct isr_context *ctx __unused) {
+static void debug_exception_handler(struct registers_state *) {
     panic("debug exception");
 }
 
-static void nmi_handler(struct isr_context *ctx __unused) {
+static void nmi_handler(struct registers_state *) {
     panic("nmi");
 }
 
-static void breakpoint_handler(struct isr_context *ctx __unused) {
+static void breakpoint_handler(struct registers_state *) {
     panic("breakpoint");
 }
 
-static void into_handler(struct isr_context *ctx __unused) {
+static void into_handler(struct registers_state *) {
     panic("into");
 }
 
-static void out_of_bounds_handler(struct isr_context *ctx __unused) {
+static void out_of_bounds_handler(struct registers_state *) {
     panic("out of bounds");
 }
 
-static void no_fpu_handler(struct isr_context *ctx __unused) {
+static void no_fpu_handler(struct registers_state *) {
     panic("no fpu");
 }
 
-static void double_fault_handler(struct isr_context *ctx __unused) {
+static void double_fault_handler(struct registers_state *) {
     panic("double fault");
 }
 
-static void fpu_segment_overrun_handler(struct isr_context *ctx __unused) {
+static void fpu_segment_overrun_handler(struct registers_state *) {
     panic("fpu segment overrun");
 }
 
-static void bad_tss_handler(struct isr_context *ctx __unused) {
+static void bad_tss_handler(struct registers_state *) {
     panic("bad tss segmnet");
 }
 
-static void segment_not_present_handler(struct isr_context *ctx __unused) {
+static void segment_not_present_handler(struct registers_state *) {
     panic("segment not present");
 }
 
-static void stack_fault_handler(struct isr_context *ctx __unused) {
+static void stack_fault_handler(struct registers_state *) {
     panic("stack fault");
 }
 
-static void general_protection_fault_handler(struct isr_context *ctx __unused) {
+static void general_protection_fault_handler(struct registers_state *) {
     panic("general protection fault");
 }
 
-static void fpu_fault_handler(struct isr_context *ctx __unused) {
+static void fpu_fault_handler(struct registers_state *) {
     panic("fpu fault");
 }
 
-static void alignment_check_handler(struct isr_context *ctx __unused) {
+static void alignment_check_handler(struct registers_state *) {
     panic("alignment check");
 }
 
-static void machine_check_handler(struct isr_context *ctx __unused) {
+static void machine_check_handler(struct registers_state *) {
     panic("machine check");
 }
 
-void isr_handler(struct isr_context *regs) {
-    expects((uintptr_t)regs % _Alignof(struct isr_context) == 0);
+void isr_handler(struct registers_state *regs) {
+    expects((uintptr_t)regs % _Alignof(struct registers_state) == 0);
     unsigned no = regs->isr_number;
     isr_t *isr = isrs[no];
     if (isr != NULL)
@@ -288,4 +288,23 @@ void init_idt(void) {
 
     load_idt();
     sti();
+}
+
+__naked __noinline void switch_process(struct process *, struct process *) {
+    asm("pushfq\n"
+        "pushq %rbp\n"
+        // save current stack
+        "movq %rsp, 0(%rdi)\n"
+        // save exit point for swithced-from process
+        "movq 1f(%rip), %rax\n"
+        "movq %rax, 8(%rdi)\n"
+        // load new stack
+        "movq 0(%rsi), %rsp\n"
+        // imitate call to jump to curent process exit
+        "pushq 8(%rsi)\n"
+        "jmp switch_to\n"
+        "1:\n"
+        "popq %rbp\n"
+        "popfq\n"
+        "retq\n");
 }

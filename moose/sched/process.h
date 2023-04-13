@@ -28,7 +28,7 @@ union process_stack {
 };
 
 struct process {
-    struct process_registers execution_state;
+    struct registers_state execution_state;
     int needs_resched;
     const char *name;
 

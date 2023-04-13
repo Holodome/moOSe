@@ -23,6 +23,8 @@
 #define __noreturn __attribute__((noreturn))
 #define __packed __attribute__((packed))
 #define __printf(_a, _b) __attribute__((format(printf, _a, _b)))
+#define __noinline __attribute__((noinline))
+#define __naked __attribute__((naked))
 
 static_assert(sizeof(i8) == 1);
 static_assert(sizeof(u8) == 1);

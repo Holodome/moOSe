@@ -40,8 +40,8 @@ struct ramfs {
     ino_t inode_counter;
 };
 
-static int ramfs_setattr(struct inode *inode __unused) {
-    return 0;
+static int ramfs_setattr(struct inode *) {
+    return -ENOTSUP;
 }
 static void ramfs_release_sb(struct superblock *sb);
 static void ramfs_free_inode(struct inode *inode);
@@ -410,7 +410,7 @@ static int ramfs_readdir(struct file *filp, struct dentry *entry) {
     return 0;
 }
 
-static int ramfs_open_file(struct inode *inode __unused, struct file *filp) {
+static int ramfs_open_file(struct inode *, struct file *filp) {
     struct ramfs_file *rf = kzalloc(sizeof(*rf));
     if (!rf)
         return -ENOMEM;

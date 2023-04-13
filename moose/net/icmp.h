@@ -12,7 +12,9 @@ struct icmp_header {
     u8 code;
     u16 checksum;
     u32 rest;
-} __attribute__((packed));
+};
+
+static_assert(sizeof(struct icmp_header) == 8);
 
 void icmp_send_echo_request(struct net_frame *frame, const u8 *ip_addr);
 void icmp_receive_frame(struct net_frame *frame);

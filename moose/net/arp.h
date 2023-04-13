@@ -19,7 +19,9 @@ struct arp_header {
     u8 src_ip[4];
     u8 dst_mac[6];
     u8 dst_ip[4];
-} __attribute((packed));
+};
+
+static_assert(sizeof(struct arp_header) == 28);
 
 int init_arp_cache(void);
 void destroy_arp_cache(void);

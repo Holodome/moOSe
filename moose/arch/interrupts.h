@@ -2,10 +2,10 @@
 
 #include <types.h>
 
-struct isr_context;
+struct registers_state;
 
 struct interrupt_handler {
-    void (*handle_interrupt)(const struct isr_context *ctx);
+    void (*handle_interrupt)(const struct registers_state *ctx);
 
     u8 number;
 };
