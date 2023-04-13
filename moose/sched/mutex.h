@@ -8,5 +8,4 @@ typedef struct mutex {
     struct process *holder;
 } mutex_t;
 
-#define INIT_MUTEX() \
-{ 
+#define INIT_MUTEX() {

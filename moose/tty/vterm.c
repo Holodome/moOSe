@@ -106,8 +106,7 @@ static void vterm_newline(struct vterm *term) {
 }
 
 void vterm_write(struct vterm *term, const char *str, size_t count) {
-    cpuflags_t flags;
-    spin_lock_irqsave(&term->lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&term->lock);
 
     for (size_t i = 0; i < count; ++i) {
         int c = str[i];

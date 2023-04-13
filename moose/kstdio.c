@@ -1,6 +1,6 @@
-#include <kstdio.h>
 #include <assert.h>
 #include <ctype.h>
+#include <kstdio.h>
 #include <string.h>
 #include <tty/vga_console.h>
 #include <tty/vterm.h>

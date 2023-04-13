@@ -1,13 +1,13 @@
 #pragma once
 
 #include <list.h>
-#include <types.h>
 #include <net/arp.h>
 #include <net/eth.h>
 #include <net/icmp.h>
 #include <net/inet.h>
 #include <net/ip.h>
 #include <net/udp.h>
+#include <types.h>
 
 #define MAX_HEADER_SIZE 256
 #define FRAME_BUFFER_SIZE (ETH_PAYLOAD_MAX_SIZE + MAX_HEADER_SIZE)

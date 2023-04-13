@@ -47,8 +47,10 @@ static_assert(sizeof(struct registers_state) == 184);
 #define irq_disable() cli()
 #define irq_enable() sti()
 
+#define __IRQS_DISABLED(_value) (((_value)&X86_FLAGS_IF) != 0)
+
 static inline int irqs_disabled(void) {
-    return (read_cpu_flags() & X86_FLAGS_IF) != 0;
+    return __IRQS_DISABLED(read_cpu_flags());
 }
 
 // TODO: Linux has this strange notion of saving interrupts in local
@@ -56,19 +58,18 @@ static inline int irqs_disabled(void) {
 // Although omnipresent occurence of this idiom makes it easily-recognizable,
 // it is still not the most consise way. Is there actual reason for not using
 // function and passing address to it?
-#define irq_save(_flags)                                                       \
-    do {                                                                       \
-        _flags = read_cpu_flags();                                             \
-        cli();                                                                 \
-    } while (0)
+static __nodiscard __forceinline cpuflags_t irq_save(void) {
+    cpuflags_t flags = read_cpu_flags();
+    cli();
+    return __IRQS_DISABLED(flags);
+}
 
-#define irq_restore(_flags)                                                    \
-    do {                                                                       \
-        if (_flags & X86_FLAGS_IF)                                             \
-            sti();                                                             \
-    } while (0)
+static __forceinline void irq_restore(cpuflags_t flags) {
+    if (flags)
+        sti();
+}
 
-// Using port 80 to wait 1us 
+// Using port 80 to wait 1us
 static inline void io_wait(void) {
     port_out32(0x80, 0);
 }

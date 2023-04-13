@@ -1,15 +1,15 @@
-#include <net/arp.h>
 #include <arch/jiffies.h>
 #include <endian.h>
 #include <errno.h>
 #include <kstdio.h>
 #include <list.h>
 #include <mm/kmalloc.h>
-#include <sched/locks.h>
-#include <string.h>
+#include <net/arp.h>
 #include <net/eth.h>
 #include <net/frame.h>
 #include <net/inet.h>
+#include <sched/locks.h>
+#include <string.h>
 
 #define ARP_CACHE_SIZE 256
 #define ARP_TIMEOUT_MSECS 15000
@@ -65,8 +65,7 @@ void destroy_arp_cache(void) {
 }
 
 static int arp_cache_get(const u8 *ip_addr, u8 *mac_addr) {
-    u64 flags;
-    read_lock_irqsave(&cache->lock, flags);
+    cpuflags_t flags = read_lock_irqsave(&cache->lock);
 
     struct arp_cache_entry *entry;
     list_for_each_entry(entry, &cache->entries, list) {
@@ -82,8 +81,7 @@ static int arp_cache_get(const u8 *ip_addr, u8 *mac_addr) {
 }
 
 static void arp_cache_add(const u8 *ip_addr, const u8 *mac_addr) {
-    u64 flags;
-    write_lock_irqsave(&cache->lock, flags);
+    cpuflags_t flags = write_lock_irqsave(&cache->lock);
 
     struct arp_cache_entry *entry;
     list_for_each_entry(entry, &cache->entries, list) {

@@ -1,13 +1,13 @@
-#include <net/netdaemon.h>
 #include <errno.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
-#include <sched/locks.h>
-#include <sched/process.h>
-#include <string.h>
 #include <net/eth.h>
 #include <net/frame.h>
 #include <net/inet.h>
+#include <net/netdaemon.h>
+#include <sched/locks.h>
+#include <sched/process.h>
+#include <string.h>
 
 #define QUEUE_SIZE 32
 
@@ -21,7 +21,7 @@ static struct daemon_queue *queue;
 __noreturn static void net_daemon_task(void *) {
     cpuflags_t flags;
     for (;;) {
-        write_lock_irqsave(&queue->lock, flags);
+        flags = write_lock_irqsave(&queue->lock);
         for (int i = 0; i < QUEUE_SIZE; i++) {
             if (queue->frames[i]) {
                 eth_receive_frame(queue->frames[i]);
@@ -62,8 +62,7 @@ void net_daemon_add_frame(const void *data, size_t size) {
     memcpy(frame->buffer, data, size);
     frame->size = size;
 
-    u64 flags;
-    write_lock_irqsave(&queue->lock, flags);
+    cpuflags_t flags = write_lock_irqsave(&queue->lock);
 
     for (int i = 0; i < QUEUE_SIZE; i++) {
         if (queue->frames[i] == NULL) {

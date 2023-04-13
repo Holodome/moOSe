@@ -1,9 +1,9 @@
-#include <arch/amd64/rtc.h>
-#include <sched/process.h>
-#include <time.h>
-#include <arch/cpu.h>
 #include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
+#include <arch/amd64/rtc.h>
+#include <arch/cpu.h>
+#include <sched/process.h>
+#include <time.h>
 
 #define RATE 8
 #define fREQUENCY (32768 >> (RATE - 1))

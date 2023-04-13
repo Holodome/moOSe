@@ -54,8 +54,7 @@ static void vga_release(struct console *console) {
 static void vga_clear(struct console *console, size_t x, size_t y,
                       size_t length) {
     struct vga *vga = console->private;
-    cpuflags_t flags;
-    spin_lock_irqsave(&vga->lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&vga->lock);
     size_t idx = y * console->width + x;
     u16 *at = vga->buffer + idx;
 
@@ -68,8 +67,7 @@ static void vga_clear(struct console *console, size_t x, size_t y,
 static void vga_write(struct console *console, size_t x, size_t y, int c,
                       enum console_color bg, enum console_color fg) {
     struct vga *vga = console->private;
-    cpuflags_t flags;
-    spin_lock_irqsave(&vga->lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&vga->lock);
 
     size_t idx = y * console->width + x;
 
@@ -81,8 +79,7 @@ static void vga_write(struct console *console, size_t x, size_t y, int c,
 
 static void vga_set_cursor(struct console *console, size_t x, size_t y) {
     struct vga *vga = console->private;
-    cpuflags_t flags;
-    spin_lock_irqsave(&vga->lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&vga->lock);
     u16 cursor = y * console->width + x;
 
     port_out8(PORT_CTL, 0x0e);
@@ -95,8 +92,7 @@ static void vga_set_cursor(struct console *console, size_t x, size_t y) {
 
 static void vga_hide_cursor(struct console *console) {
     struct vga *vga = console->private;
-    cpuflags_t flags;
-    spin_lock_irqsave(&vga->lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&vga->lock);
     port_out8(PORT_CTL, 0x0a);
     port_out8(PORT_DAT, 0x20);
     spin_unlock_irqrestore(&vga->lock, flags);

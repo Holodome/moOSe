@@ -1,10 +1,10 @@
+#include <arch/amd64/asm.h>
 #include <arch/amd64/virtmem.h>
+#include <arch/cpu.h>
 #include <bitops.h>
 #include <mm/physmem.h>
 #include <param.h>
 #include <string.h>
-#include <arch/cpu.h>
-#include <arch/amd64/asm.h>
 
 int alloc_virtual_page(u64 virt_addr) {
     ssize_t addr = alloc_page();
@@ -154,8 +154,7 @@ void unmap_virtual_region(u64 virt_addr, size_t count) {
 }
 
 void flush_tlb_entry(u64 virt_addr) {
-    cpuflags_t flags;
-    irq_save(flags);
+    cpuflags_t flags = irq_save();
     asm volatile("invlpg (%0)" : : "r"(virt_addr) : "memory");
     irq_restore(flags);
 }
