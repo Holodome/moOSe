@@ -1,7 +1,6 @@
 #include <net/frame.h>
 #include <assert.h>
 #include <errno.h>
-#include <fs/posix.h>
 #include <mm/kmalloc.h>
 #include <sched/locks.h>
 #include <string.h>
