@@ -2,6 +2,8 @@
 #include <arch/cpu.h>
 #include <kstdio.h>
 
+struct process;
+
 struct debug_registers {
     u64 rdi;
     u64 rsi;
@@ -88,4 +90,23 @@ void init_process_registers(struct registers_state *regs, void (*fn)(void *),
     regs->rflags = read_cpu_flags();
     regs->rsp = stack_end;
     regs->rdi = (u64)arg;
+}
+
+__naked __noinline void switch_process(struct process *, struct process *) {
+    asm("pushfq\n"
+        "pushq %rbp\n"
+        // save current stack
+        "movq %rsp, 0(%rdi)\n"
+        // save exit point for swithced-from process
+        "movq 1f(%rip), %rax\n"
+        "movq %rax, 8(%rdi)\n"
+        // load new stack
+        "movq 0(%rsi), %rsp\n"
+        // imitate call to jump to curent process exit
+        "pushq 8(%rsi)\n"
+        "jmp switch_to\n"
+        "1:\n"
+        "popq %rbp\n"
+        "popfq\n"
+        "retq\n");
 }

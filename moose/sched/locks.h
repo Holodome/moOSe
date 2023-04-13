@@ -69,7 +69,7 @@ __define_unlock_irqrestore(spin_unlock, spinlock_t)
 __define_trylock_irq(spin_trylock, spinlock_t)
 __define_trylock_irqsave(spin_trylock, spinlock_t)
 
-    typedef struct rwlock {
+typedef struct rwlock {
     spinlock_t lock;
     int readers;
     int writers;
