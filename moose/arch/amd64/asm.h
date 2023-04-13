@@ -4,6 +4,10 @@
 
 #define X86_FLAGS_IF 0x0200
 
+static __forceinline void clac(void) {
+    asm volatile("clac");
+}
+
 static __forceinline void hlt(void) {
     asm volatile("hlt");
 }

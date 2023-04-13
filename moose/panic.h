@@ -2,6 +2,8 @@
 
 #include <types.h>
 
+struct cpu_registers;
+
 __noreturn void __panic(void);
 __noreturn void ___panic(void);
 
