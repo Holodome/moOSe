@@ -1,11 +1,10 @@
-#include <arch/amd64/asm.h>
-#include <arch/amd64/cpu.h>
 #include <arch/amd64/idt.h>
 #include <assert.h>
 #include <kstdio.h>
 #include <panic.h>
-#include <sched/locks.h>
 #include <sched/process.h>
+#include <arch/amd64/asm.h>
+#include <arch/cpu.h>
 
 // Port address for master PIC
 #define PIC1 0x20
@@ -22,7 +21,7 @@
 #define EXCEPTION_PAGE_FAULT 0xe
 
 static struct idt_entry idt[256] __aligned(16);
-static isr_t *isrs[48];
+static isr_t *isrs[256];
 
 static void set_idt_entry(u8 n, u64 isr_addr) {
     struct idt_entry *e = idt + n;
@@ -40,20 +39,6 @@ static void load_idt(void) {
     idt_reg.offset = (u64)&idt[0];
     idt_reg.size = 256 * sizeof(struct idt_entry) - 1;
     asm volatile("lidt %0\n" : : "m"(idt_reg));
-}
-
-__used static void print_registers(const struct isr_context *r) {
-    kprintf("exception_code: %u, isr: %u\n", (unsigned)r->exception_code,
-            (unsigned)r->isr_number);
-    kprintf("rdi: %#018lx rsi: %#018lx rbp: %#018lx\n", r->rdi, r->rsi, r->rbp);
-    kprintf("rsp: %#018lx rbx: %#018lx rdx: %#018lx\n", r->rsp, r->rbx, r->rdx);
-    kprintf("rcx: %#018lx rax: %#018lx r8:  %#018lx\n", r->rcx, r->rax, r->r8);
-    kprintf("r9:  %#018lx r10: %#018lx r11: %#018lx\n", r->r9, r->r10, r->r11);
-    kprintf("r12: %#018lx r13: %#018lx r14: %#018lx\n", r->r12, r->r13, r->r14);
-    kprintf("r15: %#018lx\n", r->r15);
-    kprintf("rip: %#018lx cs:  %#018lx rflags: %#018lx\n", r->rip, r->cs,
-            r->rflags);
-    kprintf("ursp: %#018lx uss: %#018lx\n", r->ursp, r->uss);
 }
 
 static const char *get_exception_name(unsigned exception) {
@@ -157,8 +142,6 @@ static void eoi(u8 irq) {
     port_out8(PIC1_CMD, PIC_EOI);
 }
 
-static spinlock_t isr_table_lock = INIT_SPIN_LOCK();
-
 void isr_handler(struct isr_context *regs) {
     expects((uintptr_t)regs % _Alignof(struct isr_context) == 0);
     unsigned no = regs->isr_number;
@@ -166,7 +149,6 @@ void isr_handler(struct isr_context *regs) {
         if (no == EXCEPTION_PAGE_FAULT) {
             kprintf("address: %#018lx\n", read_cr2());
         }
-        print_registers(regs);
         kprintf("exception %s(%u): %u\n", get_exception_name(no), no,
                 (unsigned)regs->exception_code);
         halt_cpu();
@@ -185,10 +167,7 @@ void isr_handler(struct isr_context *regs) {
 }
 
 void register_isr(int num, isr_t *isr) {
-    cpuflags_t flags;
-    spin_lock_irqsave(&isr_table_lock, flags);
     isrs[IRQ_BASE + num] = isr;
-    spin_unlock_irqrestore(&isr_table_lock, flags);
 }
 
 void init_idt(void) {

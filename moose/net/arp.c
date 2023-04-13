@@ -1,16 +1,15 @@
+#include <net/arp.h>
 #include <arch/jiffies.h>
 #include <endian.h>
 #include <errno.h>
-#include <fs/posix.h>
 #include <kstdio.h>
 #include <list.h>
 #include <mm/kmalloc.h>
-#include <net/arp.h>
+#include <sched/locks.h>
+#include <string.h>
 #include <net/eth.h>
 #include <net/frame.h>
 #include <net/inet.h>
-#include <sched/locks.h>
-#include <string.h>
 
 #define ARP_CACHE_SIZE 256
 #define ARP_TIMEOUT_MSECS 15000

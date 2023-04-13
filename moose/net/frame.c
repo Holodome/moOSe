@@ -1,11 +1,11 @@
+#include <net/frame.h>
 #include <assert.h>
 #include <errno.h>
 #include <fs/posix.h>
 #include <mm/kmalloc.h>
-#include <net/frame.h>
-#include <net/inet.h>
 #include <sched/locks.h>
 #include <string.h>
+#include <net/inet.h>
 
 #define FREE_FRAMES_COUNT 32
 

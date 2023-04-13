@@ -1,8 +1,8 @@
+#include <mm/kmalloc.h>
 #include <arch/amd64/virtmem.h>
 #include <assert.h>
 #include <bitops.h>
 #include <list.h>
-#include <mm/kmalloc.h>
 #include <param.h>
 #include <sched/locks.h>
 #include <string.h>

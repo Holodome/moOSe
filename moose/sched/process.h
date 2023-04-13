@@ -1,10 +1,10 @@
 #pragma once
 
+#include <arch/cpu.h>
 #include <bitops.h>
 #include <list.h>
-#include <sched/locks.h>
 #include <types.h>
-#include <arch/cpu.h>
+#include <sched/locks.h>
 
 #define MAX_PROCESSES 256
 #define PROCESS_MAX_FILES 256

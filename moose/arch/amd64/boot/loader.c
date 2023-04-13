@@ -1,4 +1,4 @@
-#include "../../../drivers/ata.c"
+#include <drivers/ata.c>
 
 #include <mbr.h>
 #include <param.h>

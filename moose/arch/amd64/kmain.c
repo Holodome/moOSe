@@ -1,7 +1,3 @@
-#include <arch/amd64/idt.h>
-#include <arch/amd64/memmap.h>
-#include <arch/amd64/virtmem.h>
-#include <arch/cpu.h>
 #include <assert.h>
 #include <idle.h>
 #include <kstdio.h>
@@ -10,6 +6,10 @@
 #include <mm/physmem.h>
 #include <panic.h>
 #include <types.h>
+#include <arch/cpu.h>
+#include <arch/amd64/idt.h>
+#include <arch/amd64/memmap.h>
+#include <arch/amd64/virtmem.h>
 
 static void zero_bss(void) {
     extern u64 __bss_start;

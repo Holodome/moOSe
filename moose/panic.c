@@ -1,5 +1,5 @@
-#include <arch/cpu.h>
 #include <panic.h>
+#include <arch/cpu.h>
 
 void __panic(void) {
     dump_registers();
