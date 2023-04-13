@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <kthread.h>
 #include <sched/locks.h>
 
 void init_spin_lock(spinlock_t *spinlock) {

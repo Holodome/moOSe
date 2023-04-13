@@ -4,9 +4,9 @@
 #include <arch/cpu.h>
 #include <assert.h>
 #include <kstdio.h>
-#include <kthread.h>
 #include <string.h>
 #include <time.h>
+#include <sched/process.h>
 
 #define RATE 8
 #define fREQUENCY (32768 >> (RATE - 1))
@@ -32,25 +32,11 @@ static void cmos_write(u8 idx, u8 data) {
     port_out8(0x71, data);
 }
 
-static void timer_interrupt(struct registers_state *regs) {
+static void timer_interrupt(struct isr_context *regs __unused) {
     ++jiffies;
     (void)cmos_read(0x8c);
 
-    if (!current)
-        return;
-
-    memcpy((void *)&current->regs, regs, sizeof(*regs));
-    struct task *next_task =
-        list_next_or_null(&current->list, &tasks, struct task, list);
-    if (!next_task) {
-        assert(tasks.next != &tasks);
-        next_task = list_entry(tasks.next, struct task, list);
-    }
-
-    if (current != next_task) {
-        current = next_task;
-        memcpy(regs, (void *)&current->regs, sizeof(*regs));
-    }
+    get_current()->needs_resched = 1;
 }
 
 void init_rtc(void) {

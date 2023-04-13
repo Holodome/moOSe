@@ -1,13 +1,13 @@
 #include <errno.h>
 #include <fs/posix.h>
 #include <kstdio.h>
-#include <kthread.h>
 #include <mm/kmalloc.h>
 #include <net/eth.h>
 #include <net/frame.h>
 #include <net/inet.h>
 #include <net/netdaemon.h>
 #include <sched/locks.h>
+#include <sched/process.h>
 #include <string.h>
 
 #define QUEUE_SIZE 32
@@ -19,7 +19,7 @@ struct daemon_queue {
 
 static struct daemon_queue *queue;
 
-__noreturn __used static void net_daemon_task(void) {
+__noreturn static void net_daemon_task(void *arg __unused) {
     cpuflags_t flags;
     for (;;) {
         write_lock_irqsave(&queue->lock, flags);
@@ -32,6 +32,8 @@ __noreturn __used static void net_daemon_task(void) {
         }
         write_unlock_irqrestore(&queue->lock, flags);
     }
+
+    exit_current();
 }
 
 int init_net_daemon(void) {
@@ -42,11 +44,7 @@ int init_net_daemon(void) {
     queue->frames = (struct net_frame **)(queue + 1);
     init_rwlock(&queue->lock);
 
-    if (launch_task("net", net_daemon_task)) {
-        kfree(queue);
-        return -1;
-    }
-
+    launch_process("net", net_daemon_task, NULL);
     return 0;
 }
 
