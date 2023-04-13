@@ -9,7 +9,6 @@ KERNEL_OBJS := \
 	$(D)/arch/amd64/kstart.o \
 	$(D)/arch/amd64/kmain.o \
 	$(D)/arch/amd64/memmap.o \
-	$(D)/arch/amd64/isr.o \
 	$(D)/arch/amd64/idt.o \
 	$(D)/arch/amd64/rtc.o \
 	$(D)/arch/amd64/virtmem.o \

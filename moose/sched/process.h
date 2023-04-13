@@ -60,7 +60,6 @@ void init_scheduler(void);
 void launch_process(const char *name, void (*function)(void *), void *arg);
 void switch_process(struct process *from, struct process *to);
 void schedule(void);
-void yield(void);
 void exit_current(void);
 void preempt_disable(void);
 void preempt_enable(void);

@@ -56,13 +56,26 @@ void launch_process(const char *name, void (*function)(void *), void *arg) {
     spin_unlock_irqrestore(&__scheduler->lock, flags);
 }
 
+static void context_switch(struct process *from, struct process *to) {
+    (void)from;
+    (void)to;
+}
+
 void schedule(void) {
     if (get_preempt_count())
         return;
 
-    preempt_disable();
+    cpuflags_t flags = spin_lock_irqsave(&__scheduler->lock);
+    struct process *current = get_current();
+    struct process *next =
+        list_next_entry_or_null(current, &__scheduler->process_list, list);
+    if (!next)
+        next =
+            list_first_entry(&__scheduler->process_list, struct process, list);
 
-    preempt_enable();
+    spin_unlock_irqrestore(&__scheduler->lock, flags);
+    if (next != current)
+        context_switch(current, next);
 }
 
 void preempt_disable(void) {
@@ -78,11 +91,11 @@ int get_preempt_count(void) {
     return atomic_read(&__scheduler->preempt_count);
 }
 
-void switch_to(void) {
-}
-
-void yield(void) {
-    schedule();
+// called from switch_process to finalize switching after stack and pc
+// have been changed
+void switch_to(struct process *from, struct process *to) {
+    (void)from;
+    (void)to;
 }
 
 struct process *get_current(void) {

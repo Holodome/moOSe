@@ -20,7 +20,7 @@ retry:
         goto retry;
     }
 
-    yield();
+    schedule();
     goto retry;
 }
 
