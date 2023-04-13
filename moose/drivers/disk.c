@@ -1,9 +1,9 @@
-#include <blk_device.h>
-#include <drivers/ata.h>
 #include <drivers/disk.h>
+#include <blk_device.h>
 #include <mbr.h>
 #include <panic.h>
 #include <string.h>
+#include <drivers/ata.h>
 
 static struct blk_device disk_dev_;
 struct blk_device *disk_dev = &disk_dev_;

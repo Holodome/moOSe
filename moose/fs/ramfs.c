@@ -1,6 +1,6 @@
+#include <fs/ramfs.h>
 #include <assert.h>
 #include <errno.h>
-#include <fs/ramfs.h>
 #include <mm/kmalloc.h>
 #include <string.h>
 

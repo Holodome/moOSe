@@ -1,7 +1,6 @@
 #pragma once
 
 #include <fs/vfs.h>
-#include <types.h>
 
 enum fatfs_kind {
     PFATFS_FAT12,

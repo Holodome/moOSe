@@ -1,7 +1,6 @@
-#include <arch/amd64/rtc.h>
 #include <arch/cpu.h>
+#include <arch/amd64/rtc.h>
 #include <drivers/disk.h>
-#include <idle.h>
 
 void idle_task(void) {
     init_rtc();

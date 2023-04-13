@@ -1,6 +1,6 @@
+#include <drivers/ata.h>
 #include <arch/amd64/asm.h>
 #include <assert.h>
-#include <drivers/ata.h>
 
 #define PRIMARY_BUS 0x1f0
 #define SECONDARY_BUS 0x170

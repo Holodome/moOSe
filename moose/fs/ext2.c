@@ -1,12 +1,10 @@
+#include <fs/ext2.h>
 #include <assert.h>
 #include <bitops.h>
 #include <blk_device.h>
-#include <endian.h>
 #include <errno.h>
-#include <fs/ext2.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
-#include <string.h>
 
 #define EXT2_DIRECT_BLOCKS 12
 #define EXT2_SB_OFFSET 1024

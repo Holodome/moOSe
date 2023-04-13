@@ -1,9 +1,9 @@
+#include <fs/fat.h>
 #include <assert.h>
 #include <blk_device.h>
 #include <ctype.h>
 #include <endian.h>
 #include <errno.h>
-#include <fs/fat.h>
 #include <kstdio.h>
 #include <string.h>
 
