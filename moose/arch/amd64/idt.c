@@ -1,10 +1,10 @@
+#include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
+#include <arch/cpu.h>
 #include <assert.h>
 #include <kstdio.h>
 #include <panic.h>
 #include <sched/process.h>
-#include <arch/amd64/asm.h>
-#include <arch/cpu.h>
 
 // Port address for master PIC
 #define PIC1 0x20
@@ -20,71 +20,7 @@
 
 #define EXCEPTION_PAGE_FAULT 0xe
 
-static struct idt_entry idt[256] __aligned(16);
-static isr_t *isrs[256];
-
-static void set_idt_entry(u8 n, u64 isr_addr) {
-    struct idt_entry *e = idt + n;
-    e->offset_low = isr_addr & 0xffff;
-    e->selector = 0x08;
-    e->ist = 0;
-    e->attr = 0x8e;
-    e->offset_mid = (isr_addr >> 16) & 0xffff;
-    e->offset_high = isr_addr >> 32;
-    e->reserved = 0;
-}
-
-static void load_idt(void) {
-    struct idt_reg idt_reg;
-    idt_reg.offset = (u64)&idt[0];
-    idt_reg.size = 256 * sizeof(struct idt_entry) - 1;
-    asm volatile("lidt %0\n" : : "m"(idt_reg));
-}
-
-static const char *get_exception_name(unsigned exception) {
-    static const char *strs[] = {
-        "division by zero",
-        "debug",
-        "nmi",
-        "breakpoint",
-        "into overflow",
-        "out of bounds",
-        "invalid opcode",
-        "no coprocessor",
-        "double fault",
-        "coprocessor segment overrun",
-        "bad tss",
-        "segment not present",
-        "stack fault",
-        "general protection fault",
-        "page fault",
-        "unknown interrupt",
-        "coprocessor fault",
-        "alignment check",
-        "machine check",
-        "reserved",
-        "reserved",
-        "reserved",
-        "reserved",
-        "reserved",
-        "reserved",
-        "reserved",
-        "reserved",
-        "reserved",
-        "reserved",
-        "reserved",
-        "reserved",
-        "reserved",
-    };
-    static_assert(ARRAY_SIZE(strs) == 32);
-
-    const char *result = NULL;
-    if (exception < ARRAY_SIZE(strs))
-        result = strs[exception];
-
-    return result;
-}
-
+// These are defined in isr.S
 extern void exception0();
 extern void exception1();
 extern void exception2();
@@ -135,6 +71,27 @@ extern void isr13();
 extern void isr14();
 extern void isr15();
 
+static struct idt_entry idt[256] __aligned(16);
+static isr_t *isrs[256];
+
+static void set_idt_entry(u8 n, u64 isr_addr) {
+    struct idt_entry *e = idt + n;
+    e->offset_low = isr_addr & 0xffff;
+    e->selector = 0x08;
+    e->ist = 0;
+    e->attr = 0x8e;
+    e->offset_mid = (isr_addr >> 16) & 0xffff;
+    e->offset_high = isr_addr >> 32;
+    e->reserved = 0;
+}
+
+static void load_idt(void) {
+    struct idt_reg idt_reg;
+    idt_reg.offset = (u64)&idt[0];
+    idt_reg.size = 256 * sizeof(struct idt_entry) - 1;
+    asm volatile("lidt %0\n" : : "m"(idt_reg));
+}
+
 static void eoi(u8 irq) {
     if (irq >= 8 + IRQ_BASE)
         port_out8(PIC2_CMD, PIC_EOI);
@@ -142,21 +99,93 @@ static void eoi(u8 irq) {
     port_out8(PIC1_CMD, PIC_EOI);
 }
 
+// TODO: These should send signal to current process if we are
+// in user mode and panic the kernel otherwise
+// TODO: Print isr_context instead of registers that panic gets
+
+static void division_by_zero_handler(struct isr_context *ctx __unused) {
+    panic("division by zero");
+}
+
+static void illegal_instruction_handler(struct isr_context *ctx __unused) {
+    panic("illegal instruction");
+}
+
+static void unknown_interrupt_handler(struct isr_context *ctx __unused) {
+    panic("unknown error");
+}
+
+static void page_fault_handler(struct isr_context *ctx __unused) {
+    kprintf("address: %#018lx\n", read_cr2());
+    panic("page fault");
+}
+
+static void debug_exception_handler(struct isr_context *ctx __unused) {
+    panic("debug exception");
+}
+
+static void nmi_handler(struct isr_context *ctx __unused) {
+    panic("nmi");
+}
+
+static void breakpoint_handler(struct isr_context *ctx __unused) {
+    panic("breakpoint");
+}
+
+static void into_handler(struct isr_context *ctx __unused) {
+    panic("into");
+}
+
+static void out_of_bounds_handler(struct isr_context *ctx __unused) {
+    panic("out of bounds");
+}
+
+static void no_fpu_handler(struct isr_context *ctx __unused) {
+    panic("no fpu");
+}
+
+static void double_fault_handler(struct isr_context *ctx __unused) {
+    panic("double fault");
+}
+
+static void fpu_segment_overrun_handler(struct isr_context *ctx __unused) {
+    panic("fpu segment overrun");
+}
+
+static void bad_tss_handler(struct isr_context *ctx __unused) {
+    panic("bad tss segmnet");
+}
+
+static void segment_not_present_handler(struct isr_context *ctx __unused) {
+    panic("segment not present");
+}
+
+static void stack_fault_handler(struct isr_context *ctx __unused) {
+    panic("stack fault");
+}
+
+static void general_protection_fault_handler(struct isr_context *ctx __unused) {
+    panic("general protection fault");
+}
+
+static void fpu_fault_handler(struct isr_context *ctx __unused) {
+    panic("fpu fault");
+}
+
+static void alignment_check_handler(struct isr_context *ctx __unused) {
+    panic("alignment check");
+}
+
+static void machine_check_handler(struct isr_context *ctx __unused) {
+    panic("machine check");
+}
+
 void isr_handler(struct isr_context *regs) {
     expects((uintptr_t)regs % _Alignof(struct isr_context) == 0);
     unsigned no = regs->isr_number;
-    if (no < 32) {
-        if (no == EXCEPTION_PAGE_FAULT) {
-            kprintf("address: %#018lx\n", read_cr2());
-        }
-        kprintf("exception %s(%u): %u\n", get_exception_name(no), no,
-                (unsigned)regs->exception_code);
-        halt_cpu();
-    } else {
-        isr_t *isr = isrs[no];
-        if (isr != NULL)
-            isr(regs);
-    }
+    isr_t *isr = isrs[no];
+    if (isr != NULL)
+        isr(regs);
 
     eoi(no);
 
@@ -168,6 +197,10 @@ void isr_handler(struct isr_context *regs) {
 
 void register_isr(int num, isr_t *isr) {
     isrs[IRQ_BASE + num] = isr;
+}
+
+void register_exception_handler(int num, isr_t *isr) {
+    isrs[num] = isr;
 }
 
 void init_idt(void) {
@@ -229,10 +262,29 @@ void init_idt(void) {
     set_idt_entry(41, (u64)isr9);
     set_idt_entry(42, (u64)isr10);
     set_idt_entry(43, (u64)isr11);
-    set_idt_entry(44, (u64)isr12);
     set_idt_entry(45, (u64)isr13);
     set_idt_entry(46, (u64)isr14);
     set_idt_entry(47, (u64)isr15);
+
+    register_exception_handler(0, division_by_zero_handler);
+    register_exception_handler(1, debug_exception_handler);
+    register_exception_handler(2, nmi_handler);
+    register_exception_handler(3, breakpoint_handler);
+    register_exception_handler(4, into_handler);
+    register_exception_handler(5, out_of_bounds_handler);
+    register_exception_handler(6, illegal_instruction_handler);
+    register_exception_handler(7, no_fpu_handler);
+    register_exception_handler(8, double_fault_handler);
+    register_exception_handler(9, fpu_segment_overrun_handler);
+    register_exception_handler(10, bad_tss_handler);
+    register_exception_handler(11, segment_not_present_handler);
+    register_exception_handler(12, stack_fault_handler);
+    register_exception_handler(13, general_protection_fault_handler);
+    register_exception_handler(14, page_fault_handler);
+    register_exception_handler(15, unknown_interrupt_handler);
+    register_exception_handler(16, fpu_fault_handler);
+    register_exception_handler(17, alignment_check_handler);
+    register_exception_handler(18, machine_check_handler);
 
     load_idt();
     sti();
