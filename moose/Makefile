@@ -49,6 +49,7 @@ KERNEL_OBJS := \
 	$(D)/ctype.o \
 	$(D)/kstdio.o \
 	$(D)/time.o \
+	$(D)/rbtree.o \
 
 KERNEL_BOOT_OBJS := $(D)/arch/amd64/kboot.o $(D)/arch/amd64/long.o
 KERNEL_BOOT_LINK := $(D)/arch/amd64/kernel-boot.ld.out
