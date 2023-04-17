@@ -31,8 +31,8 @@
 #define PCI_SECONDARY_BUS 0x19
 #define PCI_SUBORDINATE_BUS 0x20
 
-#define BDF(bus, device, func)                                                 \
-    (((bus) << 16) | ((device) << 11) | ((func) << 8))
+#define BDF(_bus, _device, _func)                                              \
+    (((u32)(_bus) << 16) | ((u32)(_device) << 11) | ((u32)(_func) << 8))
 
 struct pci_device;
 
@@ -43,7 +43,7 @@ struct pci_bus {
     struct list_head children;
 
     struct pci_device *bridge;
-    struct list_head devices;
+    struct list_head dev_list;
 };
 
 // header type 0x2 (PCI-to-CardBus bridge) is unsupported
@@ -51,11 +51,11 @@ struct pci_device {
     struct list_head list;
     struct pci_bus *bus;
 
-    u8 device_index;
+    u8 dev_index;
     u8 func_index;
     u32 bdf;
     u16 vendor;
-    u16 device;
+    u16 dev;
     u16 command;
     u16 status;
     u8 prog_if;
@@ -74,8 +74,8 @@ struct pci_device {
     u8 interrupt_line;
     u8 interrupt_pin;
 
-    struct resource *resources[PCI_BARS_COUNT];
-    size_t resource_count;
+    struct io_resource *resources[PCI_BARS_COUNT];
+    unsigned resource_count;
 };
 
 int init_pci(void);

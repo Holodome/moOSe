@@ -77,7 +77,7 @@ typedef struct rwlock {
 } rwlock_t;
 
 #define INIT_RWLOCK()                                                          \
-    { INIT_SPINLOCK(), 0, 0, 0 }
+    { INIT_SPIN_LOCK(), 0, 0, 0 }
 
 void init_rwlock(rwlock_t *lock);
 
