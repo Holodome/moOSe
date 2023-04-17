@@ -1,7 +1,7 @@
-#include <arch/amd64/asm.h>
 #include <arch/amd64/idt.h>
 #include <assert.h>
 #include <bitops.h>
+#include <drivers/io_resource.h>
 #include <drivers/pci.h>
 #include <drivers/rtl8139.h>
 #include <errno.h>
@@ -11,7 +11,6 @@
 #include <param.h>
 #include <sched/locks.h>
 #include <string.h>
-#include <drivers/io_resource.h>
 
 #define RTL_REG_MAC0 0x00
 #define TRL_REG_TX_STATUS 0x10
@@ -34,31 +33,36 @@
 // 1522 - 4 bytes for crc
 #define TX_BUFFER_SIZE (ETH_FRAME_MAX_SIZE - 4)
 
-static struct {
+static struct rtl8139 {
+    struct pci_device *pci;
     u32 io_addr;
     u8 mac_addr[6];
-    struct pci_device *dev;
+    struct io_resource *address_space;
     u8 rx_buffer[RX_BUFFER_SIZE] __attribute__((aligned(4)));
     u8 tx_buffer[TX_BUFFER_SIZE] __attribute__((aligned(4)));
     u8 tx_index;
     u16 rx_offset;
     spinlock_t lock;
-} rtl8139;
+} __rtl8139;
 
-static void rtl8139_receive(void) {
+static void rtl8139_receive(struct rtl8139 *rtl8139) {
     u8 frame[ETH_FRAME_MAX_SIZE];
 
     // check that rx buffer is not empty
-    while ((port_in8(rtl8139.io_addr + RTL_REG_CMD) & 0x1) != 1) {
-        u8 *rx_ptr = rtl8139.rx_buffer + rtl8139.rx_offset;
-        u16 frame_size = *((u16 *)(rx_ptr + 2)) - 4;
+    while ((port_in8(rtl8139->io_addr + RTL_REG_CMD) & 0x1) != 1) {
+        u8 *rx_ptr = rtl8139->rx_buffer + rtl8139->rx_offset;
+        u16 frame_size;
+        // note that frame_size is actually correctly aligned and we could as
+        // well deference the pointer directly
+        memcpy(&frame_size, rx_ptr + 2, sizeof(frame_size));
+        frame_size -= 4;
 
         // skip 4 bytes rtl header
         rx_ptr += 4;
-        if (rx_ptr + frame_size >= rtl8139.rx_buffer + RX_BUFFER_SIZE) {
-            u16 part_size = (rtl8139.rx_buffer + RX_BUFFER_SIZE) - rx_ptr;
+        if (rx_ptr + frame_size >= rtl8139->rx_buffer + RX_BUFFER_SIZE) {
+            u16 part_size = (rtl8139->rx_buffer + RX_BUFFER_SIZE) - rx_ptr;
             memcpy(frame, rx_ptr, part_size);
-            memcpy(frame + part_size, rtl8139.rx_buffer,
+            memcpy(frame + part_size, rtl8139->rx_buffer,
                    frame_size - part_size);
         } else {
             memcpy(frame, rx_ptr, frame_size);
@@ -66,36 +70,37 @@ static void rtl8139_receive(void) {
 
         net_daemon_add_frame(frame, frame_size);
 
-        rtl8139.rx_offset = (rtl8139.rx_offset + frame_size + 4 + 4 + 3) & ~0x3;
-        rtl8139.rx_offset %= RX_BUFFER_SIZE;
+        rtl8139->rx_offset =
+            (rtl8139->rx_offset + frame_size + 4 + 4 + 3) & ~0x3;
+        rtl8139->rx_offset %= RX_BUFFER_SIZE;
 
-        port_out16(rtl8139.io_addr + RTL_REG_CAPR, rtl8139.rx_offset - 0x10);
+        port_out16(rtl8139->io_addr + RTL_REG_CAPR, rtl8139->rx_offset - 0x10);
     }
 }
 
 static void rtl8139_handler(struct registers_state *) {
-    u16 isr = port_in16(rtl8139.io_addr + RTL_REG_INT_STATUS);
+    u16 status = port_in16(__rtl8139.io_addr + RTL_REG_INT_STATUS);
 
-    if (isr & RTL_RER || isr & RTL_TER) {
+    if (status & RTL_RER || status & RTL_TER) {
         panic("rtl8139 tx/rx error\n");
     }
 
-    if (isr & RTL_TOK) {
+    if (status & RTL_TOK) {
         kprintf("rtl8139 frame was sent\n");
     }
 
-    if (isr & RTL_ROK) {
-        rtl8139_receive();
-        kprintf("rtl8139 frame was recieved\n");
+    if (status & RTL_ROK) {
+        rtl8139_receive(&__rtl8139);
     }
 
-    port_out16(rtl8139.io_addr + RTL_REG_INT_STATUS, RTL_TOK | RTL_ROK);
+    port_out16(__rtl8139.io_addr + RTL_REG_INT_STATUS, RTL_TOK | RTL_ROK);
 }
 
-static void read_mac_addr(u8 *mac_addr) {
-    u32 mac1 = port_in32(rtl8139.io_addr + RTL_REG_MAC0);
-    u32 mac2 = port_in32(rtl8139.io_addr + RTL_REG_MAC0 + 4);
+static void read_mac_addr(struct rtl8139 *rtl8139) {
+    u32 mac1 = port_in32(rtl8139->io_addr + RTL_REG_MAC0);
+    u32 mac2 = port_in32(rtl8139->io_addr + RTL_REG_MAC0 + 4);
 
+    u8 *mac_addr = rtl8139->mac_addr;
     mac_addr[0] = mac1 >> 0;
     mac_addr[1] = mac1 >> 8;
     mac_addr[2] = mac1 >> 16;
@@ -104,7 +109,50 @@ static void read_mac_addr(u8 *mac_addr) {
     mac_addr[5] = mac2 >> 8;
 }
 
-int init_rtl8139(u8 *mac_addr) {
+void rtl8139_get_mac(u8 mac[static 6]) {
+    memcpy(mac, __rtl8139.mac_addr, 6);
+}
+
+static void rtl8139_configure(struct rtl8139 *rtl8139) {
+    struct pci_device *pci = rtl8139->pci;
+    u32 io_addr = rtl8139->io_addr;
+    read_mac_addr(rtl8139);
+
+    // pci bus mastering
+    u32 command = read_pci_config_u16(pci->bdf, PCI_COMMAND);
+    command |= BIT(2);
+    write_pci_config_u16(pci->bdf, PCI_COMMAND, command);
+
+    // power on device
+    port_out8(io_addr + RTL_REG_CONFIG1, 0x0);
+
+    // soft reset
+    port_out8(io_addr + RTL_REG_CMD, 0x10);
+    while ((port_in8(io_addr + RTL_REG_CMD) & 0x10) != 0) {
+    }
+
+    // set rx buffer
+    port_out32(io_addr + RTL_REG_RX_BUFFER,
+               ADDR_TO_PHYS((u64)rtl8139->rx_buffer));
+
+    // enable rx and tx interrupts (bit 0 and 2)
+    port_out16(io_addr + RTL_REG_INT_MASK, RTL_ROK | RTL_TOK);
+
+    // rx buffer config (AB+AM+APM+AAP), nowrap
+    port_out32(io_addr + RTL_REG_RX_CONFIG, 0xf);
+
+    // disable loopback
+    u32 tx_config = port_in32(io_addr + RTL_REG_TX_CONFIG);
+    tx_config &= ~(BIT(17) | BIT(18));
+    port_out32(io_addr + RTL_REG_TX_CONFIG, tx_config);
+
+    port_out8(io_addr + RTL_REG_CMD, 0x0c);
+
+    u8 isr = pci->interrupt_line;
+    register_isr(isr, rtl8139_handler);
+}
+
+int init_rtl8139(void) {
     struct pci_device *dev =
         get_pci_device(RTL8139_VENDOR_ID, RTL8139_DEVICE_ID);
     if (dev == NULL) {
@@ -112,14 +160,11 @@ int init_rtl8139(u8 *mac_addr) {
         return -EIO;
     }
 
-    int err;
-    if ((err = enable_pci_device(dev))) {
+    if (enable_pci_device(dev)) {
         kprintf("failed to enable rtl8139\n");
         release_pci_device(dev);
-        return err;
+        return -EBUSY;
     }
-
-    init_spin_lock(&rtl8139.lock);
 
     struct io_resource *res = NULL;
     for (size_t i = 0; i < dev->resource_count; i++) {
@@ -135,72 +180,37 @@ int init_rtl8139(u8 *mac_addr) {
         return -EBUSY;
     }
 
-    u32 io_addr = res->base;
-
-    rtl8139.io_addr = io_addr;
-    rtl8139.dev = dev;
-    rtl8139.tx_index = 0;
-
-    read_mac_addr(mac_addr);
-
-    // pci bus mastering
-    u32 command = read_pci_config_u16(dev->bdf, PCI_COMMAND);
-    command |= BIT(2);
-    write_pci_config_u16(dev->bdf, PCI_COMMAND, command);
-
-    // power on device
-    port_out8(io_addr + RTL_REG_CONFIG1, 0x0);
-
-    // soft reset
-    port_out8(io_addr + RTL_REG_CMD, 0x10);
-    while ((port_in8(io_addr + RTL_REG_CMD) & 0x10) != 0) {
-    }
-
-    // set rx buffer
-    port_out32(io_addr + RTL_REG_RX_BUFFER,
-               ADDR_TO_PHYS((u64)rtl8139.rx_buffer));
-
-    // enable rx and tx interrupts (bit 0 and 2)
-    port_out16(io_addr + RTL_REG_INT_MASK, RTL_ROK | RTL_TOK);
-
-    // rx buffer config (AB+AM+APM+AAP), nowrap
-    port_out32(io_addr + RTL_REG_RX_CONFIG, 0xf);
-
-    // disable loopback
-    u32 tx_config = port_in32(io_addr + RTL_REG_TX_CONFIG);
-    tx_config &= ~(BIT(17) | BIT(18));
-    port_out32(io_addr + RTL_REG_TX_CONFIG, tx_config);
-
-    port_out8(io_addr + RTL_REG_CMD, 0x0c);
-
-    u8 isr = dev->interrupt_line;
-    register_isr(isr, rtl8139_handler);
+    init_spin_lock(&__rtl8139.lock);
+    __rtl8139.io_addr = res->base;
+    __rtl8139.pci = dev;
+    __rtl8139.tx_index = 0;
+    rtl8139_configure(&__rtl8139);
 
     return 0;
 }
 
 void destroy_rtl8139(void) {
-    release_pci_device(rtl8139.dev);
+    release_pci_device(__rtl8139.pci);
 }
 
-void rtl8139_send(const void *frame, size_t size) {
+void __rtl8139_send(struct rtl8139 *rtl8139, const void *frame, size_t size) {
     if (size > ETH_FRAME_MAX_SIZE) {
         kprintf("rtl8139 send error: invalid frame size\n");
         return;
     }
 
-    cpuflags_t flags = spin_lock_irqsave(&rtl8139.lock);
+    cpuflags_t flags = spin_lock_irqsave(&rtl8139->lock);
+    memcpy(rtl8139->tx_buffer, frame, size);
 
-    memcpy(rtl8139.tx_buffer, frame, size);
+    size_t tx_offset = sizeof(u32) * rtl8139->tx_index++;
+    port_out32(rtl8139->io_addr + RTL_REG_TX_ADDR + tx_offset,
+               ADDR_TO_PHYS((u64)rtl8139->tx_buffer));
+    rtl8139->tx_index &= 0x3;
+    port_out32(rtl8139->io_addr + TRL_REG_TX_STATUS + tx_offset, size);
 
-    u8 tx_offset = sizeof(u32) * rtl8139.tx_index++;
-    port_out32(rtl8139.io_addr + RTL_REG_TX_ADDR + tx_offset,
-               ADDR_TO_PHYS((u64)rtl8139.tx_buffer));
+    spin_unlock_irqrestore(&rtl8139->lock, flags);
+}
 
-    rtl8139.tx_index &= 0x3;
-
-    u16 tx_status = rtl8139.io_addr + TRL_REG_TX_STATUS + tx_offset;
-    port_out32(tx_status, size);
-
-    spin_unlock_irqrestore(&rtl8139.lock, flags);
+void rtl8139_send(const void *frame, size_t size) {
+    return __rtl8139_send(&__rtl8139, frame, size);
 }

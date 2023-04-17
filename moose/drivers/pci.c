@@ -1,5 +1,4 @@
-#include <arch/amd64/asm.h>
-#include <arch/amd64/cpu.h>
+#include <arch/cpu.h>
 #include <bitops.h>
 #include <drivers/pci.h>
 #include <errno.h>

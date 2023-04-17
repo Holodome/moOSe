@@ -21,10 +21,12 @@ int init_inet(void) {
     if ((err = init_net_frames()))
         return err;
 
-    if ((err = init_rtl8139(nic.mac_addr))) {
+    if ((err = init_rtl8139())) {
         destroy_net_frames();
         return err;
     }
+
+    rtl8139_get_mac(nic.mac_addr);
 
     memcpy(nic.ip_addr, nic_ip_addr, 4);
     debug_print_mac_addr(nic.mac_addr);
