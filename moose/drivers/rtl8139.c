@@ -11,6 +11,7 @@
 #include <param.h>
 #include <sched/locks.h>
 #include <string.h>
+#include <drivers/io_resource.h>
 
 #define RTL_REG_MAC0 0x00
 #define TRL_REG_TX_STATUS 0x10

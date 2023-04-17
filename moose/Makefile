@@ -19,7 +19,7 @@ KERNEL_OBJS := \
 	$(D)/drivers/disk.o \
 	$(D)/drivers/rtl8139.o \
 	$(D)/drivers/pci.o \
-	$(D)/mm/resource.o \
+	$(D)/drivers/io_resource.o \
 	$(D)/mm/physmem.o \
 	$(D)/mm/kmalloc.o \
 	$(D)/mm/slab.o \

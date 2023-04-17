@@ -1,8 +1,6 @@
 #pragma once
 
 #include <list.h>
-#include <mm/kmem.h>
-#include <mm/resource.h>
 
 #define PCI_BARS_COUNT 6
 
@@ -82,16 +80,16 @@ int init_pci(void);
 int enable_pci_device(struct pci_device *device);
 void release_pci_device(struct pci_device *device);
 
-struct pci_bus *get_root_bus(void);
+struct pci_bus *get_pci_root_bus(void);
 struct pci_device *get_pci_device(u16 vendor, u16 device);
 
-u32 read_pci_config_u32(u32 bdf, u8 offset);
-u16 read_pci_config_u16(u32 bdf, u8 offset);
-u8 read_pci_config_u8(u32 bdf, u8 offset);
+u32 read_pci_config_u32(u32 bdf, unsigned offset);
+u16 read_pci_config_u16(u32 bdf, unsigned offset);
+u8 read_pci_config_u8(u32 bdf, unsigned offset);
 
-void write_pci_config_u32(u32 bdf, u8 offset, u32 data);
-void write_pci_config_u16(u32 bdf, u8 offset, u16 data);
-void write_pci_config_u8(u32 bdf, u8 offset, u8 data);
+void write_pci_config_u32(u32 bdf, unsigned offset, u32 data);
+void write_pci_config_u16(u32 bdf, unsigned offset, u16 data);
+void write_pci_config_u8(u32 bdf, unsigned offset, u8 data);
 
 int is_pci_bridge(struct pci_device *device);
 

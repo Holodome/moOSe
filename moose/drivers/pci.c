@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
-#include <mm/resource.h>
+#include <drivers/io_resource.h>
 
 #define PCI_CONFIG_ADDRESS 0xcf8
 #define PCI_CONFIG_DATA 0xcfc
@@ -20,15 +20,15 @@
 
 static struct pci_bus *root_bus;
 
-u8 read_pci_config_u8(u32 bdf, u8 offset) {
+u8 read_pci_config_u8(u32 bdf, unsigned offset) {
     return read_pci_config_u32(bdf, offset) >> ((offset & 3) * 8);
 }
 
-u16 read_pci_config_u16(u32 bdf, u8 offset) {
+u16 read_pci_config_u16(u32 bdf, unsigned offset) {
     return read_pci_config_u32(bdf, offset) >> ((offset & 2) * 8);
 }
 
-u32 read_pci_config_u32(u32 bdf, u8 offset) {
+u32 read_pci_config_u32(u32 bdf, unsigned offset) {
     u32 addr = PCI_ENABLE_BIT | bdf | (offset & 0xfc);
     port_out32(PCI_CONFIG_ADDRESS, addr);
 
@@ -36,7 +36,7 @@ u32 read_pci_config_u32(u32 bdf, u8 offset) {
     return port_in32(PCI_CONFIG_DATA);
 }
 
-void write_pci_config_u8(u32 bdf, u8 offset, u8 data) {
+void write_pci_config_u8(u32 bdf, unsigned offset, u8 data) {
     u32 temp = read_pci_config_u32(bdf, offset);
 
     u32 shift = (offset & 3) * 8;
@@ -46,7 +46,7 @@ void write_pci_config_u8(u32 bdf, u8 offset, u8 data) {
     write_pci_config_u32(bdf, offset, temp);
 }
 
-void write_pci_config_u16(u32 bdf, u8 offset, u16 data) {
+void write_pci_config_u16(u32 bdf, unsigned offset, u16 data) {
     u32 temp = read_pci_config_u32(bdf, offset);
 
     u32 shift = (offset & 2) * 8;
@@ -56,7 +56,7 @@ void write_pci_config_u16(u32 bdf, u8 offset, u16 data) {
     write_pci_config_u32(bdf, offset, temp);
 }
 
-void write_pci_config_u32(u32 bdf, u8 offset, u32 data) {
+void write_pci_config_u32(u32 bdf, unsigned offset, u32 data) {
     u32 addr = PCI_ENABLE_BIT | bdf | (offset & 0xfc);
     port_out32(PCI_CONFIG_ADDRESS, addr);
     io_wait();
@@ -70,11 +70,8 @@ int is_pci_bridge(struct pci_device *dev) {
            dev->subclass == PCI_BRIDGE_SUB_CLASS;
 }
 
-static void read_common_header(struct pci_device *dev) {
-    u8 bus_idx = dev->bus->index;
-    u8 dev_idx = dev->dev_index;
-    u8 func_idx = dev->func_index;
-    u32 bdf = BDF(bus_idx, dev_idx, func_idx);
+static void read_pci_device_config(struct pci_device *dev) {
+    u32 bdf = dev->bdf;
 
     dev->vendor = read_pci_config_u16(bdf, PCI_VENDOR_ID);
     dev->dev = read_pci_config_u16(bdf, PCI_DEVICE_ID);
@@ -87,6 +84,15 @@ static void read_common_header(struct pci_device *dev) {
 
     dev->interrupt_line = read_pci_config_u16(bdf, PCI_INTERRUPT_LINE);
     dev->interrupt_pin = read_pci_config_u16(bdf, PCI_INTERRUPT_PIN);
+
+    if (is_pci_bridge(dev)) {
+        dev->secondary_bus = read_pci_config_u8(dev->bdf, PCI_SECONDARY_BUS);
+        dev->subordinate_bus =
+            read_pci_config_u8(dev->bdf, PCI_SUBORDINATE_BUS);
+    } else {
+        dev->sub_vendor_id = read_pci_config_u16(dev->bdf, PCI_SUB_VENDOR);
+        dev->subsystem_id = read_pci_config_u16(dev->bdf, PCI_SUB_SYSTEM);
+    }
 }
 
 static void init_dev(struct pci_device *dev, struct pci_bus *bus, u8 dev_idx,
@@ -94,19 +100,9 @@ static void init_dev(struct pci_device *dev, struct pci_bus *bus, u8 dev_idx,
     u8 bus_idx = bus->index;
     dev->dev_index = dev_idx;
     dev->func_index = func_idx;
-
     dev->bus = bus;
-    read_common_header(dev);
-
-    u32 bdf = BDF(bus_idx, dev_idx, func_idx);
-    dev->bdf = bdf;
-    if (is_pci_bridge(dev)) {
-        dev->secondary_bus = read_pci_config_u8(bdf, PCI_SECONDARY_BUS);
-        dev->subordinate_bus = read_pci_config_u8(bdf, PCI_SUBORDINATE_BUS);
-    } else {
-        dev->sub_vendor_id = read_pci_config_u16(bdf, PCI_SUB_VENDOR);
-        dev->subsystem_id = read_pci_config_u16(bdf, PCI_SUB_SYSTEM);
-    }
+    dev->bdf = BDF(bus_idx, dev_idx, func_idx);
+    read_pci_device_config(dev);
 }
 
 static struct pci_bus *scan_bus(u8 bus_idx) {
@@ -118,8 +114,8 @@ static struct pci_bus *scan_bus(u8 bus_idx) {
     init_list_head(&bus->dev_list);
     bus->index = bus_idx;
 
-    for (u8 dev_idx = 0; dev_idx < 32; dev_idx++) {
-        for (u8 func_idx = 0; func_idx < 8; func_idx++) {
+    for (size_t dev_idx = 0; dev_idx < 32; dev_idx++) {
+        for (size_t func_idx = 0; func_idx < 8; func_idx++) {
             u32 bdf = BDF(bus_idx, dev_idx, func_idx);
             u16 vendor_id = read_pci_config_u16(bdf, PCI_VENDOR_ID);
             if (vendor_id == PCI_DEVICE_NOT_EXIST)
