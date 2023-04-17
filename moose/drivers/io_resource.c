@@ -3,7 +3,7 @@
 #include <bitops.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
-#include <mm/resource.h>
+#include <drivers/io_resource.h>
 #include <param.h>
 #include <sched/locks.h>
 

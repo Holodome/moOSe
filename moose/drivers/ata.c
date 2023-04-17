@@ -1,4 +1,4 @@
-#include <arch/amd64/asm.h>
+#include <arch/cpu.h>
 #include <assert.h>
 #include <drivers/ata.h>
 
