@@ -111,26 +111,27 @@ int init_rtl8139(u8 *mac_addr) {
         return -EIO;
     }
 
-    int rc;
-    if ((rc = enable_pci_device(dev))) {
+    int err;
+    if ((err = enable_pci_device(dev))) {
         kprintf("failed to enable rtl8139\n");
-        return rc;
+        release_pci_device(dev);
+        return err;
     }
 
     init_spin_lock(&rtl8139.lock);
 
-    // find io port resource
-    struct resource *res = NULL;
+    struct io_resource *res = NULL;
     for (size_t i = 0; i < dev->resource_count; i++) {
-        if (dev->resources[i]->kind == PORT_RESOURCE) {
+        if (dev->resources[i]->kind == IO_RES_PORT) {
             res = dev->resources[i];
             break;
         }
     }
 
     if (res == NULL) {
+        kprintf("failed to find rtl8139 io port address space\n");
         release_pci_device(dev);
-        return -EIO;
+        return -EBUSY;
     }
 
     u32 io_addr = res->base;
