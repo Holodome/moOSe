@@ -1,7 +1,6 @@
-#include <arch/amd64/asm.h>
-#include <arch/amd64/idt.h>
 #include <arch/amd64/rtc.h>
 #include <arch/cpu.h>
+#include <arch/interrupts.h>
 #include <sched/process.h>
 #include <time.h>
 
@@ -17,7 +16,12 @@
 #define REG_STATA 0x0a
 #define REG_STATB 0x0b
 
+static irqresult_t timer_interrupt(void *dev,
+                                   const struct registers_state *ctx);
+
 static volatile u64 jiffies;
+static struct interrupt_handler irq = {
+    .number = 8, .name = "rtc", .handle_interrupt = timer_interrupt};
 
 static u8 cmos_read(u8 idx) {
     port_out8(0x70, idx);
@@ -29,15 +33,16 @@ static void cmos_write(u8 idx, u8 data) {
     port_out8(0x71, data);
 }
 
-static void timer_interrupt(struct registers_state *) {
+static irqresult_t timer_interrupt(void *, const struct registers_state *) {
     ++jiffies;
     (void)cmos_read(0x8c);
 
     get_current()->needs_resched = 1;
+    return IRQ_HANDLED;
 }
 
 void init_rtc(void) {
-    register_isr(8, timer_interrupt);
+    enable_interrupt(&irq);
 
     u8 prev;
     u8 rate = RATE;

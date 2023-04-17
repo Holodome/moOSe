@@ -21,7 +21,5 @@ struct idt_reg {
     u64 offset;
 } __packed;
 
-typedef void isr_t(struct registers_state *regs);
-
 void init_idt(void);
-void register_isr(int num, isr_t *isr);
+void eoi(u8 num);

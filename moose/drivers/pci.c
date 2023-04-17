@@ -1,10 +1,10 @@
 #include <arch/cpu.h>
 #include <bitops.h>
+#include <drivers/io_resource.h>
 #include <drivers/pci.h>
 #include <errno.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
-#include <drivers/io_resource.h>
 
 #define PCI_CONFIG_ADDRESS 0xcf8
 #define PCI_CONFIG_DATA 0xcfc
