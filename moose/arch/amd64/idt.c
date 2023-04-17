@@ -54,7 +54,6 @@
 #define EXCEPTION_PAGE_FAULT 0xe
 
 static struct idt_entry idt[256] __aligned(16);
-static isr_t *isrs[256];
 
 static void set_idt_entry(u8 n, u64 isr_addr) {
     struct idt_entry *e = idt + n;
@@ -74,7 +73,7 @@ static void load_idt(void) {
     asm volatile("lidt %0\n" : : "m"(idt_reg));
 }
 
-static void eoi(u8 irq) {
+void eoi(u8 irq) {
     if (irq >= 8 + IRQ_BASE)
         port_out8(PIC2_CMD, PIC_EOI);
 
@@ -179,113 +178,6 @@ ENUMERATE_ISRS
 
 #undef _ISR
 
-// TODO: These should send signal to current process if we are
-// in user mode and panic the kernel otherwise
-// TODO: Print registers_state instead of registers that panic gets
-static void division_by_zero_handler(struct registers_state *) {
-    panic("division by zero");
-}
-
-// NOTE: Because clang-format is f***ing stupid it does not understand 
-// macros expanding to functions and completely messes up surrounding indentation
-// clang-format on
-
-static void illegal_instruction_handler(struct registers_state *) {
-    panic("illegal instruction");
-}
-
-static void unknown_interrupt_handler(struct registers_state *) {
-    panic("unknown error");
-}
-
-static void page_fault_handler(struct registers_state *) {
-    kprintf("address: %#018lx\n", read_cr2());
-    panic("page fault");
-}
-
-static void debug_exception_handler(struct registers_state *) {
-    panic("debug exception");
-}
-
-static void nmi_handler(struct registers_state *) {
-    panic("nmi");
-}
-
-static void breakpoint_handler(struct registers_state *) {
-    panic("breakpoint");
-}
-
-static void into_handler(struct registers_state *) {
-    panic("into");
-}
-
-static void out_of_bounds_handler(struct registers_state *) {
-    panic("out of bounds");
-}
-
-static void no_fpu_handler(struct registers_state *) {
-    panic("no fpu");
-}
-
-static void double_fault_handler(struct registers_state *) {
-    panic("double fault");
-}
-
-static void fpu_segment_overrun_handler(struct registers_state *) {
-    panic("fpu segment overrun");
-}
-
-static void bad_tss_handler(struct registers_state *) {
-    panic("bad tss segmnet");
-}
-
-static void segment_not_present_handler(struct registers_state *) {
-    panic("segment not present");
-}
-
-static void stack_fault_handler(struct registers_state *) {
-    panic("stack fault");
-}
-
-static void general_protection_fault_handler(struct registers_state *) {
-    panic("general protection fault");
-}
-
-static void fpu_fault_handler(struct registers_state *) {
-    panic("fpu fault");
-}
-
-static void alignment_check_handler(struct registers_state *) {
-    panic("alignment check");
-}
-
-static void machine_check_handler(struct registers_state *) {
-    panic("machine check");
-}
-
-void isr_handler(struct registers_state *regs) {
-    expects((uintptr_t)regs % _Alignof(struct registers_state) == 0);
-    unsigned no = regs->isr_number;
-    isr_t *isr = isrs[no];
-    if (isr != NULL)
-        isr(regs);
-
-    eoi(no);
-
-    if (get_current()->needs_resched) {
-        get_current()->needs_resched = 0;
-        schedule();
-    }
-}
-
-void register_isr(int num, isr_t *isr) {
-    isrs[IRQ_BASE + num] = isr;
-}
-
-void register_exception_handler(int num, isr_t *isr) {
-    isrs[num] = isr;
-}
-
 void init_idt(void) {
     set_idt_entry(0, (u64)exception0);
     set_idt_entry(1, (u64)exception1);
@@ -336,26 +228,6 @@ void init_idt(void) {
 #define _ISR(_number) set_idt_entry(_number, (u64)isr##_number);
     ENUMERATE_ISRS
 #undef _ISR
-
-    register_exception_handler(0, division_by_zero_handler);
-    register_exception_handler(1, debug_exception_handler);
-    register_exception_handler(2, nmi_handler);
-    register_exception_handler(3, breakpoint_handler);
-    register_exception_handler(4, into_handler);
-    register_exception_handler(5, out_of_bounds_handler);
-    register_exception_handler(6, illegal_instruction_handler);
-    register_exception_handler(7, no_fpu_handler);
-    register_exception_handler(8, double_fault_handler);
-    register_exception_handler(9, fpu_segment_overrun_handler);
-    register_exception_handler(10, bad_tss_handler);
-    register_exception_handler(11, segment_not_present_handler);
-    register_exception_handler(12, stack_fault_handler);
-    register_exception_handler(13, general_protection_fault_handler);
-    register_exception_handler(14, page_fault_handler);
-    register_exception_handler(15, unknown_interrupt_handler);
-    register_exception_handler(16, fpu_fault_handler);
-    register_exception_handler(17, alignment_check_handler);
-    register_exception_handler(18, machine_check_handler);
 
     load_idt();
     sti();

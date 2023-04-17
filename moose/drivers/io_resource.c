@@ -1,9 +1,9 @@
 #include <arch/amd64/virtmem.h>
 #include <assert.h>
 #include <bitops.h>
+#include <drivers/io_resource.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
-#include <drivers/io_resource.h>
 #include <param.h>
 #include <sched/locks.h>
 

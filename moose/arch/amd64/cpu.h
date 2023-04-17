@@ -53,11 +53,10 @@ static inline int irqs_disabled(void) {
     return __IRQS_DISABLED(read_cpu_flags());
 }
 
-// TODO: Linux has this strange notion of saving interrupts in local
-// variable and passing varible name instead of address here.
-// Although omnipresent occurence of this idiom makes it easily-recognizable,
-// it is still not the most consise way. Is there actual reason for not using
-// function and passing address to it?
+// NOTE: Linux uses strange-looking idiom where irq_save is implemented as
+// macro. This is due to some strangness of SPARC architecture which
+// we have to plans to support so irq_save is implemenetd in more
+// C-y way
 static __nodiscard __forceinline cpuflags_t irq_save(void) {
     cpuflags_t flags = read_cpu_flags();
     cli();

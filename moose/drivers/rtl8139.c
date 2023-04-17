@@ -1,4 +1,4 @@
-#include <arch/amd64/idt.h>
+#include <arch/interrupts.h>
 #include <assert.h>
 #include <bitops.h>
 #include <drivers/io_resource.h>
@@ -43,6 +43,7 @@ static struct rtl8139 {
     u8 tx_index;
     u16 rx_offset;
     spinlock_t lock;
+    struct interrupt_handler irq;
 } __rtl8139;
 
 static void rtl8139_receive(struct rtl8139 *rtl8139) {
@@ -78,8 +79,9 @@ static void rtl8139_receive(struct rtl8139 *rtl8139) {
     }
 }
 
-static void rtl8139_handler(struct registers_state *) {
-    u16 status = port_in16(__rtl8139.io_addr + RTL_REG_INT_STATUS);
+static irqresult_t rtl8139_handler(void *dev, const struct registers_state *) {
+    struct rtl8139 *rtl8139 = dev;
+    u16 status = port_in16(rtl8139->io_addr + RTL_REG_INT_STATUS);
 
     if (status & RTL_RER || status & RTL_TER) {
         panic("rtl8139 tx/rx error\n");
@@ -90,10 +92,11 @@ static void rtl8139_handler(struct registers_state *) {
     }
 
     if (status & RTL_ROK) {
-        rtl8139_receive(&__rtl8139);
+        rtl8139_receive(rtl8139);
     }
 
-    port_out16(__rtl8139.io_addr + RTL_REG_INT_STATUS, RTL_TOK | RTL_ROK);
+    port_out16(rtl8139->io_addr + RTL_REG_INT_STATUS, RTL_TOK | RTL_ROK);
+    return IRQ_HANDLED;
 }
 
 static void read_mac_addr(struct rtl8139 *rtl8139) {
@@ -149,7 +152,12 @@ static void rtl8139_configure(struct rtl8139 *rtl8139) {
     port_out8(io_addr + RTL_REG_CMD, 0x0c);
 
     u8 isr = pci->interrupt_line;
-    register_isr(isr, rtl8139_handler);
+    rtl8139->irq =
+        (struct interrupt_handler){.number = isr,
+                                   .name = "rtl8139",
+                                   .dev = rtl8139,
+                                   .handle_interrupt = rtl8139_handler};
+    enable_interrupt(&rtl8139->irq);
 }
 
 int init_rtl8139(void) {
