@@ -89,7 +89,7 @@ general_protection_fault_handler(void *, const struct registers_state *) {
 }
 
 static void register_exception_handler(struct interrupt_handler *handler) {
-    list_add(&handler->list, &interrupts.isr_lists[handler->number]);
+    list_add(&handler->list, interrupts.isr_lists + handler->number);
 }
 
 void init_interrupts(void) {
@@ -124,11 +124,14 @@ void init_interrupts(void) {
 
 void isr_handler(struct registers_state *regs) {
     unsigned no = regs->isr_number;
-    struct interrupt_handler *handler;
-    list_for_each_entry(handler, &interrupts.isr_lists[no], list) {
-        irqresult_t result = handler->handle_interrupt(handler->dev, regs);
-        if (result == IRQ_HANDLED)
-            break;
+    if (spin_trylock(&interrupts.lock)) {
+        struct interrupt_handler *handler;
+        list_for_each_entry(handler, &interrupts.isr_lists[no], list) {
+            irqresult_t result = handler->handle_interrupt(handler->dev, regs);
+            if (result == IRQ_HANDLED)
+                break;
+        }
+        spin_unlock(&interrupts.lock);
     }
 
     eoi(no);
@@ -140,8 +143,13 @@ void isr_handler(struct registers_state *regs) {
 }
 
 void enable_interrupt(struct interrupt_handler *handler) {
+    spin_lock(&interrupts.lock);
     list_add(&handler->list, &interrupts.isr_lists[handler->number + 32]);
+    spin_unlock(&interrupts.lock);
 }
+
 void disable_interrupt(struct interrupt_handler *handler) {
-    (void)handler;
+    spin_lock(&interrupts.lock);
+    list_remove(&handler->list);
+    spin_unlock(&interrupts.lock);
 }

@@ -2,6 +2,7 @@
 #include <arch/amd64/memmap.h>
 #include <arch/amd64/virtmem.h>
 #include <arch/cpu.h>
+#include <arch/interrupts.h>
 #include <assert.h>
 #include <idle.h>
 #include <kstdio.h>
@@ -10,6 +11,7 @@
 #include <mm/physmem.h>
 #include <panic.h>
 #include <types.h>
+#include <arch/amd64/rtc.h>
 
 static void zero_bss(void) {
     extern u64 __bss_start;
@@ -30,7 +32,6 @@ static void init_memory(void) {
         usable_region_count += entry->type == MULTIBOOT_MEMORY_AVAILABLE;
     }
 
-    init_idt();
     struct mem_range *ranges = kmalloc(usable_region_count * sizeof(*ranges));
     expects(ranges);
     for (u32 i = 0, j = 0; i < memmap_size; ++i) {
@@ -57,6 +58,13 @@ __noreturn void kmain(void) {
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
     init_memory();
+    init_interrupts();
+    init_idt();
+    init_rtc();
+
+    for (;;) {
+        wait_for_int();
+    }
 
     /* if (launch_first_task(idle_task)) */
     /*     panic("failed to create idle task"); */
