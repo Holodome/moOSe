@@ -97,6 +97,7 @@ __used __noinline __naked void isr_common_stub(void) {
         "pushq %rbp\n"
         "pushq %rsi\n"
         "pushq %rdi\n"
+        "mov %rsp, %rdi\n"
         "cld\n"
         "call isr_handler\n"
         "popq %rdi\n"
@@ -212,6 +213,10 @@ void init_idt(void) {
     set_idt_entry(30, (u64)exception30);
     set_idt_entry(31, (u64)exception31);
 
+#define _ISR(_number) set_idt_entry(_number, (u64)isr##_number);
+    ENUMERATE_ISRS
+#undef _ISR
+
     // Remap the PIC
     port_out8(0x20, 0x11);
     port_out8(0xA0, 0x11);
@@ -224,10 +229,6 @@ void init_idt(void) {
     port_out8(0x21, 0x0);
     port_out8(0xA1, 0x0);
 
-    // Install the IRQs
-#define _ISR(_number) set_idt_entry(_number, (u64)isr##_number);
-    ENUMERATE_ISRS
-#undef _ISR
 
     load_idt();
     sti();

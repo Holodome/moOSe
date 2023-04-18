@@ -3,8 +3,10 @@
 #include <panic.h>
 #include <sched/process.h>
 
+static struct process current_proxy;
 static struct scheduler scheduler_ = {
-    .process_list = INIT_LIST_HEAD(scheduler_.process_list)};
+    .process_list = INIT_LIST_HEAD(scheduler_.process_list),
+    .current = &current_proxy};
 static struct scheduler *__scheduler = &scheduler_;
 
 __used static struct file *get_file(struct process *p, int fd) {
