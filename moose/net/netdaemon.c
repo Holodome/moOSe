@@ -18,7 +18,7 @@ struct daemon_queue {
 
 static struct daemon_queue *queue;
 
-__noreturn static void net_daemon_task(void *) {
+__noreturn static void net_daemon_task(void *arg __unused) {
     cpuflags_t flags;
     for (;;) {
         flags = write_lock_irqsave(&queue->lock);

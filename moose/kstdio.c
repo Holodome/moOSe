@@ -10,11 +10,11 @@ struct printf_opts {
     char padding_char;
     int base;
     int precision;
-    int is_left_aligned : 1;
-    int is_plus_char : 1;
-    int is_hex_uppercase : 1;
-    int has_precision : 1;
-    int force_prefix : 1;
+    unsigned is_left_aligned : 1;
+    unsigned is_plus_char : 1;
+    unsigned is_hex_uppercase : 1;
+    unsigned has_precision : 1;
+    unsigned force_prefix : 1;
 };
 
 #define outc(_buffer, _size, _counter, _c)                                     \

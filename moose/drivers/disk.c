@@ -15,29 +15,32 @@ struct blk_device *disk_part1_dev = &disk_part1_dev_;
 static u32 partition_start;
 static u32 partition1_start;
 
-static int disk_read_block(struct blk_device *, size_t idx, void *buf) {
+static int disk_read_block(struct blk_device *dev __unused, size_t idx,
+                           void *buf) {
     return ata_read_block(idx, buf);
 }
 
-static int disk_write_block(struct blk_device *, size_t idx, const void *buf) {
+static int disk_write_block(struct blk_device *dev __unused, size_t idx,
+                            const void *buf) {
     return ata_write_block(idx, buf);
 }
 
-static int partition_read_block(struct blk_device *, size_t idx, void *buf) {
+static int partition_read_block(struct blk_device *dev __unused, size_t idx,
+                                void *buf) {
     return ata_read_block(idx + partition_start, buf);
 }
 
-static int partition_write_block(struct blk_device *, size_t idx,
+static int partition_write_block(struct blk_device *dev __unused, size_t idx,
                                  const void *buf) {
     return ata_write_block(idx + partition_start, buf);
 }
 
-static int partition1_read_block(struct blk_device *, size_t idx, void *buf) {
-    /* kprintf("reading %zu (%zx)\n", idx, (idx + partition1_start) * 512); */
+static int partition1_read_block(struct blk_device *dev __unused, size_t idx,
+                                 void *buf) {
     return ata_read_block(idx + partition1_start, buf);
 }
 
-static int partition1_write_block(struct blk_device *, size_t idx,
+static int partition1_write_block(struct blk_device *dev __unused, size_t idx,
                                   const void *buf) {
     return ata_write_block(idx + partition1_start, buf);
 }

@@ -31,7 +31,8 @@ struct debug_registers {
 
 static_assert(sizeof(struct debug_registers) == 0xa8);
 
-static __noinline __naked void get_registers(struct debug_registers *r __unused) {
+static __noinline __naked void
+get_registers(struct debug_registers *r __unused) {
     asm volatile("pushq %rax\n"
                  "movq %rdi, %rax\n"
                  "movq %rdi, 0x0(%rax)\n"
