@@ -79,7 +79,8 @@ static void rtl8139_receive(struct rtl8139 *rtl8139) {
     }
 }
 
-static irqresult_t rtl8139_handler(void *dev, const struct registers_state *) {
+static irqresult_t rtl8139_handler(void *dev,
+                                   const struct registers_state *r __unused) {
     struct rtl8139 *rtl8139 = dev;
     u16 status = port_in16(rtl8139->io_addr + RTL_REG_INT_STATUS);
 
