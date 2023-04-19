@@ -21,7 +21,7 @@ static struct {
 // TODO: These should send signal to current process if we are
 // in user mode and __abort_in_handler the kernel otherwise
 // TODO: Print registers_state instead of registers that __abort_in_handler gets
-static irqresult_t division_by_zero_handler(void *,
+static irqresult_t division_by_zero_handler(void *dev __unused,
                                             const struct registers_state *r) {
     __abort_in_handler("division by zero");
 }
@@ -32,67 +32,77 @@ static irqresult_t division_by_zero_handler(void *,
 // clang-format on
 
 static irqresult_t
-illegal_instruction_handler(void *, const struct registers_state *r) {
+illegal_instruction_handler(void *dev __unused,
+                            const struct registers_state *r) {
     __abort_in_handler("illegal instruction");
 }
 
-static irqresult_t page_fault_handler(void *, const struct registers_state *r) {
+static irqresult_t page_fault_handler(void *dev __unused,
+                                      const struct registers_state *r) {
     __abort_in_handler("page fault at address: %#018lx", read_cr2());
 }
 
 // TODO: This has to be somewhere x86-specific
-static irqresult_t debug_exception_handler(void *,
+static irqresult_t debug_exception_handler(void *dev __unused,
                                            const struct registers_state *r) {
     __abort_in_handler("debug exception");
 }
 
-static irqresult_t nmi_handler(void *, const struct registers_state *r) {
+static irqresult_t nmi_handler(void *arg __unused,
+                               const struct registers_state *r) {
     __abort_in_handler("nmi");
 }
 
-static irqresult_t breakpoint_handler(void *, const struct registers_state *r) {
+static irqresult_t breakpoint_handler(void *dev __unused,
+                                      const struct registers_state *r) {
     __abort_in_handler("breakpoint");
 }
 
-static irqresult_t into_handler(void *, const struct registers_state *r) {
+static irqresult_t into_handler(void *dev __unused,
+                                const struct registers_state *r) {
     __abort_in_handler("into");
 }
 
-static irqresult_t out_of_bounds_handler(void *,
+static irqresult_t out_of_bounds_handler(void *dev __unused,
                                          const struct registers_state *r) {
     __abort_in_handler("out of bounds");
 }
 
-static irqresult_t no_fpu_handler(void *, const struct registers_state *r) {
+static irqresult_t no_fpu_handler(void *dev __unused,
+                                  const struct registers_state *r) {
     __abort_in_handler("no fpu");
 }
 
-static irqresult_t double_fault_handler(void *,
+static irqresult_t double_fault_handler(void *dev __unused,
                                         const struct registers_state *r) {
     __abort_in_handler("double fault");
 }
 
 static irqresult_t
-fpu_segment_overrun_handler(void *, const struct registers_state *r) {
+fpu_segment_overrun_handler(void *dev __unused,
+                            const struct registers_state *r) {
     __abort_in_handler("fpu segment overrun");
 }
 
-static irqresult_t bad_tss_handler(void *, const struct registers_state *r) {
+static irqresult_t bad_tss_handler(void *dev __unused,
+                                   const struct registers_state *r) {
     __abort_in_handler("bad tss segmnet");
 }
 
 static irqresult_t
-segment_not_present_handler(void *, const struct registers_state *r) {
+segment_not_present_handler(void *dev __unused,
+                            const struct registers_state *r) {
     __abort_in_handler("segment not present");
 }
 
-static irqresult_t stack_fault_handler(void *,
+static irqresult_t stack_fault_handler(void *dev __unused,
                                        const struct registers_state *r) {
     __abort_in_handler("stack fault");
 }
 
 static irqresult_t
-general_protection_fault_handler(void *, const struct registers_state *r) {
+general_protection_fault_handler(void *dev __unused,
+                                 const struct registers_state *r) {
     __abort_in_handler("general protection fault");
 }
 
