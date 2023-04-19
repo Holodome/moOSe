@@ -34,7 +34,8 @@ static void cmos_write(u8 idx, u8 data) {
     port_out8(0x71, data);
 }
 
-static irqresult_t timer_interrupt(void *, const struct registers_state *) {
+static irqresult_t timer_interrupt(void *dev __unused,
+                                   const struct registers_state *r __unused) {
     ++jiffies;
     (void)cmos_read(0x0c);
 
