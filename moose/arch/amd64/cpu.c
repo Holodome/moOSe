@@ -107,55 +107,34 @@ void init_process_registers(struct registers_state *regs, void (*fn)(void *),
 
 __naked __noinline void switch_process(struct process *from __unused,
                                        struct process *to __unused) {
-    asm volatile("pushq %r15\n"
-                 "pushq %r14\n"
-                 "pushq %r13\n"
-                 "pushq %r12\n"
-                 "pushq %r11\n"
-                 "pushq %r10\n"
-                 "pushq %r9\n"
-                 "pushq %r8\n"
-                 "pushq %rax\n"
-                 "pushq %rcx\n"
-                 "pushq %rdx\n"
-                 "pushq %rbx\n"
-                 "pushq %rsp\n"
-                 "pushq %rbp\n"
-                 "pushq %rsi\n"
-                 "pushq %rdi\n"
+    // here we only save registers that are preserved accross function call
+    // boundaries in system v abi
+    asm volatile("movq %rbp, 0x10(%rdi)\n"
+                 "movq %rsp, 0x18(%rdi)\n"
+                 "movq %rbx, 0x20(%rdi)\n"
+                 "movq %r12, 0x60(%rdi)\n"
+                 "movq %r13, 0x68(%rdi)\n"
+                 "movq %r14, 0x70(%rdi)\n"
+                 "movq %r15, 0x78(%rdi)\n"
                  "pushfq\n"
-                 "pushq %rbp\n"
-                 // save current stack
-                 "movq %rsp, 24(%rdi)\n"
-                 // save exit point for swithced-from process
-                 "leaq 1f(%rip), %rax\n"
-                 "movq %rax, 144(%rdi)\n"
-                 // load new stack
-                 "movq 24(%rsi), %rsp\n"
-                 /* "movq 160(%rsi), %rax\n" */
-                 /* "pushq %rax\n" */
-                 /* "popfq\n" */
-                 // imitate call to jump to curent process exit
-                 "pushq 144(%rsi)\n"
-                 "jmp switch_to\n"
-                 "1:\n"
-                 "popq %rbp\n"
-                 "popfq\n"
-                 "popq %rdi\n"
-                 "popq %rsi\n"
-                 "popq %rbp\n"
-                 "addq $8, %rsp\n"
-                 "popq %rbx\n"
-                 "popq %rdx\n"
-                 "popq %rcx\n"
                  "popq %rax\n"
-                 "popq %r8\n"
-                 "popq %r9\n"
-                 "popq %r10\n"
-                 "popq %r11\n"
-                 "popq %r12\n"
-                 "popq %r13\n"
-                 "popq %r14\n"
-                 "popq %r15\n"
+                 "movq %rax, 0xa0(%rdi)\n"
+                 "leaq 1f(%rip), %rax\n"
+                 "movq %rax, 0x90(%rdi)\n"
+
+                 "movq 0x18(%rsi), %rsp\n"
+                 "pushq 0x90(%rsi)\n"
+                 "jmp switch_to\n"
+
+                 "1:\n"
+                 "movq 0xa0(%rsi), %rax\n"
+                 "pushq %rax\n"
+                 "popfq\n"
+                 "movq 0x10(%rsi), %rbp\n"
+                 "movq 0x20(%rsi), %rbx\n"
+                 "movq 0x60(%rsi), %r12\n"
+                 "movq 0x68(%rsi), %r13\n"
+                 "movq 0x70(%rsi), %r14\n"
+                 "movq 0x80(%rsi), %r15\n"
                  "retq\n");
 }
