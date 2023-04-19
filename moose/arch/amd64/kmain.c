@@ -50,7 +50,7 @@ static void init_memory(void) {
         panic("failed to initialize virtual memory");
 }
 
-void other_task(void *) {
+void other_task(void *arg __unused) {
     for (;;) {
         kprintf("world\n");
         wait_for_int();
