@@ -1,6 +1,7 @@
 #include <arch/amd64/rtc.h>
 #include <arch/cpu.h>
 #include <arch/interrupts.h>
+#include <kstdio.h>
 #include <sched/process.h>
 #include <time.h>
 
@@ -35,7 +36,7 @@ static void cmos_write(u8 idx, u8 data) {
 
 static irqresult_t timer_interrupt(void *, const struct registers_state *) {
     ++jiffies;
-    (void)cmos_read(0x8c);
+    (void)cmos_read(0x0c);
 
     get_current()->needs_resched = 1;
     return IRQ_HANDLED;
@@ -48,8 +49,8 @@ void init_rtc(void) {
     u8 rate = RATE;
 
     irq_disable();
-    port_out8(0x70, 0x8a);
-    port_out8(0x71, 0x20);
+    (void)cmos_read(0x0c);
+    cmos_write(0x8a, 0x20);
 
     prev = cmos_read(0x8b);
     cmos_write(0x8b, prev | 0x40);

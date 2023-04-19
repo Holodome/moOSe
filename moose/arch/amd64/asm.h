@@ -8,15 +8,22 @@ static __forceinline void clac(void) {
     asm volatile("clac");
 }
 
+static __forceinline void nop(void) {
+    asm volatile("nop");
+}
+
 static __forceinline void hlt(void) {
     asm volatile("hlt");
 }
+
 static __forceinline void cli(void) {
     asm volatile("cli");
 }
+
 static __forceinline void sti(void) {
     asm volatile("sti");
 }
+
 static __forceinline void pause(void) {
     asm volatile("pause");
 }
@@ -49,19 +56,19 @@ static __forceinline void write_cr3(u64 value) {
 
 static __forceinline u32 read_randr(void) {
     u32 result;
-    asm("1:\n"
-        "rdrand %0\n"
-        "jnc 1b\n"
-        : "=r"(result)::"cc");
+    asm volatile("1:\n"
+                 "rdrand %0\n"
+                 "jnc 1b\n"
+                 : "=r"(result)::"cc");
     return result;
 }
 
 static __forceinline u32 read_rdseed(void) {
     u32 result;
-    asm("1:\n"
-        "rdseed %0\n"
-        "jnc 1b\n"
-        : "=r"(result)::"cc");
+    asm volatile("1:\n"
+                 "rdseed %0\n"
+                 "jnc 1b\n"
+                 : "=r"(result)::"cc");
     return result;
 }
 

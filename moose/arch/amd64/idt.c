@@ -81,57 +81,57 @@ void eoi(u8 irq) {
 }
 
 __used __noinline __naked void isr_common_stub(void) {
-    asm("pushq %r15\n"
-        "pushq %r14\n"
-        "pushq %r13\n"
-        "pushq %r12\n"
-        "pushq %r11\n"
-        "pushq %r10\n"
-        "pushq %r9\n"
-        "pushq %r8\n"
-        "pushq %rax\n"
-        "pushq %rcx\n"
-        "pushq %rdx\n"
-        "pushq %rbx\n"
-        "pushq %rsp\n"
-        "pushq %rbp\n"
-        "pushq %rsi\n"
-        "pushq %rdi\n"
-        "mov %rsp, %rdi\n"
-        "cld\n"
-        "call isr_handler\n"
-        "popq %rdi\n"
-        "popq %rsi\n"
-        "popq %rbp\n"
-        "addq $8, %rsp\n"
-        "popq %rbx\n"
-        "popq %rdx\n"
-        "popq %rcx\n"
-        "popq %rax\n"
-        "popq %r8\n"
-        "popq %r9\n"
-        "popq %r10\n"
-        "popq %r11\n"
-        "popq %r12\n"
-        "popq %r13\n"
-        "popq %r14\n"
-        "popq %r15\n"
-        /* account for pushed isr_number and exception_code */
-        "add $16, %rsp\n"
-        "iretq\n");
+    asm volatile("pushq %r15\n"
+                 "pushq %r14\n"
+                 "pushq %r13\n"
+                 "pushq %r12\n"
+                 "pushq %r11\n"
+                 "pushq %r10\n"
+                 "pushq %r9\n"
+                 "pushq %r8\n"
+                 "pushq %rax\n"
+                 "pushq %rcx\n"
+                 "pushq %rdx\n"
+                 "pushq %rbx\n"
+                 "pushq %rsp\n"
+                 "pushq %rbp\n"
+                 "pushq %rsi\n"
+                 "pushq %rdi\n"
+                 "mov %rsp, %rdi\n"
+                 "cld\n"
+                 "call isr_handler\n"
+                 "popq %rdi\n"
+                 "popq %rsi\n"
+                 "popq %rbp\n"
+                 "addq $8, %rsp\n"
+                 "popq %rbx\n"
+                 "popq %rdx\n"
+                 "popq %rcx\n"
+                 "popq %rax\n"
+                 "popq %r8\n"
+                 "popq %r9\n"
+                 "popq %r10\n"
+                 "popq %r11\n"
+                 "popq %r12\n"
+                 "popq %r13\n"
+                 "popq %r14\n"
+                 "popq %r15\n"
+                 /* account for pushed isr_number and exception_code */
+                 "add $16, %rsp\n"
+                 "iretq\n");
 }
 
 // clang-format off
 #define __define_exception_no_ec(_number)                                      \
     static __noinline __naked void exception##_number(void) {                  \
-        asm("pushq $0x00\n"                                                    \
+        asm volatile("pushq $0x00\n"                                                    \
             "pushq $" STRINGIFY(_number) "\n"                                  \
             "jmp isr_common_stub\n");                                          \
     }
 
 #define __define_exception_with_ec(_number)                                    \
     static __noinline __naked void exception##_number(void) {                  \
-        asm("pushq $" STRINGIFY(_number) "\n"                                  \
+        asm volatile("pushq $" STRINGIFY(_number) "\n"                                  \
             "jmp isr_common_stub\n");                                          \
     }
 
@@ -170,7 +170,7 @@ __define_exception_no_ec(31)
 
 #define _ISR(_number)                                                          \
     static __noinline __naked void isr##_number(void) {                        \
-        asm("pushq $0x00\n"                                                    \
+        asm volatile("pushq $0x00\n"                                                    \
             "pushq $" STRINGIFY(_number) "\n"                                  \
             "jmp isr_common_stub\n");                                          \
     }

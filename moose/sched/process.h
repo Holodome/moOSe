@@ -10,8 +10,6 @@
 #define PROCESS_MAX_FILES 256
 #define PROCESS_STACK_SIZE (4096 * 4)
 
-struct address_space {};
-
 enum process_state {
     PROCESS_RUNNING,
     PROCESS_SLEEPING,
@@ -37,13 +35,12 @@ struct process {
     pid_t ppid;
     mode_t umask;
 
-    struct address_space as;
     struct file *files[PROCESS_MAX_FILES];
     spinlock_t lock;
 
     struct list_head list;
 
-    union process_stack stack;
+    union process_stack *stack;
 };
 
 struct scheduler {
