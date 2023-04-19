@@ -21,3 +21,5 @@
 
 #define KERNEL_CS 8
 #define KERNEL_DS 16
+
+#define KERNEL_INITIAL_STACK 0x90000

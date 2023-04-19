@@ -11,7 +11,7 @@ __noreturn void ___panic(void);
     do {                                                                       \
         extern int kprintf(const char *, ...);                                 \
         kprintf("kernel panic:\n" __VA_ARGS__);                                \
-        kprintf("at " __FILE__ ":" STRINGIFY(__LINE__) " in function %s\n",    \
+        kprintf("\nat " __FILE__ ":" STRINGIFY(__LINE__) " in function %s\n",  \
                 __PRETTY_FUNCTION__);                                          \
         __panic();                                                             \
     } while (0)
@@ -20,7 +20,7 @@ __noreturn void ___panic(void);
     do {                                                                       \
         extern int kprintf(const char *, ...);                                 \
         kprintf("kernel panic:\n" __VA_ARGS__);                                \
-        kprintf("at " __FILE__ ":" STRINGIFY(__LINE__) " in function %s\n",    \
+        kprintf("\nat " __FILE__ ":" STRINGIFY(__LINE__) " in function %s\n",  \
                 __PRETTY_FUNCTION__);                                          \
         ___panic();                                                            \
     } while (0)

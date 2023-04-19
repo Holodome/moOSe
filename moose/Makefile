@@ -45,7 +45,6 @@ KERNEL_OBJS := \
 	$(D)/tty/vterm.o \
 	$(D)/blk_device.o \
 	$(D)/panic.o \
-	$(D)/idle.o \
 	$(D)/string.o \
 	$(D)/ctype.o \
 	$(D)/kstdio.o \

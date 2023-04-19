@@ -1,17 +1,17 @@
 #include <arch/amd64/idt.h>
 #include <arch/amd64/memmap.h>
+#include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
 #include <arch/cpu.h>
 #include <arch/interrupts.h>
 #include <assert.h>
-#include <idle.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
 #include <panic.h>
+#include <sched/process.h>
 #include <types.h>
-#include <arch/amd64/rtc.h>
 
 static void zero_bss(void) {
     extern u64 __bss_start;
@@ -50,6 +50,13 @@ static void init_memory(void) {
         panic("failed to initialize virtual memory");
 }
 
+void other_task(void *) {
+    for (;;) {
+        kprintf("world\n");
+        wait_for_int();
+    }
+}
+
 __noreturn void kmain(void) {
     zero_bss();
     init_kmalloc();
@@ -58,16 +65,17 @@ __noreturn void kmain(void) {
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
     init_memory();
+    init_scheduler();
     init_interrupts();
     init_idt();
     init_rtc();
 
+    launch_process("other", other_task, NULL);
+
     for (;;) {
+        kprintf("hello\n");
         wait_for_int();
     }
-
-    /* if (launch_first_task(idle_task)) */
-    /*     panic("failed to create idle task"); */
 
     halt_cpu();
 }

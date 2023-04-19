@@ -19,7 +19,7 @@
             unsigned long long: __builtin_popcountll)(_val);                   \
     })
 
-#define count_trailing_zeroes(_val)                                            \
+#define __count_trailing_zeroes(_val)                                          \
     ({                                                                         \
         static_assert(sizeof(_val) <= sizeof(unsigned long long));             \
         _Generic((_val),                                                       \
@@ -36,10 +36,10 @@
             unsigned long long: __builtin_ctzll)(_val);                        \
     })
 
-#define count_trailing_zeroes_safe(_val)                                       \
-    ((_val) == 0 : sizeof(_val) << 3 : count_trailing_zeroes(_val))
+#define count_trailing_zeroes(_val)                                            \
+    ((_val) == 0 : sizeof(_val) << 3 : __count_trailing_zeroes(_val))
 
-#define count_leading_zeroes(_val)                                             \
+#define __count_leading_zeroes(_val)                                           \
     ({                                                                         \
         static_assert(sizeof(_val) <= sizeof(unsigned long long));             \
         _Generic((_val),                                                       \
@@ -56,10 +56,10 @@
             unsigned long long: __builtin_clzll)(_val);                        \
     })
 
-#define count_leading_zeroes_safe(_val)                                        \
-    ((_val) == 0 ? sizeof(_val) << 3 : count_leading_zeroes(_val))
+#define count_leading_zeroes(_val)                                             \
+    ((_val) == 0 ? sizeof(_val) << 3 : __count_leading_zeroes(_val))
 
-#define bit_scan_forward(_val)                                                 \
+#define __bit_scan_forward(_val)                                               \
     ({                                                                         \
         static_assert(sizeof(_val) <= sizeof(unsigned long long));             \
         _Generic((_val),                                                       \
@@ -75,6 +75,8 @@
             long long: __builtin_ffsll,                                        \
             unsigned long long: __builtin_ffsll)(_val);                        \
     })
+
+#define bit_scan_forward_safe(_val) ((_val) == 0 ? 0 : __bit_scan_forward(_val))
 
 #define bit_scan_reverse(_val)                                                 \
     (((sizeof(_val) << 3) - count_leading_zeroes_safe(_val)))
@@ -102,14 +104,15 @@ static inline void clear_bit(u64 index, bitmap_t *bitmap) {
 }
 
 static inline u64 bitmap_first_clear(const bitmap_t *bitmap, u64 bit_count) {
-    u64 found = 0;
-    for (size_t i = 0; i < bit_count && !found; i += BITMAP_STRIDE) {
-        u64 biti = bit_scan_forward(bitmap[i / BITMAP_STRIDE]);
+    for (size_t i = 0;
+         i < DIV_ROUND_UP(bit_count, BITMAP_STRIDE) * BITMAP_STRIDE;
+         i += BITMAP_STRIDE) {
+        u64 biti = bit_scan_forward_safe(bitmap[i / BITMAP_STRIDE]);
         if (biti)
-            found = i + biti - 1;
+            return i + biti;
     }
 
-    return found;
+    return 0;
 }
 
 // align up power of 2

@@ -22,4 +22,4 @@ struct idt_reg {
 } __packed;
 
 void init_idt(void);
-void eoi(u8 num);
+__noinline void eoi(u8 num);

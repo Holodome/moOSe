@@ -10,12 +10,20 @@ static struct {
     spinlock_t lock;
 } interrupts;
 
+#define __abort_in_handler(...)                                                \
+    do {                                                                       \
+        kprintf(__VA_ARGS__);                                                  \
+        kprintf("\n");                                                         \
+        print_registers_state(r);                                              \
+        halt_cpu();                                                            \
+    } while (0)
+
 // TODO: These should send signal to current process if we are
-// in user mode and panic the kernel otherwise
-// TODO: Print registers_state instead of registers that panic gets
+// in user mode and __abort_in_handler the kernel otherwise
+// TODO: Print registers_state instead of registers that __abort_in_handler gets
 static irqresult_t division_by_zero_handler(void *,
-                                            const struct registers_state *) {
-    panic("division by zero");
+                                            const struct registers_state *r) {
+    __abort_in_handler("division by zero");
 }
 
 // NOTE: Because clang-format is f***ing stupid it does not understand
@@ -23,69 +31,69 @@ static irqresult_t division_by_zero_handler(void *,
 // indentation
 // clang-format on
 
-static irqresult_t illegal_instruction_handler(void *,
-                                               const struct registers_state *) {
-    panic("illegal instruction");
+static irqresult_t
+illegal_instruction_handler(void *, const struct registers_state *r) {
+    __abort_in_handler("illegal instruction");
 }
 
-static irqresult_t page_fault_handler(void *, const struct registers_state *) {
-    kprintf("address: %#018lx\n", read_cr2());
-    panic("page fault");
+static irqresult_t page_fault_handler(void *, const struct registers_state *r) {
+    __abort_in_handler("page fault at address: %#018lx", read_cr2());
 }
 
 // TODO: This has to be somewhere x86-specific
 static irqresult_t debug_exception_handler(void *,
-                                           const struct registers_state *) {
-    panic("debug exception");
+                                           const struct registers_state *r) {
+    __abort_in_handler("debug exception");
 }
 
-static irqresult_t nmi_handler(void *, const struct registers_state *) {
-    panic("nmi");
+static irqresult_t nmi_handler(void *, const struct registers_state *r) {
+    __abort_in_handler("nmi");
 }
 
-static irqresult_t breakpoint_handler(void *, const struct registers_state *) {
-    panic("breakpoint");
+static irqresult_t breakpoint_handler(void *, const struct registers_state *r) {
+    __abort_in_handler("breakpoint");
 }
 
-static irqresult_t into_handler(void *, const struct registers_state *) {
-    panic("into");
+static irqresult_t into_handler(void *, const struct registers_state *r) {
+    __abort_in_handler("into");
 }
 
 static irqresult_t out_of_bounds_handler(void *,
-                                         const struct registers_state *) {
-    panic("out of bounds");
+                                         const struct registers_state *r) {
+    __abort_in_handler("out of bounds");
 }
 
-static irqresult_t no_fpu_handler(void *, const struct registers_state *) {
-    panic("no fpu");
+static irqresult_t no_fpu_handler(void *, const struct registers_state *r) {
+    __abort_in_handler("no fpu");
 }
 
 static irqresult_t double_fault_handler(void *,
-                                        const struct registers_state *) {
-    panic("double fault");
-}
-
-static irqresult_t fpu_segment_overrun_handler(void *,
-                                               const struct registers_state *) {
-    panic("fpu segment overrun");
-}
-
-static irqresult_t bad_tss_handler(void *, const struct registers_state *) {
-    panic("bad tss segmnet");
-}
-
-static irqresult_t segment_not_present_handler(void *,
-                                               const struct registers_state *) {
-    panic("segment not present");
-}
-
-static irqresult_t stack_fault_handler(void *, const struct registers_state *) {
-    panic("stack fault");
+                                        const struct registers_state *r) {
+    __abort_in_handler("double fault");
 }
 
 static irqresult_t
-general_protection_fault_handler(void *, const struct registers_state *) {
-    panic("general protection fault");
+fpu_segment_overrun_handler(void *, const struct registers_state *r) {
+    __abort_in_handler("fpu segment overrun");
+}
+
+static irqresult_t bad_tss_handler(void *, const struct registers_state *r) {
+    __abort_in_handler("bad tss segmnet");
+}
+
+static irqresult_t
+segment_not_present_handler(void *, const struct registers_state *r) {
+    __abort_in_handler("segment not present");
+}
+
+static irqresult_t stack_fault_handler(void *,
+                                       const struct registers_state *r) {
+    __abort_in_handler("stack fault");
+}
+
+static irqresult_t
+general_protection_fault_handler(void *, const struct registers_state *r) {
+    __abort_in_handler("general protection fault");
 }
 
 static void register_exception_handler(struct interrupt_handler *handler) {
@@ -135,6 +143,7 @@ void isr_handler(struct registers_state *regs) {
     }
 
     eoi(no);
+    sti();
 
     if (get_current()->needs_resched) {
         get_current()->needs_resched = 0;

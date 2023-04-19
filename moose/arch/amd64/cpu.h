@@ -69,7 +69,7 @@ static __forceinline void irq_restore(cpuflags_t flags) {
 }
 
 // Using port 80 to wait 1us
-static inline void io_wait(void) {
+static __forceinline void io_wait(void) {
     port_out32(0x80, 0);
 }
 
@@ -85,3 +85,5 @@ static inline void io_wait(void) {
 
 void init_process_registers(struct registers_state *regs, void (*fn)(void *),
                             void *arg, u64 stack_end);
+
+void print_registers_state(const struct registers_state *state);
