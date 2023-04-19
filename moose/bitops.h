@@ -119,10 +119,8 @@ static inline u64 bitmap_first_clear(const bitmap_t *bitmap, u64 bit_count) {
 #define align_po2(_val, _align)                                                \
     ({                                                                         \
         __auto_type __x0 = (_val);                                             \
-        typeof(__x0) __align0 = (_align);                                      \
-        __x0 += __align0 - 1;                                                  \
-        __x0 &= ~(__align0 - 1);                                               \
-        __x0;                                                                  \
+        typeof(__x0) __align0 = (_align)-1;                                    \
+        (__x0 + __align0) & ~__align0;                                         \
     })
 
 #define align_po2_safe(_val, _align)                                           \
