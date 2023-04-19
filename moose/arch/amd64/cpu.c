@@ -31,7 +31,7 @@ struct debug_registers {
 
 static_assert(sizeof(struct debug_registers) == 0xa8);
 
-static __noinline __naked void get_registers(struct debug_registers *) {
+static __noinline __naked void get_registers(struct debug_registers *r __unused) {
     asm volatile("pushq %rax\n"
                  "movq %rdi, %rax\n"
                  "movq %rdi, 0x0(%rax)\n"
@@ -104,7 +104,8 @@ void init_process_registers(struct registers_state *regs, void (*fn)(void *),
     regs->rdi = (u64)arg;
 }
 
-__naked __noinline void switch_process(struct process *, struct process *) {
+__naked __noinline void switch_process(struct process *from __unused,
+                                       struct process *to __unused) {
     asm volatile("pushq %r15\n"
                  "pushq %r14\n"
                  "pushq %r13\n"
