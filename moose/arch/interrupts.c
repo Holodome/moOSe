@@ -155,10 +155,8 @@ void isr_handler(struct registers_state *regs) {
     eoi(no);
     sti();
 
-    if (get_current()->needs_resched) {
-        get_current()->needs_resched = 0;
+    if (eat_should_invoke_schedulerer())
         schedule();
-    }
 }
 
 void enable_interrupt(struct interrupt_handler *handler) {

@@ -168,15 +168,46 @@ static __forceinline void cpuid(u32 func, u32 ecx, struct cpuid *id) {
                  : "a"(func), "c"(ecx));
 }
 
-static __forceinline u64 read_gs(u32 offset) {
-    u64 result;
-    asm volatile("movq %%gs:%a[off], %[val]"
-                 : [val] "=r"(result)
-                 : [off] "ir"(offset));
-    return result;
+// clang-format off
+#define __read_gs(_n, _l)                                                      \
+    static __forceinline __nodiscard u##_n read_gs##_n(u32 offset) {           \
+        u##_n result;                                                          \
+        asm volatile("mov" _l " %%gs:%a[off], %[val]"                          \
+                     : [val] "=r"(result)                                      \
+                     : [off] "ir"(offset));                                    \
+        return result;                                                         \
+    }
+
+__read_gs(8, "b") 
+__read_gs(16, "w") 
+__read_gs(32, "l") 
+__read_gs(64, "q")
+
+#undef __read_gs
+
+static __forceinline __nodiscard void *read_gs_ptr(u32 offset) {
+    return (void *)(uintptr_t)read_gs64(offset);
 }
 
-static __forceinline void write_gs(u32 offset, u64 value) {
-    asm volatile(
-        "movq %[val], %%gs:%a[off]" ::[off] "ir"(offset), [val] "r"(value));
+#define read_gs_int read_gs32
+
+#define __write_gs(_n, _l)                                                     \
+    static __forceinline void write_gs##_n(u32 offset, u##_n value) {          \
+        asm volatile("mov" _l " %[val], %%gs:%a[off]" ::[off] "ir"(offset),    \
+                     [val] "r"(value));                                        \
+    }
+
+__write_gs(8, "b")
+__write_gs(16, "w")
+__write_gs(32, "l")
+__write_gs(64, "q")
+
+#undef __write_gs
+
+static __forceinline void write_gs_ptr(u32 offset, const void *ptr){ 
+    write_gs64(offset, (u64)(uintptr_t)ptr);
 }
+
+#define write_gs_int write_gs32
+
+// clang-format on

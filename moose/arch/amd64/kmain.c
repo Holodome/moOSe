@@ -48,6 +48,8 @@ static void init_memory(void) {
 
     if (init_virt_mem(ranges, usable_region_count))
         panic("failed to initialize virtual memory");
+
+    init_percpu();
 }
 
 void other_task(void *arg __unused) {

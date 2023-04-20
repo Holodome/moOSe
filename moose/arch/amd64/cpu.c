@@ -1,7 +1,17 @@
 #include <arch/amd64/asm.h>
 #include <arch/cpu.h>
+#include <assert.h>
 #include <kstdio.h>
+#include <mm/kmalloc.h>
 #include <sched/process.h>
+
+#define MSR_EFER 0xc0000080
+#define MSR_STAR 0xc0000081
+#define MSR_LSTAR 0xc0000082
+#define MSR_SFMASK 0xc0000084
+#define MSR_FS_BASE 0xc0000100
+#define MSR_GS_BASE 0xc0000101
+#define MSR_IA32_EFER 0xc0000080
 
 struct process;
 
@@ -123,4 +133,14 @@ __naked __noinline void switch_process(struct process *from __unused,
                  [rip_off] "i"(offsetof(struct process, execution_state.rip))
                  : "memory", "cc", "rcx", "rbx", "rdx", "r8", "r9", "r10",
                    "r11", "r12", "r13", "r14", "r15");
+}
+
+void init_percpu(void) {
+    // TODO: This is certainly not nice
+    extern struct process idle_process;
+    struct percpu *percpu = kzalloc(sizeof(*percpu));
+    expects(percpu);
+    percpu->this = percpu;
+    percpu->current = &idle_process;
+    write_msr(MSR_GS_BASE, (u64)percpu);
 }

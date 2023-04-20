@@ -6,12 +6,11 @@
 #include <sched/process.h>
 #include <string.h>
 
-static struct process idle_process = {
+struct process idle_process = {
     .name = "idle", .umask = 0666, .lock = INIT_SPIN_LOCK()};
 static struct scheduler scheduler_ = {
     .lock = INIT_SPIN_LOCK(),
-    .process_list = INIT_LIST_HEAD(scheduler_.process_list),
-    .current = &idle_process};
+    .process_list = INIT_LIST_HEAD(scheduler_.process_list)};
 static struct scheduler *__scheduler = &scheduler_;
 
 __used static struct file *get_file(struct process *p, int fd) {
@@ -104,26 +103,10 @@ void schedule(void) {
         context_switch(current, next);
 }
 
-void preempt_disable(void) {
-    atomic_inc(&__scheduler->preempt_count);
-}
-
-void preempt_enable(void) {
-    expects(get_preempt_count());
-    atomic_dec(&__scheduler->preempt_count);
-}
-
-int get_preempt_count(void) {
-    return atomic_read(&__scheduler->preempt_count);
-}
-
 // called from switch_process to finalize switching after stack and pc
 // have been changed
 void switch_to(struct process *from, struct process *to) {
-    __scheduler->current = to;
+    set_current(to);
     (void)from;
 }
 
-struct process *get_current(void) {
-    return __scheduler->current;
-}

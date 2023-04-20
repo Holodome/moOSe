@@ -39,7 +39,7 @@ static irqresult_t timer_interrupt(void *dev __unused,
     ++jiffies;
     (void)cmos_read(0x0c);
 
-    get_current()->needs_resched = 1;
+    set_invoke_schedulerer_async();
     return IRQ_HANDLED;
 }
 
