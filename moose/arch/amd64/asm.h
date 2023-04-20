@@ -167,3 +167,16 @@ static __forceinline void cpuid(u32 func, u32 ecx, struct cpuid *id) {
                  : "=a"(id->eax), "=b"(id->ebx), "=c"(id->ecx), "=d"(id->edx)
                  : "a"(func), "c"(ecx));
 }
+
+static __forceinline u64 read_gs(u32 offset) {
+    u64 result;
+    asm volatile("movq %%gs:%a[off], %[val]"
+                 : [val] "=r"(result)
+                 : [off] "ir"(offset));
+    return result;
+}
+
+static __forceinline void write_gs(u32 offset, u64 value) {
+    asm volatile(
+        "movq %[val], %%gs:%a[off]" ::[off] "ir"(offset), [val] "r"(value));
+}

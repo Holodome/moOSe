@@ -1,6 +1,7 @@
 #include <arch/amd64/asm.h>
 #include <arch/cpu.h>
 #include <kstdio.h>
+#include <sched/process.h>
 
 struct process;
 
@@ -106,36 +107,20 @@ void init_process_registers(struct registers_state *regs, void (*fn)(void *),
 
 __naked __noinline void switch_process(struct process *from __unused,
                                        struct process *to __unused) {
-    // here we only save registers that are preserved accross function call
-    // boundaries in system v abi
-    // TODO: Do we need to save registers? They seem to be all clobbered
-    // across switch_process anyway
-    asm volatile("movq %rsp, 0x18(%rdi)\n"
-                 "movq %rbp, 0x10(%rdi)\n"
-                 "movq %rbx, 0x20(%rdi)\n"
-                 "movq %r12, 0x60(%rdi)\n"
-                 "movq %r13, 0x68(%rdi)\n"
-                 "movq %r14, 0x70(%rdi)\n"
-                 "movq %r15, 0x78(%rdi)\n"
-                 "pushfq\n"
-                 "popq %rax\n"
-                 "movq %rax, 0xa0(%rdi)\n"
-                 "leaq 1f(%rip), %rax\n"
-                 "movq %rax, 0x90(%rdi)\n"
+    // here we explicitly clobber all the registers to save us from saving them
+    asm volatile("movq %%rsp, %P[rsp_off](%%rdi)\n"
+                 "leaq 1f(%%rip), %%rax\n"
+                 "movq %%rax, %P[rip_off](%%rdi)\n"
 
-                 "movq 0x18(%rsi), %rsp\n"
-                 "pushq 0x90(%rsi)\n"
+                 "movq %P[rsp_off](%%rsi), %%rsp\n"
+                 "pushq %P[rip_off](%%rsi)\n"
                  "jmp switch_to\n"
 
                  "1:\n"
-                 "movq 0xa0(%rsi), %rax\n"
-                 "pushq %rax\n"
-                 "popfq\n"
-                 "movq 0x10(%rsi), %rbp\n"
-                 "movq 0x20(%rsi), %rbx\n"
-                 "movq 0x60(%rsi), %r12\n"
-                 "movq 0x68(%rsi), %r13\n"
-                 "movq 0x70(%rsi), %r14\n"
-                 "movq 0x80(%rsi), %r15\n"
-                 "retq\n");
+                 "retq\n"
+
+                 ::[rsp_off] "i"(offsetof(struct process, execution_state.rsp)),
+                 [rip_off] "i"(offsetof(struct process, execution_state.rip))
+                 : "memory", "cc", "rcx", "rbx", "rdx", "r8", "r9", "r10",
+                   "r11", "r12", "r13", "r14", "r15");
 }
