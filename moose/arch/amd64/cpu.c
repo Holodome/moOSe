@@ -99,7 +99,6 @@ void init_process_registers(struct registers_state *regs, void (*fn)(void *),
                             void *arg, u64 stack_end) {
     regs->rip = (u64)fn;
     regs->rflags = read_cpu_flags() & ~X86_FLAGS_IF;
-    kprintf("initial flags: %d\n", __IRQS_DISABLED(regs->rflags));
     regs->rsp = stack_end;
     regs->rbp = stack_end;
     regs->rdi = (u64)arg;
@@ -109,8 +108,10 @@ __naked __noinline void switch_process(struct process *from __unused,
                                        struct process *to __unused) {
     // here we only save registers that are preserved accross function call
     // boundaries in system v abi
-    asm volatile("movq %rbp, 0x10(%rdi)\n"
-                 "movq %rsp, 0x18(%rdi)\n"
+    // TODO: Do we need to save registers? They seem to be all clobbered
+    // across switch_process anyway
+    asm volatile("movq %rsp, 0x18(%rdi)\n"
+                 "movq %rbp, 0x10(%rdi)\n"
                  "movq %rbx, 0x20(%rdi)\n"
                  "movq %r12, 0x60(%rdi)\n"
                  "movq %r13, 0x68(%rdi)\n"

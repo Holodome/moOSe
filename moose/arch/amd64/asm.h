@@ -142,3 +142,28 @@ static __forceinline u64 read_cpu_flags(void) {
                  : "=rm"(flags)::"memory");
     return flags;
 }
+
+static __forceinline u64 read_msr(u32 msr) {
+    u32 lo, hi;
+    asm volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(msr));
+    return ((u64)hi << 32) | lo;
+}
+
+static __forceinline void write_msr(u32 msr, u64 value) {
+    u32 lo = value & 0xffffffff;
+    u32 hi = value >> 32;
+    asm volatile("wrmsr" ::"a"(lo), "d"(hi), "c"(msr));
+}
+
+struct cpuid {
+    u32 eax;
+    u32 ebx;
+    u32 ecx;
+    u32 edx;
+};
+
+static __forceinline void cpuid(u32 func, u32 ecx, struct cpuid *id) {
+    asm volatile("cpuid"
+                 : "=a"(id->eax), "=b"(id->ebx), "=c"(id->ecx), "=d"(id->edx)
+                 : "a"(func), "c"(ecx));
+}
