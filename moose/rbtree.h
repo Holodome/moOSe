@@ -14,7 +14,6 @@ struct rb_node {
     struct rb_node *right;
 };
 
-#define rb_parent(_ptr) ((struct rb_node *)((_ptr)->parent__color & ~1))
 #define rb_entry(_ptr, _type, _member) container_of(_ptr, _type, _member)
 #define rb_entry_safe(_ptr, _type, _member)                                    \
     ({                                                                         \
@@ -33,5 +32,6 @@ static __forceinline void rb_link_node(struct rb_node *node,
     node->left = node->right = NULL;
 }
 
-void rb_insert_color(struct rb_node *node, struct rb_node *root);
-void rb_erase(struct rb_node *node, struct rb_node *root);
+void rb_insert_color(struct rb_node *node, struct rb_node **root);
+void rb_erase(struct rb_node *node, 
+                    struct rb_node **root);

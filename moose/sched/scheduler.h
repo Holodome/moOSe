@@ -1,10 +1,22 @@
-#pragma once 
+#pragma once
 
 #include <bitops.h>
-#include <sched/locks.h>
 #include <list.h>
+#include <rbtree.h>
+#include <sched/locks.h>
 
 #define MAX_PROCESSES 256
+#define PRIO_COUNT 40
+
+struct runqueue_rank {
+    struct rb_node *root;
+    struct rb_node *leftmost;
+    size_t count;
+};
+
+struct runqueue {
+    struct runqueue_rank runqueues[PRIO_COUNT];
+};
 
 struct scheduler {
     bitmap_t pid_bitmap[BITS_TO_BITMAP(MAX_PROCESSES)];
