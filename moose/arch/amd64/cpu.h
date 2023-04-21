@@ -136,16 +136,16 @@ static __forceinline void preempt_enable(void) {
     atomic_dec(&percpu->preempt_count);
 }
 
-static __forceinline void set_invoke_schedulerer_async(void) {
+static __forceinline void set_invoke_scheduler_async(void) {
     write_gs_int(offsetof(struct percpu, should_invoke_scheduler), 1);
 }
 
-static __forceinline int eat_should_invoke_schedulerer(void) {
-    int should_invoke_schedulerer =
+static __forceinline int eat_should_invoke_scheduler(void) {
+    int should_invoke_scheduler =
         read_gs_int(offsetof(struct percpu, should_invoke_scheduler));
-    if (should_invoke_schedulerer) {
+    if (should_invoke_scheduler) {
         write_gs_int(offsetof(struct percpu, should_invoke_scheduler), 0);
     }
 
-    return should_invoke_schedulerer;
+    return should_invoke_scheduler;
 }

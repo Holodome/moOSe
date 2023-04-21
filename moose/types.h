@@ -3,7 +3,7 @@
 #include <arch/amd64/types.h>
 
 #define static_assert(_x) _Static_assert(_x, #_x)
-#define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(*_arr))
+#define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(*(_arr)))
 #define offsetof(_struct, _field) ((size_t)(&((_struct *)(0))->_field))
 #define container_of(_ptr, _type, _member)                                     \
     ({                                                                         \
@@ -16,7 +16,8 @@
 
 #define __forceinline inline __attribute__((always_inline))
 #define __nodiscard __attribute__((warn_unused_result))
-#define __unlikely(_x) __builtin_expect(_x, 0)
+#define __unlikely(_x) __builtin_expect(!!(_x), 0)
+#define __likely(_x) __builtin_expect(!(_x), 0)
 #define __unused __attribute__((unused))
 #define __used __attribute__((used))
 #define __aligned(_x) __attribute__((aligned(_x)))

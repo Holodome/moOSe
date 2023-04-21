@@ -103,12 +103,6 @@ void *memmove(void *dst, const void *src, size_t c) {
             to[i] = from[i];
         return dst;
     }
-    if (from > to && from - to < (int)c) {
-        size_t i;
-        for (i = 0; i < c; i++)
-            to[i] = from[i];
-        return dst;
-    }
     memcpy(dst, src, c);
     return dst;
 }

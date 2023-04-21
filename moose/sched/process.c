@@ -78,11 +78,6 @@ void launch_process(const char *name, void (*function)(void *), void *arg) {
 static void context_switch(struct process *from, struct process *to) {
     (void)from;
     (void)to;
-    /* kprintf("switching from pid=%d rip=%lx rsp=%lx\n", from->pid, */
-    /*         from->execution_state.rip, from->execution_state.rsp); */
-    /* kprintf("switching to pid=%d rip=%lx rsp=%lx\n", to->pid, */
-    /*         to->execution_state.rip, to->execution_state.rsp); */
-    // for(;;);
     switch_process(from, to);
 }
 

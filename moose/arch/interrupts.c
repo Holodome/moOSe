@@ -155,7 +155,7 @@ void isr_handler(struct registers_state *regs) {
     eoi(no);
     sti();
 
-    if (eat_should_invoke_schedulerer())
+    if (eat_should_invoke_scheduler())
         schedule();
 }
 
