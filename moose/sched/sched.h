@@ -8,13 +8,23 @@
 #define MAX_PROCESSES 256
 #define PROCESS_MAX_FILES 256
 #define PROCESS_STACK_SIZE (4096 * 4)
+#define DEFAULT_TIMESLICE 10
 
 #define MAX_NICE 19
 #define MIN_NICE -20
-#define MAX_PRIO 40
+#define MAX_PRIO 39
 
-#define prio_to_nice(_prio) (-(int)(_prio) + 20)
-#define nice_to_prio(_nice) (-(int)(_nice) + 20)
+#define prio_to_nice(_prio) ((int)(_prio)-20)
+#define nice_to_prio(_nice) (u32)((int)(_nice) + 20)
+
+struct process_sched_info {
+    int nice;
+    u32 timeslice;
+    u32 prio;
+
+    u64 current_time;
+    u64 timeslice_start_jiffies;
+};
 
 struct runqueue {
     bitmap_t bitmap[BITS_TO_BITMAP(MAX_PRIO)];
@@ -31,8 +41,10 @@ struct scheduler {
 
 enum process_state {
     PROCESS_RUNNING,
-    PROCESS_SLEEPING,
-    PROCESS_DEAD
+    PROCESS_INTERRUPTIBLE,
+    PROCESS_UNINTERRUPTIBLE,
+    PROCESS_STOPPED,
+    PROCESS_ZOMBIE
 };
 
 struct process_info {
@@ -46,19 +58,21 @@ union process_stack {
 
 struct process {
     struct registers_state execution_state;
+    struct process_sched_info sched;
+
     const char *name;
 
     enum process_state state;
     pid_t pid;
     pid_t ppid;
     mode_t umask;
-
     struct file *files[PROCESS_MAX_FILES];
-    spinlock_t lock;
 
     struct list_head list;
+    struct list_head sched_list;
 
     union process_stack *stack;
+    spinlock_t lock;
 };
 
 void init_scheduler(void);

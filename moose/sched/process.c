@@ -13,4 +13,3 @@ __used static int allocate_fd(struct process *p) {
     }
     return result;
 }
-

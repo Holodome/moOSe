@@ -1,3 +1,4 @@
+#include <arch/jiffies.h>
 #include <assert.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
@@ -14,7 +15,7 @@ static struct scheduler scheduler_ = {
 static struct scheduler *__scheduler = &scheduler_;
 
 static pid_t alloc_pid(struct scheduler *scheduler) {
-    u64 bit = bitmap_first_clear(scheduler->pid_bitmap, MAX_PROCESSES);
+    u64 bit = bitmap_first_set(scheduler->pid_bitmap, MAX_PROCESSES);
     if (!bit)
         panic("max count of processes reached");
 
@@ -38,7 +39,13 @@ static void init_idle_stack(void) {
     list_add(&idle_process.list, &__scheduler->process_list);
 }
 
+static void init_rq(void) {
+    for (size_t i = 0; i < ARRAY_SIZE(__scheduler->rq.ranks); ++i)
+        init_list_head(__scheduler->rq.ranks + i);
+}
+
 void init_scheduler(void) {
+    init_rq();
     memset(__scheduler->pid_bitmap, 0xff, sizeof(__scheduler->pid_bitmap));
     clear_bit(0, __scheduler->pid_bitmap);
     init_idle_stack();
@@ -65,21 +72,62 @@ static void context_switch(struct process *from, struct process *to) {
     switch_process(from, to);
 }
 
+static int update_current(struct process *current) {
+    struct process_sched_info *si = &current->sched;
+    u64 jiffies = get_jiffies();
+    u64 expired = jiffies - si->timeslice_start_jiffies;
+    // we have used timeslice
+    if (expired > si->timeslice && current->state == PROCESS_RUNNING) {
+        u32 old_prio = si->prio;
+        if (__unlikely(si->prio == MAX_PRIO)) {
+            si->prio = nice_to_prio(si->nice);
+            si->timeslice <<= 1;
+        } else {
+            ++si->prio;
+        }
+
+        list_remove(&current->sched_list);
+        if (list_is_empty(__scheduler->rq.ranks + old_prio))
+            clear_bit(old_prio, __scheduler->rq.bitmap);
+        list_add_tail(&current->sched_list, __scheduler->rq.ranks + si->prio);
+        set_bit(si->prio, __scheduler->rq.bitmap);
+
+        return 1;
+    }
+
+    return 0;
+}
+
+static struct process *pick_next_process(void) {
+    u32 first_set = bitmap_first_set(__scheduler->rq.bitmap, MAX_PRIO);
+    expects(first_set);
+    --first_set;
+
+    for (; first_set <= MAX_PRIO; ++first_set) {
+        struct list_head *rank = __scheduler->rq.ranks + first_set;
+        struct process *candidate;
+        list_for_each_entry(candidate, rank, list) {
+            if (candidate->state == PROCESS_INTERRUPTIBLE) {
+                return candidate;
+            } else if (candidate->state == PROCESS_UNINTERRUPTIBLE) {
+                expects(!"todo");
+            }
+        }
+    }
+
+    panic("oops");
+}
+
 void schedule(void) {
-    if (get_preempt_count())
+    struct process *current = get_current();
+
+    if (!update_current(current))
         return;
 
     cpuflags_t flags = spin_lock_irqsave(&__scheduler->lock);
-    struct process *current = get_current();
-    struct process *next =
-        list_next_entry_or_null(current, &__scheduler->process_list, list);
-    if (!next)
-        next =
-            list_first_entry(&__scheduler->process_list, struct process, list);
-
+    struct process *new_process = pick_next_process();
     spin_unlock_irqrestore(&__scheduler->lock, flags);
-    if (next != current)
-        context_switch(current, next);
+    context_switch(current, new_process);
 }
 
 // called from switch_process to finalize switching after stack and pc
@@ -88,4 +136,3 @@ void switch_to(struct process *from, struct process *to) {
     set_current(to);
     (void)from;
 }
-

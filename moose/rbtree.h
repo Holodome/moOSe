@@ -33,5 +33,4 @@ static __forceinline void rb_link_node(struct rb_node *node,
 }
 
 void rb_insert_color(struct rb_node *node, struct rb_node **root);
-void rb_erase(struct rb_node *node, 
-                    struct rb_node **root);
+void rb_erase(struct rb_node *node, struct rb_node **root);

@@ -61,22 +61,13 @@ void init_rtc(void) {
     irq_enable();
 }
 
-u32 get_jiffies(void) {
-    return (u32)jiffies;
-}
-u64 get_jiffies64(void) {
+u64 get_jiffies(void) {
     return jiffies;
 }
-u64 jiffies64_to_msecs(u64 jiffies) {
+u64 jiffies_to_msecs(u64 jiffies) {
     return jiffies * 1000 / fREQUENCY;
 }
 u64 msecs_to_jiffies64(u64 msecs) {
-    return msecs * 1000 * fREQUENCY;
-}
-u32 jiffies_to_msecs(u32 jiffies) {
-    return jiffies * 1000 / fREQUENCY;
-}
-u32 msecs_to_jiffies(u32 msecs) {
     return msecs * 1000 * fREQUENCY;
 }
 

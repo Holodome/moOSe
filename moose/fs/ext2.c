@@ -288,7 +288,7 @@ __used static ssize_t ext2_alloc_ino(struct superblock *sb, int is_dir) {
     blk_read(sb->dev, desc->bg_inode_bitmap << sb->blk_sz_bits, bitmap,
              sizeof(bitmap));
 
-    u64 found = bitmap_first_clear(bitmap, ext2->sb.s_inodes_per_group);
+    u64 found = bitmap_first_set(bitmap, ext2->sb.s_inodes_per_group);
     if (!found)
         ext2_error(sb, "corrupted inode bitmap");
 
@@ -359,7 +359,7 @@ __used static ssize_t ext2_alloc_block(struct superblock *sb) {
     blk_read(sb->dev, desc->bg_block_bitmap << sb->blk_sz_bits, bitmap,
              sizeof(bitmap));
 
-    u64 found = bitmap_first_clear(bitmap, ext2->sb.s_blocks_per_group);
+    u64 found = bitmap_first_set(bitmap, ext2->sb.s_blocks_per_group);
     if (!found)
         ext2_error(sb, "corrupted block bitmap");
 
