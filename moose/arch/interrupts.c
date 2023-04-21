@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <kstdio.h>
 #include <sched/locks.h>
-#include <sched/scheduler.h>
+#include <sched/sched.h>
 
 static struct {
     struct list_head isr_lists[256];

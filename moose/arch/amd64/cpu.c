@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
-#include <sched/process.h>
+#include <sched/sched.h>
 
 #define MSR_EFER 0xc0000080
 #define MSR_STAR 0xc0000081

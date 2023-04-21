@@ -2,7 +2,7 @@
 #include <arch/cpu.h>
 #include <arch/interrupts.h>
 #include <kstdio.h>
-#include <sched/process.h>
+#include <sched/sched.h>
 #include <time.h>
 
 #define RATE 8

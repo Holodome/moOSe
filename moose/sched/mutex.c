@@ -1,6 +1,5 @@
 #include <sched/mutex.h>
-#include <sched/process.h>
-#include <sched/scheduler.h>
+#include <sched/sched.h>
 
 void init_mutex(mutex_t *lock) {
     lock->holder = NULL;

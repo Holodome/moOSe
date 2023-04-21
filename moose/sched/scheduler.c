@@ -3,8 +3,7 @@
 #include <mm/kmalloc.h>
 #include <panic.h>
 #include <param.h>
-#include <sched/process.h>
-#include <sched/scheduler.h>
+#include <sched/sched.h>
 #include <string.h>
 
 struct process idle_process = {
