@@ -4,7 +4,6 @@
 #include <assert.h>
 #include <kstdio.h>
 #include <panic.h>
-#include <sched/process.h>
 
 // clang-format off
 #define ENUMERATE_ISRS                                                         \

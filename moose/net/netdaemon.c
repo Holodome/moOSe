@@ -7,6 +7,7 @@
 #include <net/netdaemon.h>
 #include <sched/locks.h>
 #include <sched/process.h>
+#include <sched/scheduler.h>
 #include <string.h>
 
 #define QUEUE_SIZE 32

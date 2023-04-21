@@ -11,6 +11,7 @@
 #include <mm/physmem.h>
 #include <panic.h>
 #include <sched/process.h>
+#include <sched/scheduler.h>
 #include <types.h>
 
 static void zero_bss(void) {

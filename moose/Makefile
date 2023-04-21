@@ -27,6 +27,7 @@ KERNEL_OBJS := \
 	$(D)/sched/locks.o \
 	$(D)/sched/process.o \
 	$(D)/sched/mutex.o \
+	$(D)/sched/scheduler.o \
 	$(D)/fs/ext2.o \
 	$(D)/fs/vfs.o \
 	$(D)/fs/fat.o \
