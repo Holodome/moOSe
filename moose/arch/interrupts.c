@@ -86,7 +86,7 @@ fpu_segment_overrun_handler(void *dev __unused,
 
 static irqresult_t bad_tss_handler(void *dev __unused,
                                    const struct registers_state *r) {
-    __abort_in_handler("bad tss segmnet");
+    __abort_in_handler("bad tss segment");
 }
 
 static irqresult_t

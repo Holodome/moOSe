@@ -152,7 +152,7 @@ static inline int atomic_fetch_xor(atomic_t *a, int v) {
     return __atomic_fetch_xor(&a->v, v, __ATOMIC_SEQ_CST);
 }
 
-static inline int atomic_fetch_xor_realxed(atomic_t *a, int v) {
+static inline int atomic_fetch_xor_relaxed(atomic_t *a, int v) {
     return __atomic_fetch_xor(&a->v, v, __ATOMIC_RELAXED);
 }
 
@@ -164,23 +164,23 @@ static inline int atomic_fetch_xor_release(atomic_t *a, int v) {
     return __atomic_fetch_xor(&a->v, v, __ATOMIC_RELEASE);
 }
 
-static inline void atomic_andnot(atomic_t *a, int v) {
+static inline void atomic_nand(atomic_t *a, int v) {
     __atomic_nand_fetch(&a->v, v, __ATOMIC_RELAXED);
 }
 
-static inline int atomic_fetch_andnot(atomic_t *a, int v) {
+static inline int atomic_fetch_nand(atomic_t *a, int v) {
     return __atomic_fetch_nand(&a->v, v, __ATOMIC_SEQ_CST);
 }
 
-static inline int atomic_fetch_andnot_relaxed(atomic_t *a, int v) {
+static inline int atomic_fetch_nand_relaxed(atomic_t *a, int v) {
     return __atomic_fetch_nand(&a->v, v, __ATOMIC_RELAXED);
 }
 
-static inline int atomic_fetch_andnot_acquire(atomic_t *a, int v) {
+static inline int atomic_fetch_nand_acquire(atomic_t *a, int v) {
     return __atomic_fetch_nand(&a->v, v, __ATOMIC_ACQUIRE);
 }
 
-static inline int atomic_fetch_andnot_release(atomic_t *a, int v) {
+static inline int atomic_fetch_nand_release(atomic_t *a, int v) {
     return __atomic_fetch_nand(&a->v, v, __ATOMIC_RELEASE);
 }
 

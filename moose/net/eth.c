@@ -16,7 +16,7 @@ void eth_send_frame(struct net_frame *frame, const u8 *dst_mac_addr,
     memcpy(header->src_mac, nic.mac_addr, sizeof(header->src_mac));
     header->eth_type = htobe16(eth_type);
 
-    // pad frame with zeros, to be at least mininum size
+    // pad frame with zeros, to be at least minimum size
     if (frame->size < ETH_FRAME_MIN_SIZE) {
         memset(frame->head + frame->size, 0, ETH_FRAME_MIN_SIZE - frame->size);
         frame->size = ETH_FRAME_MIN_SIZE;

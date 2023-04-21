@@ -59,8 +59,8 @@ static inline int irqs_disabled(void) {
 }
 
 // NOTE: Linux uses strange-looking idiom where irq_save is implemented as
-// macro. This is due to some strangness of SPARC architecture which
-// we have to plans to support so irq_save is implemenetd in more
+// macro. This is due to some strangeness of SPARC architecture which
+// we have to plans to support so irq_save is implement in more
 // C-y way
 static __nodiscard __forceinline cpuflags_t irq_save(void) {
     cpuflags_t flags = read_cpu_flags();
