@@ -8,28 +8,28 @@ enable_long_mode:
     /* first set up paging */
 
     /* clear the page tables */
-    mov $0x1000, %edi
-    mov %edi, %cr3
-    xor %eax, %eax
-    mov $8192, %ecx
+    movl $0x1000, %edi
+    movl %edi, %cr3
+    xorl %eax, %eax
+    movl $8192, %ecx
     rep stosl
-    mov %cr3, %edi
+    movl %cr3, %edi
 
     /* set up page tables */
     movl $0x2003, (%edi)
-    add $0x1000, %edi
+    addl $0x1000, %edi
     movl $0x3003, (%edi)
-    add $0x1000, %edi
+    addl $0x1000, %edi
     movl $0x4003, (%edi)
-    add $0x1000, %edi
+    addl $0x1000, %edi
 
     /* set up low page table entries with identity mapping */
-    mov $3, %ebx
-    mov $512, %ecx
+    movl $3, %ebx
+    movl $512, %ecx
 set_low_entry:
     movl %ebx, (%edi)
-    add $0x1000, %ebx
-    add $8, %edi
+    addl $0x1000, %ebx
+    addl $8, %edi
     loop set_low_entry
 
     /* (0xffff880000000000 >> 39) & 0x1ff) = 272 */
@@ -37,33 +37,33 @@ set_low_entry:
     movl $0x5003, (%edi)
     movl $0x5000, %edi
     movl $0x6003, (%edi)
-    add $0x1000, %edi
+    addl $0x1000, %edi
     movl $0x7003, (%edi)
-    add $0x1000, %edi
+    addl $0x1000, %edi
 
     /* set up high page table entries */
-    mov $3, %ebx
-    mov $512, %ecx
+    movl $3, %ebx
+    movl $512, %ecx
 set_high_entry:
     movl %ebx, (%edi)
-    add $0x1000, %ebx
-    add $8, %edi
+    addl $0x1000, %ebx
+    addl $8, %edi
     loop set_high_entry
 
-    mov %cr4, %eax
-    or $1<<5, %eax
-    mov %eax, %cr4
+    movl %cr4, %eax
+    orl $1<<5, %eax
+    movl %eax, %cr4
 
     /* now paging is set up, time to enable it */
 
-    mov $0xc0000080, %ecx
+    movl $0xc0000080, %ecx
     rdmsr
-    or $1<<8, %eax
+    orl $1<<8, %eax
     wrmsr
     
-    mov %cr0, %eax
-    or $1<<31 | 1, %eax
-    mov %eax, %cr0
+    movl %cr0, %eax
+    orl $1<<31 | 1, %eax
+    movl %eax, %cr0
 
     /* now we are at long mode, but in 32-bit compatibility mode
      load new gdt */
@@ -113,10 +113,10 @@ gdt_descriptor:
 
 .code64
 amd64:
-    mov $0x10, %ax
-    mov %ax, %ds
-    mov %ax, %es
-    mov %ax, %fs
-    mov %ax, %gs
-    mov %ax, %ss
+    movw $0x10, %ax
+    movw %ax, %ds
+    movw %ax, %es
+    movw %ax, %fs
+    movw %ax, %gs
+    movw %ax, %ss
     jmp kboot64

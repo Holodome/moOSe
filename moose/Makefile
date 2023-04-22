@@ -44,6 +44,7 @@ KERNEL_OBJS := \
 	$(D)/tty/console.o \
 	$(D)/tty/vga_console.o \
 	$(D)/tty/vterm.o \
+	$(D)/sys/syscalls.o \
 	$(D)/blk_device.o \
 	$(D)/panic.o \
 	$(D)/string.o \

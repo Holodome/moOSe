@@ -105,6 +105,9 @@ struct percpu {
     // this is not atomic because it is accessed only in non-interruptible
     // context
     int should_invoke_scheduler;
+
+    u64 user_stack;
+    u64 kernel_stack;
 };
 
 void init_percpu(void);

@@ -4,6 +4,7 @@
 #include <kstdio.h>
 #include <mm/kmalloc.h>
 #include <sched/sched.h>
+#include <sys/syscalls.h>
 
 #define MSR_EFER 0xc0000080
 #define MSR_STAR 0xc0000081
@@ -133,6 +134,79 @@ __naked __noinline void switch_process(struct process *from __unused,
                  [rip_off] "i"(offsetof(struct process, execution_state.rip))
                  : "memory", "cc", "rcx", "rbx", "rdx", "r8", "r9", "r10",
                    "r11", "r12", "r13", "r14", "r15");
+}
+
+__naked __noinline void syscall_entry(void) {
+    asm volatile(
+        "movq %%rsp, %%gs:%c[user_stack]\n"
+        "movq %%gs:%c[kernel_stack], %%rsp\n"
+        // build registers_state
+        "pushq $0x1b\n"               // uss
+        "pushq %%gs:%c[user_stack]\n" // ursp
+        "sti\n"
+        "pushq %%r11\n" // rflags
+        "pushq $0x23\n" // cs
+        "pushq %%rcx\n" // rip
+        "pushq $0x0\n"  // exception_code
+        "pushq $0x0\n"  // isr_number
+        "pushq %%r15\n"
+        "pushq %%r14\n"
+        "pushq %%r13\n"
+        "pushq %%r12\n"
+        "pushq %%r11\n"
+        "pushq %%r10\n"
+        "pushq %%r9\n"
+        "pushq %%r8\n"
+        "pushq %%rax\n"
+        "pushq %%rcx\n"
+        "pushq %%rdx\n"
+        "pushq %%rbx\n"
+        "pushq %%rsp\n"
+        "pushq %%rbp\n"
+        "pushq %%rsi\n"
+        "pushq %%rdi\n"
+
+        "movq %%rsp, %%rdi\n"
+        "call syscall_handler\n"
+
+        "popq %%rdi\n"
+        "popq %%rsi\n"
+        "popq %%rbp\n"
+        "addq $8, %%rsp\n"
+        "popq %%rbx\n"
+        "popq %%rdx\n"
+        "popq %%rcx\n"
+        "popq %%rax\n"
+        "popq %%r8\n"
+        "popq %%r9\n"
+        "popq %%r10\n"
+        "popq %%r11\n"
+        "popq %%r12\n"
+        "popq %%r13\n"
+        "popq %%r14\n"
+        "popq %%r15\n"
+        "addq $16, %%rsp\n"
+        "popq %%rcx\n"
+        "addq $0x10, %%rsp\n"
+        "cli\n"
+        "popq %%rsp\n"
+        "sysretq\n" ::[user_stack] "i"(offsetof(struct percpu, user_stack)),
+        [kernel_stack] "i"(offsetof(struct percpu, kernel_stack)));
+}
+
+void parse_sysclass_parameters(const struct registers_state *state,
+                               struct sysclass_parameters *params) {
+    params->function = state->rax;
+    params->arg0 = state->rbx;
+    params->arg1 = state->rcx;
+    params->arg2 = state->rdx;
+    params->arg3 = state->rsi;
+    params->arg4 = state->rdi;
+    params->arg5 = state->rbp;
+}
+
+void set_syscall_result(u64 result, struct registers_state *state) {
+    state->rax = result;
 }
 
 void init_percpu(void) {

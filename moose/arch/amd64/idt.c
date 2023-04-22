@@ -96,7 +96,7 @@ __used __noinline __naked void isr_common_stub(void) {
                  "pushq %rbp\n"
                  "pushq %rsi\n"
                  "pushq %rdi\n"
-                 "mov %rsp, %rdi\n"
+                 "movq %rsp, %rdi\n"
                  "cld\n"
                  "call isr_handler\n"
                  "popq %rdi\n"
@@ -116,7 +116,7 @@ __used __noinline __naked void isr_common_stub(void) {
                  "popq %r14\n"
                  "popq %r15\n"
                  /* account for pushed isr_number and exception_code */
-                 "add $16, %rsp\n"
+                 "addq $16, %rsp\n"
                  "iretq\n");
 }
 
