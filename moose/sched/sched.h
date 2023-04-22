@@ -8,11 +8,12 @@
 #define MAX_PROCESSES 256
 #define PROCESS_MAX_FILES 256
 #define PROCESS_STACK_SIZE (4096 * 4)
-#define DEFAULT_TIMESLICE 10
+#define DEFAULT_TIMESLICE 1
 
 #define MAX_NICE 19
 #define MIN_NICE -20
 #define MAX_PRIO 39
+#define DEFAULT_NICE 0
 
 #define prio_to_nice(_prio) ((int)(_prio)-20)
 #define nice_to_prio(_nice) (u32)((int)(_nice) + 20)
@@ -22,7 +23,6 @@ struct process_sched_info {
     u32 timeslice;
     u32 prio;
 
-    u64 current_time;
     u64 timeslice_start_jiffies;
 };
 

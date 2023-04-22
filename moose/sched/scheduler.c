@@ -36,6 +36,11 @@ static void init_idle_stack(void) {
         FIXUP_ADDR(KERNEL_INITIAL_STACK - sizeof(union process_stack));
     idle_process.stack = (void *)stack_base_address;
     idle_process.stack->info.p = &idle_process;
+    idle_process.sched.nice = DEFAULT_NICE;
+    idle_process.sched.prio = nice_to_prio(idle_process.sched.nice);
+    idle_process.state = PROCESS_RUNNING;
+    list_add_tail(&idle_process.sched_list,
+                  __scheduler->rq.ranks + idle_process.sched.prio);
     list_add(&idle_process.list, &__scheduler->process_list);
 }
 
@@ -62,8 +67,15 @@ void launch_process(const char *name, void (*function)(void *), void *arg) {
                            (u64)((process->stack) + 1));
     process->stack->info.p = process;
     process->pid = alloc_pid(__scheduler);
+    process->sched.nice = DEFAULT_NICE;
+    process->sched.timeslice = DEFAULT_TIMESLICE;
+    process->sched.prio = nice_to_prio(process->sched.nice);
+    process->state = PROCESS_INTERRUPTIBLE;
 
     cpuflags_t flags = spin_lock_irqsave(&__scheduler->lock);
+    list_add_tail(&process->sched_list,
+                  __scheduler->rq.ranks + process->sched.prio);
+    set_bit(process->sched.prio, __scheduler->rq.bitmap);
     list_add(&process->list, &__scheduler->process_list);
     spin_unlock_irqrestore(&__scheduler->lock, flags);
 }
@@ -73,15 +85,15 @@ static void context_switch(struct process *from, struct process *to) {
 }
 
 static int update_current(struct process *current) {
+    expects(current->state == PROCESS_RUNNING);
     struct process_sched_info *si = &current->sched;
     u64 jiffies = get_jiffies();
     u64 expired = jiffies - si->timeslice_start_jiffies;
-    // we have used timeslice
-    if (expired > si->timeslice && current->state == PROCESS_RUNNING) {
+    if (expired > si->timeslice) {
         u32 old_prio = si->prio;
         if (__unlikely(si->prio == MAX_PRIO)) {
             si->prio = nice_to_prio(si->nice);
-            si->timeslice <<= 1;
+            ++si->timeslice;
         } else {
             ++si->prio;
         }
@@ -115,7 +127,7 @@ static struct process *pick_next_process(void) {
         }
     }
 
-    panic("oops");
+    return get_current();
 }
 
 void schedule(void) {
@@ -127,12 +139,15 @@ void schedule(void) {
     cpuflags_t flags = spin_lock_irqsave(&__scheduler->lock);
     struct process *new_process = pick_next_process();
     spin_unlock_irqrestore(&__scheduler->lock, flags);
-    context_switch(current, new_process);
+    if (current != new_process)
+        context_switch(current, new_process);
 }
 
 // called from switch_process to finalize switching after stack and pc
 // have been changed
 void switch_to(struct process *from, struct process *to) {
+    from->state = PROCESS_INTERRUPTIBLE;
+    to->state = PROCESS_RUNNING;
     set_current(to);
-    (void)from;
+    to->sched.timeslice_start_jiffies = get_jiffies();
 }
