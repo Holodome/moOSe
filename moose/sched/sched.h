@@ -18,14 +18,6 @@
 #define prio_to_nice(_prio) ((int)(_prio)-20)
 #define nice_to_prio(_nice) (u32)((int)(_nice) + 20)
 
-struct process_sched_info {
-    int nice;
-    u32 timeslice;
-    u32 prio;
-
-    u64 timeslice_start_jiffies;
-};
-
 struct runqueue {
     bitmap_t bitmap[BITS_TO_BITMAP(MAX_PRIO)];
     struct list_head ranks[MAX_PRIO];
@@ -58,7 +50,11 @@ union process_stack {
 
 struct process {
     struct registers_state execution_state;
-    struct process_sched_info sched;
+    int nice;
+    u32 timeslice;
+    u32 prio;
+
+    u64 timeslice_start_jiffies;
 
     const char *name;
 

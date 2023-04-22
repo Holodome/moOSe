@@ -36,11 +36,11 @@ static void init_idle_stack(void) {
         FIXUP_ADDR(KERNEL_INITIAL_STACK - sizeof(union process_stack));
     idle_process.stack = (void *)stack_base_address;
     idle_process.stack->info.p = &idle_process;
-    idle_process.sched.nice = DEFAULT_NICE;
-    idle_process.sched.prio = nice_to_prio(idle_process.sched.nice);
+    idle_process.nice = DEFAULT_NICE;
+    idle_process.prio = nice_to_prio(idle_process.nice);
     idle_process.state = PROCESS_RUNNING;
     list_add_tail(&idle_process.sched_list,
-                  __scheduler->rq.ranks + idle_process.sched.prio);
+                  __scheduler->rq.ranks + idle_process.prio);
     list_add(&idle_process.list, &__scheduler->process_list);
 }
 
@@ -67,15 +67,14 @@ void launch_process(const char *name, void (*function)(void *), void *arg) {
                            (u64)((process->stack) + 1));
     process->stack->info.p = process;
     process->pid = alloc_pid(__scheduler);
-    process->sched.nice = DEFAULT_NICE;
-    process->sched.timeslice = DEFAULT_TIMESLICE;
-    process->sched.prio = nice_to_prio(process->sched.nice);
+    process->nice = DEFAULT_NICE;
+    process->timeslice = DEFAULT_TIMESLICE;
+    process->prio = nice_to_prio(process->nice);
     process->state = PROCESS_INTERRUPTIBLE;
 
     cpuflags_t flags = spin_lock_irqsave(&__scheduler->lock);
-    list_add_tail(&process->sched_list,
-                  __scheduler->rq.ranks + process->sched.prio);
-    set_bit(process->sched.prio, __scheduler->rq.bitmap);
+    list_add_tail(&process->sched_list, __scheduler->rq.ranks + process->prio);
+    set_bit(process->prio, __scheduler->rq.bitmap);
     list_add(&process->list, &__scheduler->process_list);
     spin_unlock_irqrestore(&__scheduler->lock, flags);
 }
@@ -86,23 +85,23 @@ static void context_switch(struct process *from, struct process *to) {
 
 static int update_current(struct process *current) {
     expects(current->state == PROCESS_RUNNING);
-    struct process_sched_info *si = &current->sched;
     u64 jiffies = get_jiffies();
-    u64 expired = jiffies - si->timeslice_start_jiffies;
-    if (expired > si->timeslice) {
-        u32 old_prio = si->prio;
-        if (__unlikely(si->prio == MAX_PRIO)) {
-            si->prio = nice_to_prio(si->nice);
-            ++si->timeslice;
+    u64 expired = jiffies - current->timeslice_start_jiffies;
+    if (expired > current->timeslice) {
+        u32 old_prio = current->prio;
+        if (__unlikely(current->prio == MAX_PRIO)) {
+            current->prio = nice_to_prio(current->nice);
+            ++current->timeslice;
         } else {
-            ++si->prio;
+            ++current->prio;
         }
 
         list_remove(&current->sched_list);
         if (list_is_empty(__scheduler->rq.ranks + old_prio))
             clear_bit(old_prio, __scheduler->rq.bitmap);
-        list_add_tail(&current->sched_list, __scheduler->rq.ranks + si->prio);
-        set_bit(si->prio, __scheduler->rq.bitmap);
+        list_add_tail(&current->sched_list,
+                      __scheduler->rq.ranks + current->prio);
+        set_bit(current->prio, __scheduler->rq.bitmap);
 
         return 1;
     }
@@ -149,5 +148,5 @@ void switch_to(struct process *from, struct process *to) {
     from->state = PROCESS_INTERRUPTIBLE;
     to->state = PROCESS_RUNNING;
     set_current(to);
-    to->sched.timeslice_start_jiffies = get_jiffies();
+    to->timeslice_start_jiffies = get_jiffies();
 }
