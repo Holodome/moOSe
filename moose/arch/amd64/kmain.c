@@ -67,6 +67,7 @@ __noreturn void kmain(void) {
     kprintf("running moOSe kernel\n");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
+    init_cpu();
     init_memory();
     init_scheduler();
     init_interrupts();

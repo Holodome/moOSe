@@ -211,3 +211,11 @@ static __forceinline void write_gs_ptr(u32 offset, const void *ptr){
 #define write_gs_int write_gs32
 
 // clang-format on
+
+static __forceinline void disable_nmi(void) {
+    port_out8(0x70, port_in8(0x70) | 0x80);
+}
+
+static __forceinline void enable_nmi(void) {
+    port_out8(0x70, port_in8(0x70) & 0x7f);
+}

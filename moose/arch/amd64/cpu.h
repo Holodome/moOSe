@@ -111,6 +111,7 @@ struct percpu {
 };
 
 void init_percpu(void);
+void init_cpu(void);
 
 static __forceinline __nodiscard struct percpu *get_percpu(void) {
     return read_gs_ptr(offsetof(struct percpu, this));

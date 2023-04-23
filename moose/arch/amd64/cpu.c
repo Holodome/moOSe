@@ -1,4 +1,5 @@
 #include <moose/arch/amd64/asm.h>
+#include <moose/arch/amd64/cpuid.h>
 #include <moose/arch/cpu.h>
 #include <moose/assert.h>
 #include <moose/kstdio.h>
@@ -216,4 +217,20 @@ void init_percpu(void) {
     percpu->this = percpu;
     percpu->current = &idle_process;
     write_msr(MSR_GS_BASE, (u64)percpu);
+}
+
+static void setup_syscall(void) {
+    if (!cpu_supports(CPUID_SYSCALL))
+        panic("cpu must suport syscall instruction");
+    write_msr(MSR_EFER, read_msr(MSR_EFER) | 0x1);
+
+    u64 star = (0x13ul << 48u) | (0x08ul << 32u);
+    write_msr(MSR_STAR, star);
+    write_msr(MSR_LSTAR, (u64)syscall_entry);
+    write_msr(MSR_SFMASK, 0x257fd5u);
+}
+
+void init_cpu(void) {
+    init_cpuid();
+    setup_syscall();
 }

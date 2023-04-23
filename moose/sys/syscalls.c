@@ -1,5 +1,6 @@
 #include <moose/arch/cpu.h>
 #include <moose/kstdio.h>
+#include <moose/sched/sched.h>
 #include <moose/sys/syscalls.h>
 
 // Note that altough we do here very evil thing of recasting pointer types,
@@ -150,8 +151,12 @@ off_t sys$lseek(int fd, off_t offset, int whence) {
 }
 
 mode_t sys$umask(mode_t mask) {
-    (void)mask;
-    return -1;
+    struct process *current = get_current();
+    spin_lock(&current->lock);
+    mode_t prev = current->umask;
+    current->umask = mask & 0777;
+    spin_unlock(&current->lock);
+    return prev;
 }
 
 int sys$dup(int oldfd) {
