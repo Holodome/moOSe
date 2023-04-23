@@ -57,7 +57,7 @@ struct kstat {
     gid_t st_gid;
     dev_t st_rdev;
     off_t st_size;
-    blcksize_t st_blksize;
+    blksize_t st_blksize;
     blkcnt_t st_blkcnt;
 
     struct ktimespec st_atim;

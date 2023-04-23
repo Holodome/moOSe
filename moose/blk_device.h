@@ -8,7 +8,7 @@
 struct blk_device {
     char name[BLK_DEVICE_NAME_LEN];
     blkcnt_t capacity;
-    blcksize_t block_size;
+    blksize_t block_size;
     u8 block_size_log;
 
     void *private;
