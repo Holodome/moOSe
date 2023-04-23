@@ -197,12 +197,11 @@ __naked __noinline void syscall_entry(void) {
 void parse_syscall_parameters(const struct registers_state *state,
                                struct syscall_parameters *params) {
     params->function = state->rax;
-    params->arg0 = state->rbx;
-    params->arg1 = state->rcx;
+    params->arg0 = state->r8;
+    params->arg1 = state->r10;
     params->arg2 = state->rdx;
     params->arg3 = state->rsi;
     params->arg4 = state->rdi;
-    params->arg5 = state->rbp;
 }
 
 void set_syscall_result(u64 result, struct registers_state *state) {

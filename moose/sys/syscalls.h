@@ -3,6 +3,35 @@
 #include <fs/posix.h>
 #include <types.h>
 
+enum syscall_number {
+    SYS_OPEN = 0,
+    SYS_CREAT = 1,
+    SYS_READ = 2,
+    SYS_WRITE = 3,
+    SYS_CLOSE = 4,
+    SYS_STAT = 5,
+    SYS_FORK = 6,
+    SYS_EXECVE = 7,
+    SYS_GETTIMEOFDAY = 8,
+    SYS_SETTIMEOFDAY = 9,
+    SYS_MOUNT = 10,
+    SYS_UMOUNT = 11,
+    SYS_MKDIR = 12,
+    SYS_RMDIR = 13,
+    SYS_UNLINK = 14,
+    SYS_LINK = 15,
+    SYS_RENAME = 16,
+    SYS_CHMOD = 17,
+    SYS_FCHMOD = 18,
+    SYS_LSEEK = 19,
+    SYS_UMASK = 20,
+    SYS_DUP = 21,
+    SYS_DUP2 = 22,
+    SYS_FCNTL = 23,
+    SYS_IOCTL = 24,
+    SYS_SBRK = 25,
+};
+
 struct timespec {
     time_t tv_sec;
     long tv_nsec;
@@ -48,11 +77,37 @@ struct syscall_parameters {
     u64 arg2;
     u64 arg3;
     u64 arg4;
-    u64 arg5;
 };
-
 void parse_syscall_parameters(const struct registers_state *state,
                               struct syscall_parameters *params);
 void set_syscall_result(u64 result, struct registers_state *state);
 
 void syscall_handler(struct registers_state *state);
+
+int sys$open(const char *name, int flags, mode_t mode);
+int sys$creat(const char *name, mode_t mode);
+ssize_t sys$read(int fd, void *buf, size_t count);
+ssize_t sys$write(int fd, void *buf, size_t count);
+int sys$close(int fd);
+int sys$stat(int fd, struct stat *stat);
+int sys$fork(void);
+int sys$execve(const char *name, const char **argv, const char **envp);
+int sys$gettimeofday(struct timeval *tv, struct timezone *tz);
+int sys$settimeofday(const struct timeval *tv, const struct timezone *tz);
+int sys$mount(const char *source, const char *dst, const char *fstype,
+              unsigned long mountflags, const void *data);
+int sys$umount(const char *target);
+int sys$mkdir(const char *name, mode_t mode);
+int sys$rmdir(const char *name);
+int sys$unlink(const char *name);
+int sys$link(const char *oldpath, const char *newpath);
+int sys$rename(const char *oldpath, const char *newpath);
+int sys$chmod(const char *filename, mode_t mode);
+int sys$fchmod(int fd, mode_t mode);
+off_t sys$lseek(int fd, off_t offset, int whence);
+mode_t sys$umask(mode_t mask);
+int sys$dup(int oldfd);
+int sys$dup2(int oldfd, int newfd);
+int sys$fcntl(int fd, int cmd, unsigned long arg);
+int sys$ioctl(int fd, int cmd, unsigned long arg);
+void *sys$sbrk(intptr_t increment);

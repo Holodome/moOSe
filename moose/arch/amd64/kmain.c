@@ -12,6 +12,7 @@
 #include <panic.h>
 #include <sched/sched.h>
 #include <types.h>
+#include <sys/usrsys.h>
 
 static void zero_bss(void) {
     extern u64 __bss_start;

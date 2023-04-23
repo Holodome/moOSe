@@ -151,16 +151,21 @@ int sys$dup2(int oldfd, int newfd) {
     return -1;
 }
 
-int sys$fcntl(int fd, int cmd, uintptr_t arg) {
+int sys$fcntl(int fd, int cmd, unsigned long arg) {
     (void)fd;
     (void)cmd;
     (void)arg;
     return -1;
 }
 
-int sys$ioctl(int fd, int cmd, uintptr_t arg) {
+int sys$ioctl(int fd, int cmd, unsigned long arg) {
     (void)fd;
     (void)cmd;
     (void)arg;
     return -1;
+}
+
+void *sys$sbrk(intptr_t increment) {
+    (void)increment;
+    return (void *)(uintptr_t)(-1);
 }
