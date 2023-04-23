@@ -3,33 +3,43 @@
 #include <moose/fs/posix.h>
 #include <moose/types.h>
 
-enum syscall_number {
-    SYS_OPEN = 0,
-    SYS_CREAT = 1,
-    SYS_READ = 2,
-    SYS_WRITE = 3,
-    SYS_CLOSE = 4,
-    SYS_STAT = 5,
-    SYS_FORK = 6,
-    SYS_EXECVE = 7,
-    SYS_GETTIMEOFDAY = 8,
-    SYS_SETTIMEOFDAY = 9,
-    SYS_MOUNT = 10,
-    SYS_UMOUNT = 11,
-    SYS_MKDIR = 12,
-    SYS_RMDIR = 13,
-    SYS_UNLINK = 14,
-    SYS_LINK = 15,
-    SYS_RENAME = 16,
-    SYS_CHMOD = 17,
-    SYS_FCHMOD = 18,
-    SYS_LSEEK = 19,
-    SYS_UMASK = 20,
-    SYS_DUP = 21,
-    SYS_DUP2 = 22,
-    SYS_FCNTL = 23,
-    SYS_IOCTL = 24,
-    SYS_SBRK = 25,
+#define __ENUMERATE_SYSCALLS                                                   \
+    SYSCALL(open)                                                              \
+    SYSCALL(creat)                                                             \
+    SYSCALL(read)                                                              \
+    SYSCALL(write)                                                             \
+    SYSCALL(close)                                                             \
+    SYSCALL(stat)                                                              \
+    SYSCALL(fork)                                                              \
+    SYSCALL(execve)                                                            \
+    SYSCALL(gettimeofday)                                                      \
+    SYSCALL(settimeofday)                                                      \
+    SYSCALL(mount)                                                             \
+    SYSCALL(umount)                                                            \
+    SYSCALL(mkdir)                                                             \
+    SYSCALL(rmdir)                                                             \
+    SYSCALL(unlink)                                                            \
+    SYSCALL(link)                                                              \
+    SYSCALL(rename)                                                            \
+    SYSCALL(chmod)                                                             \
+    SYSCALL(fchmod)                                                            \
+    SYSCALL(lseek)                                                             \
+    SYSCALL(umask)                                                             \
+    SYSCALL(dup)                                                               \
+    SYSCALL(dup2)                                                              \
+    SYSCALL(fcntl)                                                             \
+    SYSCALL(ioctl)                                                             \
+    SYSCALL(sbrk)                                                              \
+    SYSCALL(exit)                                                              \
+    SYSCALL(wait)                                                              \
+    SYSCALL(kill)                                                              \
+    SYSCALL(readlink)                                                          \
+    SYSCALL(fstat)
+
+enum {
+#define SYSCALL(_name) __SYS_##_name,
+    __ENUMERATE_SYSCALLS
+#undef SYSCALL
 };
 
 struct timespec {
@@ -111,3 +121,8 @@ int sys$dup2(int oldfd, int newfd);
 int sys$fcntl(int fd, int cmd, unsigned long arg);
 int sys$ioctl(int fd, int cmd, unsigned long arg);
 void *sys$sbrk(intptr_t increment);
+__noreturn void sys$exit(int status);
+int sys$kill(pid_t pid, int sig);
+int sys$wait(int *wstatus);
+ssize_t sys$readlink(const char *pathname, char *buf, size_t bufsiz);
+int sys$fstat(int fd, struct stat *stat);

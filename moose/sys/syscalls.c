@@ -1,14 +1,28 @@
 #include <moose/arch/cpu.h>
+#include <moose/kstdio.h>
 #include <moose/sys/syscalls.h>
 
-static u64 handle_syscall(const struct syscall_parameters *params __unused) {
-    return 0;
-}
+// Note that altough we do here very evil thing of recasting pointer types,
+// we are certain that this would produce the desired behaviour on platforms
+// that we want to support (amd64 and aarch64 both), where arguments
+// are passed via registers.
+static u64 (*syscall_table[])(u64, u64, u64, u64, u64) = {
+#define SYSCALL(_name) [__SYS_##_name] = (void *)sys$##_name,
+    __ENUMERATE_SYSCALLS
+#undef SYSCALL
+};
 
 void syscall_handler(struct registers_state *state) {
     struct syscall_parameters params;
     parse_syscall_parameters(state, &params);
-    u64 result = handle_syscall(&params);
+    if (params.function > ARRAY_SIZE(syscall_table)) {
+        kprintf("Invalid syscall number %lx\n", params.function);
+        return;
+    }
+
+    u64 result = syscall_table[params.function](
+        params.arg0, params.arg1, params.arg2, params.arg3, params.arg4);
+
     set_syscall_result(result, state);
 }
 
@@ -168,4 +182,33 @@ int sys$ioctl(int fd, int cmd, unsigned long arg) {
 void *sys$sbrk(intptr_t increment) {
     (void)increment;
     return (void *)(uintptr_t)(-1);
+}
+
+__noreturn void sys$exit(int status) {
+    (void)status;
+    __builtin_unreachable();
+}
+
+int sys$kill(pid_t pid, int sig) {
+    (void)pid;
+    (void)sig;
+    return -1;
+}
+
+int sys$wait(int *wstatus) {
+    (void)wstatus;
+    return -1;
+}
+
+ssize_t sys$readlink(const char *pathname, char *buf, size_t bufsiz) {
+    (void)pathname;
+    (void)buf;
+    (void)bufsiz;
+    return -1;
+}
+
+int sys$fstat(int fd, struct stat *stat) {
+    (void)fd;
+    (void)stat;
+    return -1;
 }

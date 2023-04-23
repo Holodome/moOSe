@@ -11,8 +11,8 @@
 #include <moose/mm/physmem.h>
 #include <moose/panic.h>
 #include <moose/sched/sched.h>
-#include <moose/types.h>
 #include <moose/sys/usrsys.h>
+#include <moose/types.h>
 
 static void zero_bss(void) {
     extern u64 __bss_start;
