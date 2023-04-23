@@ -1,11 +1,11 @@
-#include <arch/jiffies.h>
-#include <assert.h>
-#include <kstdio.h>
-#include <mm/kmalloc.h>
-#include <panic.h>
-#include <param.h>
-#include <sched/sched.h>
-#include <string.h>
+#include <moose/arch/jiffies.h>
+#include <moose/assert.h>
+#include <moose/kstdio.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/panic.h>
+#include <moose/param.h>
+#include <moose/sched/sched.h>
+#include <moose/string.h>
 
 struct process idle_process = {
     .name = "idle", .umask = 0666, .lock = INIT_SPIN_LOCK()};

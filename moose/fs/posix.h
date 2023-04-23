@@ -1,7 +1,7 @@
 #pragma once
 
-#include <time.h>
-#include <types.h>
+#include <moose/time.h>
+#include <moose/types.h>
 
 // <stdio.h>
 
@@ -9,7 +9,7 @@
 #define SEEK_END 1
 #define SEEK_CUR 2
 
-// <sys/stat.h>
+// <moose/sys/stat.h>
 
 // note: these are shamelessly taken from linux
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <bitops.h>
-#include <list.h>
-#include <rbtree.h>
-#include <sched/locks.h>
+#include <moose/bitops.h>
+#include <moose/list.h>
+#include <moose/rbtree.h>
+#include <moose/sched/locks.h>
 
 #define MAX_PROCESSES 256
 #define PROCESS_MAX_FILES 256

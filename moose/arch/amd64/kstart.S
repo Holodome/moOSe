@@ -1,6 +1,6 @@
 .global kstart 
 
-#include <param.h>
+#include <moose/param.h>
 
 .section ".text.kstart"
 kstart:

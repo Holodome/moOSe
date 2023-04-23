@@ -1,7 +1,7 @@
 #pragma once
 
-#include <fs/posix.h>
-#include <types.h>
+#include <moose/fs/posix.h>
+#include <moose/types.h>
 
 enum syscall_number {
     SYS_OPEN = 0,

@@ -1,4 +1,4 @@
-#include <rbtree.h>
+#include <moose/rbtree.h>
 
 static struct rb_node *rb_parent(const struct rb_node *node) {
     return (void *)(node->parent__color & ~1);

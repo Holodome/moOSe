@@ -1,7 +1,7 @@
 #pragma once
 
-#include <panic.h>
-#include <types.h>
+#include <moose/panic.h>
+#include <moose/types.h>
 
 // NOTE: Use %s instead of compile-time string join here because in case
 // assertion contains % compilation fails

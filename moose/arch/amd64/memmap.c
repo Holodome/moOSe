@@ -1,5 +1,5 @@
-#include <arch/amd64/memmap.h>
-#include <param.h>
+#include <moose/arch/amd64/memmap.h>
+#include <moose/param.h>
 
 #define MEMMAP_ADDR FIXUP_PTR((u8 *)0x500)
 

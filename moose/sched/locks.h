@@ -1,8 +1,8 @@
 #pragma once
 
-#include <arch/atomic.h>
-#include <arch/cpu.h>
-#include <types.h>
+#include <moose/arch/atomic.h>
+#include <moose/arch/cpu.h>
+#include <moose/types.h>
 
 #define __define_lock_irq(_f, _type)                                           \
     static __forceinline void _f##_irq(_type *lock) {                          \

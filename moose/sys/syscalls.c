@@ -1,5 +1,5 @@
-#include <arch/cpu.h>
-#include <sys/syscalls.h>
+#include <moose/arch/cpu.h>
+#include <moose/sys/syscalls.h>
 
 static u64 handle_syscall(const struct syscall_parameters *params __unused) {
     return 0;

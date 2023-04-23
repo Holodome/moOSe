@@ -1,9 +1,9 @@
-#include <arch/amd64/types.h>
-#include <assert.h>
-#include <bitops.h>
-#include <mm/kmalloc.h>
-#include <mm/physmem.h>
-#include <param.h>
+#include <moose/arch/amd64/types.h>
+#include <moose/assert.h>
+#include <moose/bitops.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/mm/physmem.h>
+#include <moose/param.h>
 
 struct free_area {
     u32 size;

@@ -1,5 +1,5 @@
-#include <ctype.h>
-#include <string.h>
+#include <moose/ctype.h>
+#include <moose/string.h>
 
 int isdigit(int c) {
     return c >= '0' && c <= '9';

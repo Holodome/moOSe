@@ -3,8 +3,8 @@
 //
 #pragma once
 
-#include <arch/amd64/asm.h>
-#include <arch/atomic.h>
+#include <moose/arch/amd64/asm.h>
+#include <moose/arch/atomic.h>
 
 // Used with irq_save and friends to make more self-explanatory declarations
 // for flags variable

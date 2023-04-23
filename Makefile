@@ -18,7 +18,7 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(subst .o,.d,$@)
 ASFLAGS = -msyntax=att --warn --fatal-warnings
 LDFLAGS = -Map $(subst .elf,.map,$@)
 
-CFLAGS  = -Imoose \
+CFLAGS  = -I.\
 		  -Wall -Werror -Wextra -Wno-sign-compare -Wpacked \
 		  -Os -g -std=gnu11 -fno-strict-aliasing -fno-strict-overflow \
 		  -ffreestanding -nostdlib -nostartfiles \
@@ -73,7 +73,7 @@ include moose/Makefile
 
 %.ld.out: %.ld
 	@echo "CPP $<"
-	$(Q)gcc -CC -E -P -x c -Imoose $< > $@
+	$(Q)gcc -CC -E -P -x c -I. $< > $@
 
 %.i: %.c
 	$(Q)$(CC) $(CFLAGS) -E -o $@ $^

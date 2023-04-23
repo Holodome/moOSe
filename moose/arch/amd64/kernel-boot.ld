@@ -1,4 +1,4 @@
-#include <param.h>
+#include <moose/param.h>
 
 ENTRY(kstart)
 SECTIONS {

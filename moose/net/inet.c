@@ -1,11 +1,11 @@
-#include <drivers/rtl8139.h>
-#include <endian.h>
-#include <kstdio.h>
-#include <net/arp.h>
-#include <net/frame.h>
-#include <net/inet.h>
-#include <net/netdaemon.h>
-#include <string.h>
+#include <moose/drivers/rtl8139.h>
+#include <moose/endian.h>
+#include <moose/kstdio.h>
+#include <moose/net/arp.h>
+#include <moose/net/frame.h>
+#include <moose/net/inet.h>
+#include <moose/net/netdaemon.h>
+#include <moose/string.h>
 
 struct nic nic;
 

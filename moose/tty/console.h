@@ -1,8 +1,8 @@
 #pragma once
 
-#include <arch/refcount.h>
-#include <sched/locks.h>
-#include <types.h>
+#include <moose/arch/refcount.h>
+#include <moose/sched/locks.h>
+#include <moose/types.h>
 
 struct console;
 

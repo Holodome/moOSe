@@ -1,9 +1,9 @@
-#include <arch/amd64/asm.h>
-#include <arch/amd64/idt.h>
-#include <arch/cpu.h>
-#include <assert.h>
-#include <kstdio.h>
-#include <panic.h>
+#include <moose/arch/amd64/asm.h>
+#include <moose/arch/amd64/idt.h>
+#include <moose/arch/cpu.h>
+#include <moose/assert.h>
+#include <moose/kstdio.h>
+#include <moose/panic.h>
 
 // clang-format off
 #define ENUMERATE_ISRS                                                         \

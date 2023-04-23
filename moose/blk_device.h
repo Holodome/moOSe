@@ -1,7 +1,7 @@
 #pragma once
 
-#include <fs/vfs.h>
-#include <types.h>
+#include <moose/fs/vfs.h>
+#include <moose/types.h>
 
 #define BLK_DEVICE_NAME_LEN 32
 

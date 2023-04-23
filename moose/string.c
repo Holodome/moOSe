@@ -1,4 +1,4 @@
-#include <string.h>
+#include <moose/string.h>
 
 char *strpbrk(const char *string, const char *lookup) {
     char *cursor = (char *)string;

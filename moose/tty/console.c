@@ -1,5 +1,5 @@
-#include <mm/kmalloc.h>
-#include <tty/console.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/tty/console.h>
 
 struct console *create_empty_console(void) {
     struct console *console = kzalloc(sizeof(*console));

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <list.h>
-#include <types.h>
+#include <moose/list.h>
+#include <moose/types.h>
 
 struct net_device {
     void *private;

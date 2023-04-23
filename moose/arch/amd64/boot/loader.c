@@ -1,7 +1,7 @@
-#include <drivers/ata.c>
+#include <moose/drivers/ata.c>
 
-#include <mbr.h>
-#include <param.h>
+#include <moose/mbr.h>
+#include <moose/param.h>
 
 extern void print(const char *s);
 int kprintf(const char *str, ...) {

@@ -1,7 +1,7 @@
-#include <list.h>
-#include <mm/kmalloc.h>
-#include <net/interface.h>
-#include <string.h>
+#include <moose/list.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/net/interface.h>
+#include <moose/string.h>
 
 LIST_HEAD(interfaces);
 

@@ -1,8 +1,8 @@
-#include <assert.h>
-#include <errno.h>
-#include <fs/ramfs.h>
-#include <mm/kmalloc.h>
-#include <string.h>
+#include <moose/assert.h>
+#include <moose/errno.h>
+#include <moose/fs/ramfs.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/string.h>
 
 #define RAMFS_BLOCK_SIZE 4096
 #define RAMFS_BLOCK_SIZE_BITS 12

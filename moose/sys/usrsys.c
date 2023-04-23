@@ -1,16 +1,16 @@
-#include <sys/syscalls.h>
-#include <sys/usrsys.h>
-#include <varargs.h>
+#include <moose/sys/syscalls.h>
+#include <moose/sys/usrsys.h>
+#include <moose/varargs.h>
 
 u64 __syscall(u64 function, u64 arg0, u64 arg1, u64 arg2, u64 arg3, u64 arg4) {
     u64 result;
     asm volatile(
         "movq %[syscall_number], %%rax\n"
-        "movq %[arg4], %%rdi\n"
-        "movq %[arg3], %%rsi\n"
+        "movq %[arg4], %%r8\n"
+        "movq %[arg3], %%r10\n"
         "movq %[arg2], %%rdx\n"
-        "movq %[arg1], %%r10\n"
-        "movq %[arg0], %%r8\n"
+        "movq %[arg1], %%rsi\n"
+        "movq %[arg0], %%rdi\n"
         "syscall\n"
         : "=rax"(result)
         : [syscall_number] "g"(function), [arg4] "g"(arg4), [arg3] "g"(arg3),

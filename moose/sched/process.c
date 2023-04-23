@@ -1,4 +1,4 @@
-#include <sched/sched.h>
+#include <moose/sched/sched.h>
 
 __used static struct file *get_file(struct process *p, int fd) {
     return fd < ARRAY_SIZE(p->files) ? p->files[fd] : NULL;

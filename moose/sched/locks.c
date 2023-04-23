@@ -1,5 +1,5 @@
-#include <assert.h>
-#include <sched/locks.h>
+#include <moose/assert.h>
+#include <moose/sched/locks.h>
 
 void init_spin_lock(spinlock_t *spinlock) {
     atomic_set(&spinlock->atomic, 0);

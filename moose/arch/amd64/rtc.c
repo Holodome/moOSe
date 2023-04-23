@@ -1,9 +1,9 @@
-#include <arch/amd64/rtc.h>
-#include <arch/cpu.h>
-#include <arch/interrupts.h>
-#include <kstdio.h>
-#include <sched/sched.h>
-#include <time.h>
+#include <moose/arch/amd64/rtc.h>
+#include <moose/arch/cpu.h>
+#include <moose/arch/interrupts.h>
+#include <moose/kstdio.h>
+#include <moose/sched/sched.h>
+#include <moose/time.h>
 
 #define RATE 8
 #define fREQUENCY (32768 >> (RATE - 1))

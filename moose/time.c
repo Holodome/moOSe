@@ -1,7 +1,7 @@
-#include <time.h>
+#include <moose/time.h>
 
-#include <assert.h>
-#include <kstdio.h>
+#include <moose/assert.h>
+#include <moose/kstdio.h>
 
 time_t ktm_to_time(const struct ktm *tm) {
     time_t days = days_since_epoch(tm->tm_year + 1900, tm->tm_mon, tm->tm_mday);

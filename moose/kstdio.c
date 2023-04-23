@@ -1,9 +1,9 @@
-#include <assert.h>
-#include <ctype.h>
-#include <kstdio.h>
-#include <string.h>
-#include <tty/vga_console.h>
-#include <tty/vterm.h>
+#include <moose/assert.h>
+#include <moose/ctype.h>
+#include <moose/kstdio.h>
+#include <moose/string.h>
+#include <moose/tty/vga_console.h>
+#include <moose/tty/vterm.h>
 
 struct printf_opts {
     size_t width;

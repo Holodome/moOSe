@@ -1,7 +1,7 @@
 #pragma once
 
-#include <kstdio.h>
-#include <types.h>
+#include <moose/kstdio.h>
+#include <moose/types.h>
 
 void init_disk(void);
 

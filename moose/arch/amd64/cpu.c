@@ -1,10 +1,10 @@
-#include <arch/amd64/asm.h>
-#include <arch/cpu.h>
-#include <assert.h>
-#include <kstdio.h>
-#include <mm/kmalloc.h>
-#include <sched/sched.h>
-#include <sys/syscalls.h>
+#include <moose/arch/amd64/asm.h>
+#include <moose/arch/cpu.h>
+#include <moose/assert.h>
+#include <moose/kstdio.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/sched/sched.h>
+#include <moose/sys/syscalls.h>
 
 #define MSR_EFER 0xc0000080
 #define MSR_STAR 0xc0000081
@@ -197,11 +197,11 @@ __naked __noinline void syscall_entry(void) {
 void parse_syscall_parameters(const struct registers_state *state,
                                struct syscall_parameters *params) {
     params->function = state->rax;
-    params->arg0 = state->r8;
-    params->arg1 = state->r10;
+    params->arg0 = state->rdi;
+    params->arg1 = state->rsi;
     params->arg2 = state->rdx;
-    params->arg3 = state->rsi;
-    params->arg4 = state->rdi;
+    params->arg3 = state->r10;
+    params->arg4 = state->r8;
 }
 
 void set_syscall_result(u64 result, struct registers_state *state) {

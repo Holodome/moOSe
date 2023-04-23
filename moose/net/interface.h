@@ -1,6 +1,6 @@
 #pragma once
 
-#include <net/device.h>
+#include <moose/net/device.h>
 
 #define IFNAME_SIZE 16
 

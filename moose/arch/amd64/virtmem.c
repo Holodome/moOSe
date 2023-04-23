@@ -1,10 +1,10 @@
-#include <arch/amd64/asm.h>
-#include <arch/amd64/virtmem.h>
-#include <arch/cpu.h>
-#include <bitops.h>
-#include <mm/physmem.h>
-#include <param.h>
-#include <string.h>
+#include <moose/arch/amd64/asm.h>
+#include <moose/arch/amd64/virtmem.h>
+#include <moose/arch/cpu.h>
+#include <moose/bitops.h>
+#include <moose/mm/physmem.h>
+#include <moose/param.h>
+#include <moose/string.h>
 
 int alloc_virtual_page(u64 virt_addr) {
     ssize_t addr = alloc_page();

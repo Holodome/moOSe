@@ -1,5 +1,5 @@
-#include <sched/mutex.h>
-#include <sched/sched.h>
+#include <moose/sched/mutex.h>
+#include <moose/sched/sched.h>
 
 void init_mutex(mutex_t *lock) {
     lock->holder = NULL;

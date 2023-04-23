@@ -1,13 +1,13 @@
-#include <errno.h>
-#include <kstdio.h>
-#include <mm/kmalloc.h>
-#include <net/eth.h>
-#include <net/frame.h>
-#include <net/inet.h>
-#include <net/netdaemon.h>
-#include <sched/locks.h>
-#include <sched/sched.h>
-#include <string.h>
+#include <moose/errno.h>
+#include <moose/kstdio.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/net/eth.h>
+#include <moose/net/frame.h>
+#include <moose/net/inet.h>
+#include <moose/net/netdaemon.h>
+#include <moose/sched/locks.h>
+#include <moose/sched/sched.h>
+#include <moose/string.h>
 
 #define QUEUE_SIZE 32
 

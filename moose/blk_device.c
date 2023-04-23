@@ -1,9 +1,9 @@
-#include <blk_device.h>
-#include <errno.h>
-#include <kstdio.h>
-#include <mm/kmalloc.h>
-#include <panic.h>
-#include <string.h>
+#include <moose/blk_device.h>
+#include <moose/errno.h>
+#include <moose/kstdio.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/panic.h>
+#include <moose/string.h>
 
 struct blk_device_buffered {
     struct blk_device *dev;

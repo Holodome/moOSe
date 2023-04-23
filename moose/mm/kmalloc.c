@@ -1,11 +1,11 @@
-#include <arch/amd64/virtmem.h>
-#include <assert.h>
-#include <bitops.h>
-#include <list.h>
-#include <mm/kmalloc.h>
-#include <param.h>
-#include <sched/locks.h>
-#include <string.h>
+#include <moose/arch/amd64/virtmem.h>
+#include <moose/assert.h>
+#include <moose/bitops.h>
+#include <moose/list.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/param.h>
+#include <moose/sched/locks.h>
+#include <moose/string.h>
 
 #define BRK_BASE ((uintptr_t)0xffffc90000000000llu)
 #define BRK_LIMIT ((uintptr_t)0xffffe8ffffffffffllu)

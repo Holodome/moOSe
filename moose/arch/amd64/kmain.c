@@ -1,18 +1,18 @@
-#include <arch/amd64/idt.h>
-#include <arch/amd64/memmap.h>
-#include <arch/amd64/rtc.h>
-#include <arch/amd64/virtmem.h>
-#include <arch/cpu.h>
-#include <arch/interrupts.h>
-#include <assert.h>
-#include <kstdio.h>
-#include <mm/kmalloc.h>
-#include <mm/kmem.h>
-#include <mm/physmem.h>
-#include <panic.h>
-#include <sched/sched.h>
-#include <types.h>
-#include <sys/usrsys.h>
+#include <moose/arch/amd64/idt.h>
+#include <moose/arch/amd64/memmap.h>
+#include <moose/arch/amd64/rtc.h>
+#include <moose/arch/amd64/virtmem.h>
+#include <moose/arch/cpu.h>
+#include <moose/arch/interrupts.h>
+#include <moose/assert.h>
+#include <moose/kstdio.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/mm/kmem.h>
+#include <moose/mm/physmem.h>
+#include <moose/panic.h>
+#include <moose/sched/sched.h>
+#include <moose/types.h>
+#include <moose/sys/usrsys.h>
 
 static void zero_bss(void) {
     extern u64 __bss_start;

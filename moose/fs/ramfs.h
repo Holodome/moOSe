@@ -1,5 +1,5 @@
 #pragma once
 
-#include <fs/vfs.h>
+#include <moose/fs/vfs.h>
 
 int ramfs_mount(struct superblock *sb);

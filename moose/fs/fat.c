@@ -1,11 +1,11 @@
-#include <assert.h>
-#include <blk_device.h>
-#include <ctype.h>
-#include <endian.h>
-#include <errno.h>
-#include <fs/fat.h>
-#include <kstdio.h>
-#include <string.h>
+#include <moose/assert.h>
+#include <moose/blk_device.h>
+#include <moose/ctype.h>
+#include <moose/endian.h>
+#include <moose/errno.h>
+#include <moose/fs/fat.h>
+#include <moose/kstdio.h>
+#include <moose/string.h>
 
 #define PFATFS_ROOTDIR ((u32)1)
 #define PFATFS_DIRENT_SIZE 32

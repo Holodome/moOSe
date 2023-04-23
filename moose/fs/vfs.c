@@ -1,8 +1,8 @@
-#include <assert.h>
-#include <errno.h>
-#include <fs/vfs.h>
-#include <kstdio.h>
-#include <mm/kmalloc.h>
+#include <moose/assert.h>
+#include <moose/errno.h>
+#include <moose/fs/vfs.h>
+#include <moose/kstdio.h>
+#include <moose/mm/kmalloc.h>
 
 static struct filesystem *filesystem;
 

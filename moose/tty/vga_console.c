@@ -1,8 +1,8 @@
-#include <errno.h>
-#include <mm/kmalloc.h>
-#include <param.h>
-#include <string.h>
-#include <tty/console.h>
+#include <moose/errno.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/param.h>
+#include <moose/string.h>
+#include <moose/tty/console.h>
 
 #define PORT_CTL 0x3d4
 #define PORT_DAT 0x3d5

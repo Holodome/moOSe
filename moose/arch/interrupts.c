@@ -1,9 +1,9 @@
-#include <arch/amd64/idt.h>
-#include <arch/interrupts.h>
-#include <assert.h>
-#include <kstdio.h>
-#include <sched/locks.h>
-#include <sched/sched.h>
+#include <moose/arch/amd64/idt.h>
+#include <moose/arch/interrupts.h>
+#include <moose/assert.h>
+#include <moose/kstdio.h>
+#include <moose/sched/locks.h>
+#include <moose/sched/sched.h>
 
 static struct {
     struct list_head isr_lists[256];

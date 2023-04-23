@@ -1,7 +1,7 @@
 #pragma once
 
-#include <mm/kmem.h>
-#include <types.h>
+#include <moose/mm/kmem.h>
+#include <moose/types.h>
 
 #define ENTRIES_PER_TABLE 512
 
