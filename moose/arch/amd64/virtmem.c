@@ -93,6 +93,7 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
         pml4_entry->present = 1;
         pml4_entry->rw = 1;
         pml4_entry->addr = (u64)pdptr_table >> PAGE_SIZE_BITS;
+        pml4_entry->us = 1;
     }
 
     struct pdptr_table *pdptr_table = pdptr_from_pml4e(pml4_entry);
@@ -106,6 +107,7 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
         pdpt_entry->present = 1;
         pdpt_entry->rw = 1;
         pdpt_entry->addr = (u64)page_directory >> PAGE_SIZE_BITS;
+        pdpt_entry->us = 1;
     }
 
     struct page_directory *page_directory = pdir_from_pdpte(pdpt_entry);
@@ -119,6 +121,7 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
         pd_entry->present = 1;
         pd_entry->rw = 1;
         pd_entry->addr = (u64)page_table >> PAGE_SIZE_BITS;
+        pd_entry->us = 1;
     }
 
     struct page_table *page_table = pt_from_pdire(pd_entry);
@@ -126,6 +129,8 @@ int map_virtual_page(u64 phys_addr, u64 virt_addr) {
 
     pt_entry->present = 1;
     pt_entry->addr = phys_addr >> PAGE_SIZE_BITS;
+    pt_entry->us = 1;
+    pt_entry->rw = 1;
 
     return 0;
 }

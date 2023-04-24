@@ -4,6 +4,7 @@
 #include <moose/assert.h>
 #include <moose/kstdio.h>
 #include <moose/mm/kmalloc.h>
+#include <moose/param.h>
 #include <moose/sched/sched.h>
 #include <moose/sys/syscalls.h>
 
@@ -43,6 +44,40 @@ struct debug_registers {
 };
 
 static_assert(sizeof(struct debug_registers) == 0xa8);
+
+struct gdt_entry {
+    union {
+        struct {
+            u32 low;
+            u32 high;
+        };
+        struct {
+            u16 limit_lo;
+            u16 base_lo;
+            u8 base_hi;
+            u8 type : 4;
+            u8 descriptor_type : 1;
+            u8 dpl : 2;
+            u8 segment_present : 1;
+            u8 limit_hi : 4;
+            u8 : 1;
+            u8 operation_size64 : 1;
+            u8 operation_size32 : 1;
+            u8 granularity : 1;
+            u8 base_hi2;
+        };
+    };
+};
+
+static_assert(sizeof(struct gdt_entry) == 8);
+
+struct gdt_reg {
+    u16 size;
+    u64 offset;
+} __packed;
+
+static struct gdt_entry gdt[256] __aligned(16);
+static struct gdt_reg gdtr;
 
 static __noinline __naked void
 get_registers(struct debug_registers *r __unused) {
@@ -209,7 +244,7 @@ void set_syscall_result(u64 result, struct registers_state *state) {
     state->rax = result;
 }
 
-void init_percpu(void) {
+static void init_percpu(void) {
     // TODO: This is certainly not nice
     extern struct process idle_process;
     struct percpu *percpu = kzalloc(sizeof(*percpu));
@@ -228,9 +263,39 @@ static void setup_syscall(void) {
     write_msr(MSR_STAR, star);
     write_msr(MSR_LSTAR, (u64)syscall_entry);
     write_msr(MSR_SFMASK, 0x257fd5u);
+
+    struct percpu *percpu = get_percpu();
+    percpu->kernel_stack =
+        (u64)kmalloc(sizeof(union process_stack)) + sizeof(union process_stack);
+}
+
+static void init_gdt(void) {
+    gdt[0].low = 0x00000000;
+    gdt[0].high = 0x00000000;
+    gdt[KERNEL_CS >> 3].low = 0x0000ffff;
+    gdt[KERNEL_CS >> 3].high = 0x00af9a00;
+    gdt[KERNEL_DS >> 3].low = 0x0000ffff;
+    gdt[KERNEL_DS >> 3].high = 0x00af9200;
+#if 0
+    gdt[USER_DS >> 3].low = 0x0000ffff;
+    gdt[USER_DS >> 3].high = 0x008ff200;
+    gdt[USER_CS >> 3].low = 0x0000ffff;
+    gdt[USER_CS >> 3].high = 0x00affa00;
+#else
+    gdt[USER_DS >> 3].low = 0x0000ffff;
+    gdt[USER_DS >> 3].high = 0x00af9200;
+    gdt[USER_CS >> 3].low = 0x0000ffff;
+    gdt[USER_CS >> 3].high = 0x00af9a00;
+#endif
+
+    gdtr.offset = (u64)&gdt;
+    gdtr.size = sizeof(gdt) - 1;
+    asm volatile("lidt %0\n" : : "m"(gdtr));
 }
 
 void init_cpu(void) {
+    init_percpu();
     init_cpuid();
+    init_gdt();
     setup_syscall();
 }

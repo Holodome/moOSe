@@ -110,7 +110,6 @@ struct percpu {
     u64 kernel_stack;
 };
 
-void init_percpu(void);
 void init_cpu(void);
 
 static __forceinline __nodiscard struct percpu *get_percpu(void) {

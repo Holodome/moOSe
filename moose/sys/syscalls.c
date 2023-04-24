@@ -41,6 +41,8 @@ int sys$creat(const char *name, mode_t mode) {
 }
 
 ssize_t sys$read(int fd, void *buf, size_t count) {
+    kprintf("hello world\n");
+    for(;;);
     (void)fd;
     (void)buf;
     (void)(count);

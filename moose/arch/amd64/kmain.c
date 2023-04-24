@@ -49,13 +49,11 @@ static void init_memory(void) {
 
     if (init_virt_mem(ranges, usable_region_count))
         panic("failed to initialize virtual memory");
-
-    init_percpu();
 }
 
 void other_task(void *arg __unused) {
+    read(0, NULL, 0);
     for (;;) {
-        kprintf("world\n");
         wait_for_int();
     }
 }
@@ -69,15 +67,14 @@ __noreturn void kmain(void) {
 
     init_cpu();
     init_memory();
-    init_scheduler();
     init_interrupts();
     init_idt();
+    init_scheduler();
     init_rtc();
 
     launch_process("other", other_task, NULL);
 
     for (;;) {
-        kprintf("hello\n");
         wait_for_int();
     }
 

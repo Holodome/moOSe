@@ -19,7 +19,12 @@
 
 #define MMIO_VIRTUAL_BASE 0xffffe90000000000
 
-#define KERNEL_CS 8
-#define KERNEL_DS 16
+#define KERNEL_CS 0x08
+#define KERNEL_DS 0x10
+#define USER_DS   0x18
+#define USER_CS   0x20
+#define TSS_SEL   0x28
+#define TSS_SEL1  0x30
+
 
 #define KERNEL_INITIAL_STACK 0x90000
