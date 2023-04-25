@@ -80,6 +80,7 @@ void launch_process(const char *name, void (*function)(void *), void *arg) {
 }
 
 static void context_switch(struct process *from, struct process *to) {
+    expects(to->execution_state.rsp % 16 == 0);
     switch_process(from, to);
 }
 

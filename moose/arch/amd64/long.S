@@ -16,15 +16,15 @@ enable_long_mode:
     movl %cr3, %edi
 
     /* set up page tables */
-    movl $0x2003, (%edi)
+    movl $0x2003 | 0x4, (%edi)
     addl $0x1000, %edi
-    movl $0x3003, (%edi)
+    movl $0x3003 | 0x4, (%edi)
     addl $0x1000, %edi
-    movl $0x4003, (%edi)
+    movl $0x4003 | 0x4, (%edi)
     addl $0x1000, %edi
 
     /* set up low page table entries with identity mapping */
-    movl $3, %ebx
+    movl $3 | 0x4, %ebx
     movl $512, %ecx
 set_low_entry:
     movl %ebx, (%edi)
@@ -34,15 +34,15 @@ set_low_entry:
 
     /* (0xffff880000000000 >> 39) & 0x1ff) = 272 */
     movl $(0x1000 + 272*8), %edi
-    movl $0x5003, (%edi)
+    movl $0x5003 | 0x4, (%edi)
     movl $0x5000, %edi
-    movl $0x6003, (%edi)
+    movl $0x6003 | 0x4, (%edi)
     addl $0x1000, %edi
-    movl $0x7003, (%edi)
+    movl $0x7003 | 0x4, (%edi)
     addl $0x1000, %edi
 
     /* set up high page table entries */
-    movl $3, %ebx
+    movl $3 | 0x4, %ebx
     movl $512, %ecx
 set_high_entry:
     movl %ebx, (%edi)

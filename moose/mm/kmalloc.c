@@ -71,7 +71,7 @@ static void init_subheap(struct subheap *heap) {
 }
 
 void init_kmalloc(void) {
-    static u8 initial_memory[INITIAL_HEAP_SIZE];
+    static u8 initial_memory[INITIAL_HEAP_SIZE] __aligned(ALIGNMENT);
     static struct subheap initial_subheap = {
         .memory = initial_memory,
         .size = INITIAL_HEAP_SIZE,

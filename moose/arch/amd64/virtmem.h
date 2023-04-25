@@ -106,8 +106,6 @@ int alloc_virtual_pages(u64 virt_addr, size_t page_count);
 void free_virtual_page(u64 virt_addr);
 void free_virtual_pages(u64 virt_addr, size_t page_count);
 
-struct pt_entry *get_page_entry(u64 virt_addr);
-
 int map_virtual_page(u64 phys_addr, u64 virt_addr);
 int map_virtual_region(u64 phys_base, u64 virt_base, size_t size);
 void unmap_virtual_page(u64 virt_addr);

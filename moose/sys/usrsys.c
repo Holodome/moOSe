@@ -1,3 +1,4 @@
+#include <moose/param.h>
 #include <moose/sys/syscalls.h>
 #include <moose/sys/usrsys.h>
 #include <moose/varargs.h>
@@ -12,10 +13,10 @@ u64 __syscall(u64 function, u64 arg0, u64 arg1, u64 arg2, u64 arg3, u64 arg4) {
         "movq %[arg1], %%rsi\n"
         "movq %[arg0], %%rdi\n"
         "syscall\n"
-        : "=rax"(result)
+        : "=a"(result)
         : [syscall_number] "g"(function), [arg4] "g"(arg4), [arg3] "g"(arg3),
           [arg2] "g"(arg2), [arg1] "g"(arg1), [arg0] "g"(arg0)
-        : "rdi", "rsi", "rdx", "r10", "r8");
+        : "rcx", "r11", "rdi", "rsi", "rdx", "r10", "r8", "memory");
     return result;
 }
 

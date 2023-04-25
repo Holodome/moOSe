@@ -76,8 +76,48 @@ struct gdt_reg {
     u64 offset;
 } __packed;
 
+struct tss_entry {
+    u32 __1; // Link?
+    u32 rsp0l;
+    u32 rsp0h;
+    u32 rsp1l;
+    u32 rsp1h;
+    u32 rsp2l;
+    u32 rsp2h;
+    u64 __2; // probably CR3 and EIP?
+    u32 ist1l;
+    u32 ist1h;
+    u32 ist2l;
+    u32 ist2h;
+    u32 ist3l;
+    u32 ist3h;
+    u32 ist4l;
+    u32 ist4h;
+    u32 ist5l;
+    u32 ist5h;
+    u32 ist6l;
+    u32 ist6h;
+    u32 ist7l;
+    u32 ist7h;
+    u64 __3; // GS and LDTR?
+    u16 __4;
+    u16 iomapbase;
+};
+
 static struct gdt_entry gdt[256] __aligned(16);
 static struct gdt_reg gdtr;
+static struct tss_entry tss;
+
+static void gdte_set_base(u32 base, struct gdt_entry *e) {
+    e->base_lo = base & 0xffffu;
+    e->base_hi = (base >> 16u) & 0xffu;
+    e->base_hi2 = (base >> 24u) & 0xffu;
+}
+
+static void gdte_set_limit(u32 length, struct gdt_entry *e) {
+    e->limit_lo = length & 0xffffu;
+    e->limit_hi = (length >> 16) & 0xfu;
+}
 
 static __noinline __naked void
 get_registers(struct debug_registers *r __unused) {
@@ -177,11 +217,11 @@ __naked __noinline void syscall_entry(void) {
         "movq %%rsp, %%gs:%c[user_stack]\n"
         "movq %%gs:%c[kernel_stack], %%rsp\n"
         // build registers_state
-        "pushq $0x1b\n"               // uss
+        "pushq $0x10\n"               // uss
         "pushq %%gs:%c[user_stack]\n" // ursp
         "sti\n"
         "pushq %%r11\n" // rflags
-        "pushq $0x23\n" // cs
+        "pushq $0x08\n" // cs
         "pushq %%rcx\n" // rip
         "pushq $0x0\n"  // exception_code
         "pushq $0x0\n"  // isr_number
@@ -221,7 +261,7 @@ __naked __noinline void syscall_entry(void) {
         "popq %%r13\n"
         "popq %%r14\n"
         "popq %%r15\n"
-        "addq $16, %%rsp\n"
+        "addq $0x10, %%rsp\n"
         "popq %%rcx\n"
         "addq $0x10, %%rsp\n"
         "cli\n"
@@ -269,14 +309,42 @@ static void setup_syscall(void) {
         (u64)kmalloc(sizeof(union process_stack)) + sizeof(union process_stack);
 }
 
+static void flush_gdt(void) {
+    gdtr.offset = (u64)&gdt;
+    gdtr.size = sizeof(gdt) - 1;
+    asm volatile("lgdt %0\n"
+                 "leaq 1f(%%rip), %%rax\n"
+                 "pushq $0x8\n"
+                 "pushq %%rax\n"
+                 ".byte 0x48\n" // rex.w
+                 "ljmp *(%%rsp)\n"
+                 "1:\n"
+                 "addq $0x10, %%rsp\n"
+                 :
+                 : "m"(gdtr)
+                 : "cc", "memory", "rax");
+}
+
+static void flush_tss(void) {
+    asm volatile("movw $(5 * 8), %%ax\n"
+                 "ltrw %%ax\n" ::
+                     : "memory", "ax");
+}
+
 static void init_gdt(void) {
+    static union process_stack interrupt_stack;
+    u64 addr = (u64)(void *)(&interrupt_stack + 1);
+    tss.rsp0l = addr;
+    tss.rsp0h = addr >> 32;
+    tss.iomapbase = sizeof(tss);
+
     gdt[0].low = 0x00000000;
     gdt[0].high = 0x00000000;
     gdt[KERNEL_CS >> 3].low = 0x0000ffff;
     gdt[KERNEL_CS >> 3].high = 0x00af9a00;
     gdt[KERNEL_DS >> 3].low = 0x0000ffff;
     gdt[KERNEL_DS >> 3].high = 0x00af9200;
-#if 0
+#if 1
     gdt[USER_DS >> 3].low = 0x0000ffff;
     gdt[USER_DS >> 3].high = 0x008ff200;
     gdt[USER_CS >> 3].low = 0x0000ffff;
@@ -287,10 +355,18 @@ static void init_gdt(void) {
     gdt[USER_CS >> 3].low = 0x0000ffff;
     gdt[USER_CS >> 3].high = 0x00af9a00;
 #endif
+    struct gdt_entry *tss0 = gdt + (TSS_SEL >> 3);
+    gdte_set_base((u32)(u64)&tss, tss0);
+    gdte_set_limit(sizeof(tss) - 1, tss0);
+    tss0->segment_present = 1;
+    tss0->operation_size32 = 1;
+    tss0->type = 0x9;
 
-    gdtr.offset = (u64)&gdt;
-    gdtr.size = sizeof(gdt) - 1;
-    asm volatile("lidt %0\n" : : "m"(gdtr));
+    struct gdt_entry *tss1 = tss0 + 1;
+    tss1->low = (u32)(((u64)&tss) >> 32);
+
+    flush_gdt();
+    flush_tss();
 }
 
 void init_cpu(void) {

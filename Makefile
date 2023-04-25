@@ -40,7 +40,11 @@ qemu: all
 	$(QEMU) -d guest_errors \
 	-device pci-bridge,id=bridge1,bus=pci.0,chassis_nr=4 \
 	-device rtl8139,netdev=moose0,bus=pci.0 -netdev user,id=moose0 \
-	-drive file=$(TARGET_IMG),format=raw,index=0,if=ide
+	-drive file=$(TARGET_IMG),format=raw,index=0,if=ide \
+	-no-reboot
+
+bochs: all
+	bochs -q -f meta/bochsrc
 
 format:
 	$(Q)find moose \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} \;

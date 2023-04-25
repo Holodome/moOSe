@@ -26,5 +26,4 @@
 #define TSS_SEL   0x28
 #define TSS_SEL1  0x30
 
-
 #define KERNEL_INITIAL_STACK 0x90000

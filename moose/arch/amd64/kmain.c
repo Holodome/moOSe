@@ -51,11 +51,12 @@ static void init_memory(void) {
         panic("failed to initialize virtual memory");
 }
 
-void other_task(void *arg __unused) {
+__used static void other_task(void *arg __unused) {
     read(0, NULL, 0);
-    for (;;) {
-        wait_for_int();
-    }
+    /* *(int volatile *)0 = 0; */
+    for (;;)
+        pause();
+    /* wait_for_int(); */
 }
 
 __noreturn void kmain(void) {
@@ -67,10 +68,13 @@ __noreturn void kmain(void) {
 
     init_cpu();
     init_memory();
+
     init_interrupts();
     init_idt();
     init_scheduler();
     init_rtc();
+    /* for (;;) */
+    /*     ; */
 
     launch_process("other", other_task, NULL);
 
