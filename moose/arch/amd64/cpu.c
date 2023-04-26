@@ -190,6 +190,7 @@ void init_process_registers(struct registers_state *regs, void (*fn)(void *),
     regs->rsp = stack_end;
     regs->rbp = stack_end;
     regs->rdi = (u64)arg;
+    regs->uss = USER_DS;
 }
 
 __naked __noinline void switch_process(struct process *from __unused,
@@ -217,11 +218,11 @@ __naked __noinline void syscall_entry(void) {
         "movq %%rsp, %%gs:%c[user_stack]\n"
         "movq %%gs:%c[kernel_stack], %%rsp\n"
         // build registers_state
-        "pushq $0x10\n"               // uss
+        "pushq $0x1b\n"               // uss
         "pushq %%gs:%c[user_stack]\n" // ursp
         "sti\n"
         "pushq %%r11\n" // rflags
-        "pushq $0x08\n" // cs
+        "pushq $0x23\n" // cs
         "pushq %%rcx\n" // rip
         "pushq $0x0\n"  // exception_code
         "pushq $0x0\n"  // isr_number
@@ -344,7 +345,7 @@ static void init_gdt(void) {
     gdt[KERNEL_CS >> 3].high = 0x00af9a00;
     gdt[KERNEL_DS >> 3].low = 0x0000ffff;
     gdt[KERNEL_DS >> 3].high = 0x00af9200;
-#if 1
+#if 0
     gdt[USER_DS >> 3].low = 0x0000ffff;
     gdt[USER_DS >> 3].high = 0x008ff200;
     gdt[USER_CS >> 3].low = 0x0000ffff;

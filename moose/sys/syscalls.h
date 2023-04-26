@@ -97,7 +97,7 @@ void syscall_handler(struct registers_state *state);
 int sys$open(const char *name, int flags, mode_t mode);
 int sys$creat(const char *name, mode_t mode);
 ssize_t sys$read(int fd, void *buf, size_t count);
-ssize_t sys$write(int fd, void *buf, size_t count);
+ssize_t sys$write(int fd, const void *buf, size_t count);
 int sys$close(int fd);
 int sys$stat(int fd, struct stat *stat);
 int sys$fork(void);

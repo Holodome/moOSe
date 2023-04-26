@@ -17,7 +17,7 @@ void syscall_handler(struct registers_state *state) {
     struct syscall_parameters params;
     parse_syscall_parameters(state, &params);
     if (params.function > ARRAY_SIZE(syscall_table)) {
-        kprintf("Invalid syscall number %lx\n", params.function);
+        kprintf("invalid syscall number %lx\n", params.function);
         return;
     }
 
@@ -25,6 +25,7 @@ void syscall_handler(struct registers_state *state) {
         params.arg0, params.arg1, params.arg2, params.arg3, params.arg4);
 
     set_syscall_result(result, state);
+    kprintf("exiting\n");
 }
 
 int sys$open(const char *name, int flags, mode_t mode) {
@@ -41,17 +42,17 @@ int sys$creat(const char *name, mode_t mode) {
 }
 
 ssize_t sys$read(int fd, void *buf, size_t count) {
-    kprintf("hello world\n");
     (void)fd;
     (void)buf;
     (void)(count);
     return -1;
 }
 
-ssize_t sys$write(int fd, void *buf, size_t count) {
-    (void)fd;
-    (void)buf;
-    (void)(count);
+ssize_t sys$write(int fd, const void *buf, size_t count) {
+    if (fd == 1 || fd == 2) {
+        kprint(buf, count);
+        return count;
+    }
     return -1;
 }
 

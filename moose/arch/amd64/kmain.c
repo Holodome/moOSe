@@ -52,11 +52,8 @@ static void init_memory(void) {
 }
 
 __used static void other_task(void *arg __unused) {
-    read(0, NULL, 0);
-    /* *(int volatile *)0 = 0; */
     for (;;)
         pause();
-    /* wait_for_int(); */
 }
 
 __noreturn void kmain(void) {
@@ -73,8 +70,6 @@ __noreturn void kmain(void) {
     init_idt();
     init_scheduler();
     init_rtc();
-    /* for (;;) */
-    /*     ; */
 
     launch_process("other", other_task, NULL);
 

@@ -6,12 +6,13 @@
 u64 __syscall(u64 function, u64 arg0, u64 arg1, u64 arg2, u64 arg3, u64 arg4) {
     u64 result;
     asm volatile(
-        "movq %[syscall_number], %%rax\n"
         "movq %[arg4], %%r8\n"
         "movq %[arg3], %%r10\n"
         "movq %[arg2], %%rdx\n"
         "movq %[arg1], %%rsi\n"
         "movq %[arg0], %%rdi\n"
+        "movq %[syscall_number], %%rax\n" // FIXME: In some situations gcc
+                                          // reorders arguments in bad way
         "syscall\n"
         : "=a"(result)
         : [syscall_number] "g"(function), [arg4] "g"(arg4), [arg3] "g"(arg3),
@@ -32,7 +33,7 @@ ssize_t read(int fd, void *buf, size_t count) {
     return (ssize_t)__syscall(__SYS_read, (u64)fd, (u64)buf, (u64)count, 0, 0);
 }
 
-ssize_t write(int fd, void *buf, size_t count) {
+ssize_t write(int fd, const void *buf, size_t count) {
     return (ssize_t)__syscall(__SYS_write, (u64)fd, (u64)buf, (u64)count, 0, 0);
 }
 

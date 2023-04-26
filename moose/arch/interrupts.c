@@ -141,6 +141,7 @@ void init_interrupts(void) {
 }
 
 void isr_handler(struct registers_state *regs) {
+    /* expects(regs->uss); */
     unsigned no = regs->isr_number;
     if (spin_trylock(&interrupts.lock)) {
         struct interrupt_handler *handler;

@@ -478,8 +478,12 @@ int kvprintf(const char *fmt, va_list args) {
 
     char buffer[256];
     int count = vsnprintf(buffer, sizeof(buffer), fmt, args);
-    vterm_write(kstdio_state.term, buffer, strlen(buffer));
+    kprint(buffer, strlen(buffer));
     return count;
+}
+
+void kprint(const char *str, size_t count) {
+    vterm_write(kstdio_state.term, str, count);
 }
 
 int init_kstdio(void) {

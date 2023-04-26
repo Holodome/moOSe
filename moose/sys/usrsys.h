@@ -11,7 +11,7 @@ u64 __syscall(u64 function, u64 arg0, u64 arg1, u64 arg2, u64 arg3, u64 arg4);
 int open(const char *name, int flags, mode_t mode);
 int creat(const char *name, mode_t mode);
 ssize_t read(int fd, void *buf, size_t count);
-ssize_t write(int fd, void *buf, size_t count);
+ssize_t write(int fd, const void *buf, size_t count);
 int close(int fd);
 int stat(int fd, struct stat *stat);
 int fork(void);
