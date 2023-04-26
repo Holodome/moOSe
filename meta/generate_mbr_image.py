@@ -8,7 +8,7 @@ boot_name, stage2_name, kernel_name, out_name = sys.argv[1:]
 boot = open(boot_name, "rb").read()
 stage2 = open(stage2_name, "rb").read()
 kernel = open(kernel_name, "rb").read()
-ext2 = open("scripts/ext2", "rb").read()
+ext2 = open("meta/ext2", "rb").read()
 
 stage2_size = (len(stage2) + 511) // 512
 kernel_offset = 1 + stage2_size
