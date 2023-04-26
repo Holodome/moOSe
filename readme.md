@@ -1,6 +1,8 @@
 # moOSe
 
-An unix-like operating system with aim at simplicity.
+A unix-like operating system with aim at simplicity.
+
+![screenshot](screenshots/v0.1.png)
 
 ## Features 
 

@@ -4,7 +4,7 @@
 #include <moose/time.h>
 
 #define RATE 8
-#define fREQUENCY (32768 >> (RATE - 1))
+#define FREQUENCY (32768 >> (RATE - 1))
 
 #define REG_SECS 0x00
 #define REG_MINS 0x02
@@ -63,10 +63,10 @@ u64 get_jiffies(void) {
     return jiffies;
 }
 u64 jiffies_to_msecs(u64 jiffies) {
-    return jiffies * 1000 / fREQUENCY;
+    return jiffies * 1000 / FREQUENCY;
 }
 u64 msecs_to_jiffies64(u64 msecs) {
-    return msecs * 1000 * fREQUENCY;
+    return msecs * 1000 * FREQUENCY;
 }
 
 static int is_update_in_progress(void) {
