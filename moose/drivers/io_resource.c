@@ -1,10 +1,10 @@
-#include <arch/amd64/virtmem.h>
-#include <assert.h>
-#include <bitops.h>
-#include <drivers/io_resource.h>
-#include <mm/kmalloc.h>
-#include <param.h>
-#include <sched/locks.h>
+#include <moose/arch/amd64/virtmem.h>
+#include <moose/assert.h>
+#include <moose/bitops.h>
+#include <moose/drivers/io_resource.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/param.h>
+#include <moose/sched/locks.h>
 
 static LIST_HEAD(port_regions);
 static LIST_HEAD(mem_regions);

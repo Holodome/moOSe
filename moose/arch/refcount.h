@@ -1,6 +1,6 @@
 #pragma once
 
-#include <arch/atomic.h>
+#include <moose/arch/atomic.h>
 
 typedef struct refcount {
     atomic_t refs;

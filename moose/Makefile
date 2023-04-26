@@ -14,6 +14,7 @@ KERNEL_OBJS := \
 	$(D)/arch/amd64/virtmem.o \
 	$(D)/arch/amd64/cpu.o \
 	$(D)/arch/amd64/delay.o \
+	$(D)/arch/amd64/cpuid.o \
 	$(D)/arch/refcount.o \
 	$(D)/arch/interrupts.o \
 	$(D)/drivers/ata.o \
@@ -27,6 +28,7 @@ KERNEL_OBJS := \
 	$(D)/sched/locks.o \
 	$(D)/sched/process.o \
 	$(D)/sched/mutex.o \
+	$(D)/sched/scheduler.o \
 	$(D)/fs/ext2.o \
 	$(D)/fs/vfs.o \
 	$(D)/fs/fat.o \
@@ -43,6 +45,8 @@ KERNEL_OBJS := \
 	$(D)/tty/console.o \
 	$(D)/tty/vga_console.o \
 	$(D)/tty/vterm.o \
+	$(D)/sys/syscalls.o \
+	$(D)/sys/usrsys.o \
 	$(D)/blk_device.o \
 	$(D)/panic.o \
 	$(D)/string.o \

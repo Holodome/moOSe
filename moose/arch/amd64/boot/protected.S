@@ -1,4 +1,4 @@
-#include <param.h>
+#include <moose/param.h>
 
 .global switch_to_32bit
 /* GDT that resembles flat memory model */

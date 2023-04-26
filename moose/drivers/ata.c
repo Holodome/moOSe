@@ -1,6 +1,6 @@
-#include <arch/cpu.h>
-#include <assert.h>
-#include <drivers/ata.h>
+#include <moose/arch/cpu.h>
+#include <moose/assert.h>
+#include <moose/drivers/ata.h>
 
 #define PRIMARY_BUS 0x1f0
 #define SECONDARY_BUS 0x170

@@ -1,8 +1,8 @@
-#include <bitops.h>
-#include <mm/physmem.h>
-#include <mm/slab.h>
-#include <param.h>
-#include <string.h>
+#include <moose/bitops.h>
+#include <moose/mm/physmem.h>
+#include <moose/mm/slab.h>
+#include <moose/param.h>
+#include <moose/string.h>
 
 #define FREE_QUEUE_END UINT_MAX
 #define FREE_QUEUE_PTR(_slab) ((u32 *)(((struct slab *)(_slab)) + 1))

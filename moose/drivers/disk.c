@@ -1,9 +1,9 @@
-#include <blk_device.h>
-#include <drivers/ata.h>
-#include <drivers/disk.h>
-#include <mbr.h>
-#include <panic.h>
-#include <string.h>
+#include <moose/blk_device.h>
+#include <moose/drivers/ata.h>
+#include <moose/drivers/disk.h>
+#include <moose/mbr.h>
+#include <moose/panic.h>
+#include <moose/string.h>
 
 static struct blk_device disk_dev_;
 struct blk_device *disk_dev = &disk_dev_;

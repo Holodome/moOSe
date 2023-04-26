@@ -1,10 +1,10 @@
-#include <arch/amd64/asm.h>
-#include <arch/amd64/idt.h>
-#include <arch/cpu.h>
-#include <assert.h>
-#include <kstdio.h>
-#include <panic.h>
-#include <sched/process.h>
+#include <moose/arch/amd64/asm.h>
+#include <moose/arch/amd64/idt.h>
+#include <moose/arch/cpu.h>
+#include <moose/assert.h>
+#include <moose/kstdio.h>
+#include <moose/panic.h>
+#include <moose/param.h>
 
 // clang-format off
 #define ENUMERATE_ISRS                                                         \
@@ -55,12 +55,12 @@
 
 static struct idt_entry idt[256] __aligned(16);
 
-static void set_idt_entry(u8 n, u64 isr_addr) {
+static void set_idt_entry(u8 n, u64 isr_addr, int is_trap) {
     struct idt_entry *e = idt + n;
     e->offset_low = isr_addr & 0xffff;
-    e->selector = 0x08;
+    e->selector = KERNEL_CS;
     e->ist = 0;
-    e->attr = 0x8e;
+    e->attr = 0x80 | 0x60 | (is_trap ? 0xf : 0xe);
     e->offset_mid = (isr_addr >> 16) & 0xffff;
     e->offset_high = isr_addr >> 32;
     e->reserved = 0;
@@ -97,7 +97,7 @@ __used __noinline __naked void isr_common_stub(void) {
                  "pushq %rbp\n"
                  "pushq %rsi\n"
                  "pushq %rdi\n"
-                 "mov %rsp, %rdi\n"
+                 "movq %rsp, %rdi\n"
                  "cld\n"
                  "call isr_handler\n"
                  "popq %rdi\n"
@@ -117,7 +117,7 @@ __used __noinline __naked void isr_common_stub(void) {
                  "popq %r14\n"
                  "popq %r15\n"
                  /* account for pushed isr_number and exception_code */
-                 "add $16, %rsp\n"
+                 "addq $16, %rsp\n"
                  "iretq\n");
 }
 
@@ -180,40 +180,40 @@ ENUMERATE_ISRS
 #undef _ISR
 
 void init_idt(void) {
-    set_idt_entry(0, (u64)exception0);
-    set_idt_entry(1, (u64)exception1);
-    set_idt_entry(2, (u64)exception2);
-    set_idt_entry(3, (u64)exception3);
-    set_idt_entry(4, (u64)exception4);
-    set_idt_entry(5, (u64)exception5);
-    set_idt_entry(6, (u64)exception6);
-    set_idt_entry(7, (u64)exception7);
-    set_idt_entry(8, (u64)exception8);
-    set_idt_entry(9, (u64)exception9);
-    set_idt_entry(10, (u64)exception10);
-    set_idt_entry(11, (u64)exception11);
-    set_idt_entry(12, (u64)exception12);
-    set_idt_entry(13, (u64)exception13);
-    set_idt_entry(14, (u64)exception14);
-    set_idt_entry(15, (u64)exception15);
-    set_idt_entry(16, (u64)exception16);
-    set_idt_entry(17, (u64)exception17);
-    set_idt_entry(18, (u64)exception18);
-    set_idt_entry(19, (u64)exception19);
-    set_idt_entry(20, (u64)exception20);
-    set_idt_entry(21, (u64)exception21);
-    set_idt_entry(22, (u64)exception22);
-    set_idt_entry(23, (u64)exception23);
-    set_idt_entry(24, (u64)exception24);
-    set_idt_entry(25, (u64)exception25);
-    set_idt_entry(26, (u64)exception26);
-    set_idt_entry(27, (u64)exception27);
-    set_idt_entry(28, (u64)exception28);
-    set_idt_entry(29, (u64)exception29);
-    set_idt_entry(30, (u64)exception30);
-    set_idt_entry(31, (u64)exception31);
+    set_idt_entry(0, (u64)exception0, 1);
+    set_idt_entry(1, (u64)exception1, 1);
+    set_idt_entry(2, (u64)exception2, 1);
+    set_idt_entry(3, (u64)exception3, 1);
+    set_idt_entry(4, (u64)exception4, 1);
+    set_idt_entry(5, (u64)exception5, 1);
+    set_idt_entry(6, (u64)exception6, 1);
+    set_idt_entry(7, (u64)exception7, 1);
+    set_idt_entry(8, (u64)exception8, 1);
+    set_idt_entry(9, (u64)exception9, 1);
+    set_idt_entry(10, (u64)exception10, 1);
+    set_idt_entry(11, (u64)exception11, 1);
+    set_idt_entry(12, (u64)exception12, 1);
+    set_idt_entry(13, (u64)exception13, 1);
+    set_idt_entry(14, (u64)exception14, 1);
+    set_idt_entry(15, (u64)exception15, 1);
+    set_idt_entry(16, (u64)exception16, 1);
+    set_idt_entry(17, (u64)exception17, 1);
+    set_idt_entry(18, (u64)exception18, 1);
+    set_idt_entry(19, (u64)exception19, 1);
+    set_idt_entry(20, (u64)exception20, 1);
+    set_idt_entry(21, (u64)exception21, 1);
+    set_idt_entry(22, (u64)exception22, 1);
+    set_idt_entry(23, (u64)exception23, 1);
+    set_idt_entry(24, (u64)exception24, 1);
+    set_idt_entry(25, (u64)exception25, 1);
+    set_idt_entry(26, (u64)exception26, 1);
+    set_idt_entry(27, (u64)exception27, 1);
+    set_idt_entry(28, (u64)exception28, 1);
+    set_idt_entry(29, (u64)exception29, 1);
+    set_idt_entry(30, (u64)exception30, 1);
+    set_idt_entry(31, (u64)exception31, 1);
 
-#define _ISR(_number) set_idt_entry(_number, (u64)isr##_number);
+#define _ISR(_number) set_idt_entry(_number, (u64)isr##_number, 0);
     ENUMERATE_ISRS
 #undef _ISR
 
@@ -228,7 +228,6 @@ void init_idt(void) {
     port_out8(0xA1, 0x01);
     port_out8(0x21, 0x0);
     port_out8(0xA1, 0x0);
-
 
     load_idt();
     sti();

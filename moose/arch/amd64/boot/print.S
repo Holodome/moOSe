@@ -14,94 +14,94 @@
 #define WHITE_ON_BLACK 0x0f
 
 cls:
-    mov $' ', %al
-    mov $WHITE_ON_BLACK, %ah
-    mov $VMEM, %ebx
+    movb $' ', %al
+    movb $WHITE_ON_BLACK, %ah
+    movl $VMEM, %ebx
 cls_loop:
-    mov %ax, (%ebx)
+    movw %ax, (%ebx)
 
-    add $2, %ebx
-    cmp $VMEM + MAX_ROWS * MAX_COLS * 2, %ebx
+    addl $2, %ebx
+    cmpl $VMEM + MAX_ROWS * MAX_COLS * 2, %ebx
     jne cls_loop
 
-    mov $14, %al
-    mov $P_SCRCTL, %dx
-    out %al, %dx
-    mov $0, %al
-    mov $P_SCRDAT, %dx
-    out %al, %dx
-    mov $15, %al
-    mov $P_SCRCTL, %dx
-    out %al, %dx
-    mov $0, %al
-    mov $P_SCRDAT, %dx
-    out %al, %dx
+    movb $14, %al
+    movw $P_SCRCTL, %dx
+    outb %al, %dx
+    movb $0, %al
+    movw $P_SCRDAT, %dx
+    outb %al, %dx
+    movb $15, %al
+    movw $P_SCRCTL, %dx
+    outb %al, %dx
+    movb $0, %al
+    movw $P_SCRDAT, %dx
+    outb %al, %dx
 
     ret
 
 print:
-    push %ebp
-    push %ebx
-    mov %esp, %ebp
+    pushl %ebp
+    pushl %ebx
+    movl %esp, %ebp
 
     /* get cursor to ecx */
-    xor %ecx, %ecx
-    mov $14, %al
-    mov $P_SCRCTL, %dx
-    out %al, %dx
-    mov $P_SCRDAT, %dx
-    in %dx, %al
-    mov %al, %ch
-    mov $15, %al
-    mov $P_SCRCTL, %dx
-    out %al, %dx
-    mov $P_SCRDAT, %dx
-    in %dx, %al
-    mov %al, %cl
+    xorl %ecx, %ecx
+    movb $14, %al
+    movw $P_SCRCTL, %dx
+    outb %al, %dx
+    movw $P_SCRDAT, %dx
+    inb %dx, %al
+    movb %al, %ch
+    movb $15, %al
+    movw $P_SCRCTL, %dx
+    outb %al, %dx
+    movw $P_SCRDAT, %dx
+    inb %dx, %al
+    movb %al, %cl
     /* ecx is cursor position */
-    mov 12(%ebp), %eax
+    movl 12(%ebp), %eax
 print_loop:
-    mov (%eax), %bl
-    cmp $0, %bl
+    movb (%eax), %bl
+    cmpb $0, %bl
     je print_end
-    inc %eax
+    incl %eax
 
-    mov $WHITE_ON_BLACK, %bh
-    mov $VMEM, %edx
-    lea (%edx, %ecx, 2), %edx
-    mov %bx, (%edx)
-    inc %ecx
+    movb $WHITE_ON_BLACK, %bh
+    movl $VMEM, %edx
+    leal (%edx, %ecx, 2), %edx
+    movw %bx, (%edx)
+    incl %ecx
 
     jmp print_loop
 print_end:
     /* move cursor to next line
      do not bother with scrolling because there should not be much messages
      anyway */
-    xor %edx, %edx
-    mov %ecx, %eax
-    mov $MAX_COLS, %ebx
+    xorl %edx, %edx
+    movl %ecx, %eax
+    movl $MAX_COLS, %ebx
     idivl %ebx
-    inc %eax
-    mov $MAX_COLS, %ebx
-    mul %ebx
-    mov %eax, %ecx
+    incl %eax
+    movl $MAX_COLS, %ebx
+    mull %ebx
+    movl %eax, %ecx
 
     /* update cursor */
-    mov $14, %al
-    mov $P_SCRCTL, %dx
-    out %al, %dx
-    mov %ch, %al
-    mov $P_SCRDAT, %dx
-    out %al, %dx
-    mov $15, %al
-    mov $P_SCRCTL, %dx
-    out %al, %dx
-    mov %cl, %al
-    mov $P_SCRDAT, %dx
-    out %al, %dx
+    movb $14, %al
+    movw $P_SCRCTL, %dx
+    outb %al, %dx
+    movb %ch, %al
+    movw $P_SCRDAT, %dx
+    outb %al, %dx
+    movb $15, %al
+    movw $P_SCRCTL, %dx
+    outb %al, %dx
+    movb %cl, %al
+    movw $P_SCRDAT, %dx
+    outb %al, %dx
 
-    mov %ebp, %esp
-    pop %ebx
-    pop %ebp
-    ret
+    movl %ebp, %esp
+    popl %ebx
+    popl %ebp
+    retl
 

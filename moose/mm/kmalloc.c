@@ -1,11 +1,11 @@
-#include <arch/amd64/virtmem.h>
-#include <assert.h>
-#include <bitops.h>
-#include <list.h>
-#include <mm/kmalloc.h>
-#include <param.h>
-#include <sched/locks.h>
-#include <string.h>
+#include <moose/arch/amd64/virtmem.h>
+#include <moose/assert.h>
+#include <moose/bitops.h>
+#include <moose/list.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/param.h>
+#include <moose/sched/locks.h>
+#include <moose/string.h>
 
 #define BRK_BASE ((uintptr_t)0xffffc90000000000llu)
 #define BRK_LIMIT ((uintptr_t)0xffffe8ffffffffffllu)
@@ -71,7 +71,7 @@ static void init_subheap(struct subheap *heap) {
 }
 
 void init_kmalloc(void) {
-    static u8 initial_memory[INITIAL_HEAP_SIZE];
+    static u8 initial_memory[INITIAL_HEAP_SIZE] __aligned(ALIGNMENT);
     static struct subheap initial_subheap = {
         .memory = initial_memory,
         .size = INITIAL_HEAP_SIZE,

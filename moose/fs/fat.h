@@ -1,6 +1,6 @@
 #pragma once
 
-#include <fs/vfs.h>
+#include <moose/fs/vfs.h>
 
 enum fatfs_kind {
     PFATFS_FAT12,

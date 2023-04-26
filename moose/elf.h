@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.h>
+#include <moose/types.h>
 
 #define ELF_HDR_IDENT_SIZE 16
 

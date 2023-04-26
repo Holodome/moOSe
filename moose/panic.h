@@ -1,6 +1,8 @@
 #pragma once
 
-#include <types.h>
+#include <moose/types.h>
+
+struct cpu_registers;
 
 struct cpu_registers;
 

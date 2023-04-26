@@ -1,8 +1,7 @@
-#include <ctype.h>
-#include <mm/kmalloc.h>
-#include <string.h>
-#include <tty/console.h>
-#include <tty/vterm.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/string.h>
+#include <moose/tty/console.h>
+#include <moose/tty/vterm.h>
 
 struct vterm *create_vterm(struct console *console) {
     struct vterm *term = kzalloc(sizeof(*term));

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.h>
+#include <moose/types.h>
 
 #define X86_FLAGS_IF 0x0200
 
@@ -141,4 +141,81 @@ static __forceinline u64 read_cpu_flags(void) {
                  "pop %0\n"
                  : "=rm"(flags)::"memory");
     return flags;
+}
+
+static __forceinline u64 read_msr(u32 msr) {
+    u32 lo, hi;
+    asm volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(msr));
+    return ((u64)hi << 32) | lo;
+}
+
+static __forceinline void write_msr(u32 msr, u64 value) {
+    u32 lo = value & 0xffffffff;
+    u32 hi = value >> 32;
+    asm volatile("wrmsr" ::"a"(lo), "d"(hi), "c"(msr));
+}
+
+struct cpuid {
+    u32 eax;
+    u32 ebx;
+    u32 ecx;
+    u32 edx;
+};
+
+static __forceinline void cpuid(u32 func, u32 ecx, struct cpuid *id) {
+    asm volatile("cpuid"
+                 : "=a"(id->eax), "=b"(id->ebx), "=c"(id->ecx), "=d"(id->edx)
+                 : "a"(func), "c"(ecx));
+}
+
+// clang-format off
+#define __read_gs(_n, _l)                                                      \
+    static __forceinline __nodiscard u##_n read_gs##_n(u32 offset) {           \
+        u##_n result;                                                          \
+        asm volatile("mov" _l " %%gs:%a[off], %[val]"                          \
+                     : [val] "=r"(result)                                      \
+                     : [off] "ir"(offset));                                    \
+        return result;                                                         \
+    }
+
+__read_gs(8, "b") 
+__read_gs(16, "w") 
+__read_gs(32, "l") 
+__read_gs(64, "q")
+
+#undef __read_gs
+
+static __forceinline __nodiscard void *read_gs_ptr(u32 offset) {
+    return (void *)(uintptr_t)read_gs64(offset);
+}
+
+#define read_gs_int read_gs32
+
+#define __write_gs(_n, _l)                                                     \
+    static __forceinline void write_gs##_n(u32 offset, u##_n value) {          \
+        asm volatile("mov" _l " %[val], %%gs:%a[off]" ::[off] "ir"(offset),    \
+                     [val] "r"(value));                                        \
+    }
+
+__write_gs(8, "b")
+__write_gs(16, "w")
+__write_gs(32, "l")
+__write_gs(64, "q")
+
+#undef __write_gs
+
+static __forceinline void write_gs_ptr(u32 offset, const void *ptr){ 
+    write_gs64(offset, (u64)(uintptr_t)ptr);
+}
+
+#define write_gs_int write_gs32
+
+// clang-format on
+
+static __forceinline void disable_nmi(void) {
+    port_out8(0x70, port_in8(0x70) | 0x80);
+}
+
+static __forceinline void enable_nmi(void) {
+    port_out8(0x70, port_in8(0x70) & 0x7f);
 }

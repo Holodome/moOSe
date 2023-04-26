@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.h>
+#include <moose/types.h>
 
 #define popcount(_val)                                                         \
     ({                                                                         \
@@ -103,7 +103,7 @@ static inline void clear_bit(u64 index, bitmap_t *bitmap) {
     bitmap[index >> 6] &= ~(1l << (index & 0x3f));
 }
 
-static inline u64 bitmap_first_clear(const bitmap_t *bitmap, u64 bit_count) {
+static inline u64 bitmap_first_set(const bitmap_t *bitmap, u64 bit_count) {
     for (size_t i = 0;
          i < DIV_ROUND_UP(bit_count, BITMAP_STRIDE) * BITMAP_STRIDE;
          i += BITMAP_STRIDE) {

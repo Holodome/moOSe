@@ -1,10 +1,10 @@
-#include <assert.h>
-#include <errno.h>
-#include <mm/kmalloc.h>
-#include <net/frame.h>
-#include <net/inet.h>
-#include <sched/locks.h>
-#include <string.h>
+#include <moose/assert.h>
+#include <moose/errno.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/net/frame.h>
+#include <moose/net/inet.h>
+#include <moose/sched/locks.h>
+#include <moose/string.h>
 
 #define FREE_FRAMES_COUNT 32
 

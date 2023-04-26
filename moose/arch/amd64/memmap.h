@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.h>
+#include <moose/types.h>
 
 #define MULTIBOOT_MEMORY_AVAILABLE 1
 #define MULTIBOOT_MEMORY_RESERVED 2

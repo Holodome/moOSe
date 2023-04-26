@@ -1,17 +1,18 @@
-#include <arch/amd64/idt.h>
-#include <arch/amd64/memmap.h>
-#include <arch/amd64/rtc.h>
-#include <arch/amd64/virtmem.h>
-#include <arch/cpu.h>
-#include <arch/interrupts.h>
-#include <assert.h>
-#include <kstdio.h>
-#include <mm/kmalloc.h>
-#include <mm/kmem.h>
-#include <mm/physmem.h>
-#include <panic.h>
-#include <sched/process.h>
-#include <types.h>
+#include <moose/arch/amd64/idt.h>
+#include <moose/arch/amd64/memmap.h>
+#include <moose/arch/amd64/rtc.h>
+#include <moose/arch/amd64/virtmem.h>
+#include <moose/arch/cpu.h>
+#include <moose/arch/interrupts.h>
+#include <moose/assert.h>
+#include <moose/kstdio.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/mm/kmem.h>
+#include <moose/mm/physmem.h>
+#include <moose/panic.h>
+#include <moose/sched/sched.h>
+#include <moose/sys/usrsys.h>
+#include <moose/types.h>
 
 static void zero_bss(void) {
     extern u64 __bss_start;
@@ -50,11 +51,9 @@ static void init_memory(void) {
         panic("failed to initialize virtual memory");
 }
 
-void other_task(void *arg __unused) {
-    for (;;) {
-        kprintf("world\n");
-        wait_for_int();
-    }
+__used static void other_task(void *arg __unused) {
+    for (;;)
+        pause();
 }
 
 __noreturn void kmain(void) {
@@ -64,10 +63,12 @@ __noreturn void kmain(void) {
     kprintf("running moOSe kernel\n");
     kprintf("build %s %s\n", __DATE__, __TIME__);
 
+    init_cpu();
     init_memory();
-    init_scheduler();
+
     init_interrupts();
     init_idt();
+    init_scheduler();
     init_rtc();
 
     launch_process("other", other_task, NULL);

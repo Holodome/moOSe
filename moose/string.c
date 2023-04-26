@@ -1,4 +1,4 @@
-#include <string.h>
+#include <moose/string.h>
 
 char *strpbrk(const char *string, const char *lookup) {
     char *cursor = (char *)string;
@@ -100,12 +100,6 @@ void *memmove(void *dst, const void *src, size_t c) {
     if (to > from && to - from < (int)c) {
         int i;
         for (i = c - 1; i >= 0; i--)
-            to[i] = from[i];
-        return dst;
-    }
-    if (from > to && from - to < (int)c) {
-        size_t i;
-        for (i = 0; i < c; i++)
             to[i] = from[i];
         return dst;
     }

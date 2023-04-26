@@ -1,9 +1,9 @@
 #pragma once
 
-#include <arch/refcount.h>
-#include <fs/posix.h>
-#include <list.h>
-#include <types.h>
+#include <moose/arch/refcount.h>
+#include <moose/fs/posix.h>
+#include <moose/list.h>
+#include <moose/types.h>
 
 struct superblock;
 struct inode;

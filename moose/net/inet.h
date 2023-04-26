@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.h>
+#include <moose/types.h>
 
 #define ETH_FRAME_MAX_SIZE 1522
 #define ETH_FRAME_MIN_SIZE 64

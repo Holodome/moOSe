@@ -1,9 +1,9 @@
-#include <arch/amd64/rtc.h>
-#include <arch/cpu.h>
-#include <arch/interrupts.h>
-#include <kstdio.h>
-#include <sched/process.h>
-#include <time.h>
+#include <moose/arch/amd64/rtc.h>
+#include <moose/arch/cpu.h>
+#include <moose/arch/interrupts.h>
+#include <moose/kstdio.h>
+#include <moose/sched/sched.h>
+#include <moose/time.h>
 
 #define RATE 8
 #define fREQUENCY (32768 >> (RATE - 1))
@@ -39,7 +39,7 @@ static irqresult_t timer_interrupt(void *dev __unused,
     ++jiffies;
     (void)cmos_read(0x0c);
 
-    get_current()->needs_resched = 1;
+    set_invoke_scheduler_async();
     return IRQ_HANDLED;
 }
 
@@ -61,22 +61,13 @@ void init_rtc(void) {
     irq_enable();
 }
 
-u32 get_jiffies(void) {
-    return (u32)jiffies;
-}
-u64 get_jiffies64(void) {
+u64 get_jiffies(void) {
     return jiffies;
 }
-u64 jiffies64_to_msecs(u64 jiffies) {
+u64 jiffies_to_msecs(u64 jiffies) {
     return jiffies * 1000 / fREQUENCY;
 }
 u64 msecs_to_jiffies64(u64 msecs) {
-    return msecs * 1000 * fREQUENCY;
-}
-u32 jiffies_to_msecs(u32 jiffies) {
-    return jiffies * 1000 / fREQUENCY;
-}
-u32 msecs_to_jiffies(u32 msecs) {
     return msecs * 1000 * fREQUENCY;
 }
 

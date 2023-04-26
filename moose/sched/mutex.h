@@ -1,6 +1,6 @@
 #pragma once
 
-#include <arch/atomic.h>
+#include <moose/arch/atomic.h>
 
 struct process;
 

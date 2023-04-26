@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.h>
+#include <moose/types.h>
 
 void *memcpy(void *dst, const void *src, size_t c);
 void *memset(void *dst, int ch, size_t c);

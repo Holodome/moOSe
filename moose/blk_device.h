@@ -1,14 +1,14 @@
 #pragma once
 
-#include <fs/vfs.h>
-#include <types.h>
+#include <moose/fs/vfs.h>
+#include <moose/types.h>
 
 #define BLK_DEVICE_NAME_LEN 32
 
 struct blk_device {
     char name[BLK_DEVICE_NAME_LEN];
     blkcnt_t capacity;
-    blcksize_t block_size;
+    blksize_t block_size;
     u8 block_size_log;
 
     void *private;

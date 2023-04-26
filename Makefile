@@ -18,7 +18,7 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(subst .o,.d,$@)
 ASFLAGS = -msyntax=att --warn --fatal-warnings
 LDFLAGS = -Map $(subst .elf,.map,$@)
 
-CFLAGS  = -Imoose \
+CFLAGS  = -I.\
 		  -Wall -Werror -Wextra -Wno-sign-compare -Wpacked \
 		  -Os -g -std=gnu11 -fno-strict-aliasing -fno-strict-overflow \
 		  -ffreestanding -nostdlib -nostartfiles \
@@ -40,7 +40,11 @@ qemu: all
 	$(QEMU) -d guest_errors \
 	-device pci-bridge,id=bridge1,bus=pci.0,chassis_nr=4 \
 	-device rtl8139,netdev=moose0,bus=pci.0 -netdev user,id=moose0 \
-	-drive file=$(TARGET_IMG),format=raw,index=0,if=ide
+	-drive file=$(TARGET_IMG),format=raw,index=0,if=ide \
+	-no-reboot
+
+bochs: all
+	bochs -q -f meta/bochsrc
 
 format:
 	$(Q)find moose \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} \;
@@ -73,7 +77,7 @@ include moose/Makefile
 
 %.ld.out: %.ld
 	@echo "CPP $<"
-	$(Q)gcc -CC -E -P -x c -Imoose $< > $@
+	$(Q)gcc -CC -E -P -x c -I. $< > $@
 
 %.i: %.c
 	$(Q)$(CC) $(CFLAGS) -E -o $@ $^

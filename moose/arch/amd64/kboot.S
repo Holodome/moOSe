@@ -8,13 +8,13 @@ kboot:
 
 .code64
 kboot64:
-    mov %rsp, %rax
-    mov $0xffff880000000000, %rbx
-    add %rbx, %rax
-    mov %rax, %rbp
-    mov %rbp, %rsp
+    movq %rsp, %rax
+    movq $0xffff880000000000, %rbx
+    addq %rbx, %rax
+    movq %rax, %rbp
+    movq %rbp, %rsp
 
-    mov $_end, %rax
-    add %rbx, %rax
+    movq $_end, %rax
+    addq %rbx, %rax
 
     jmp *%rax

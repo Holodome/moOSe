@@ -1,13 +1,13 @@
 #pragma once
 
-#include <list.h>
-#include <net/arp.h>
-#include <net/eth.h>
-#include <net/icmp.h>
-#include <net/inet.h>
-#include <net/ip.h>
-#include <net/udp.h>
-#include <types.h>
+#include <moose/list.h>
+#include <moose/net/arp.h>
+#include <moose/net/eth.h>
+#include <moose/net/icmp.h>
+#include <moose/net/inet.h>
+#include <moose/net/ip.h>
+#include <moose/net/udp.h>
+#include <moose/types.h>
 
 #define MAX_HEADER_SIZE 256
 #define FRAME_BUFFER_SIZE (ETH_PAYLOAD_MAX_SIZE + MAX_HEADER_SIZE)

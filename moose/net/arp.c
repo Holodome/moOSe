@@ -1,15 +1,15 @@
-#include <arch/jiffies.h>
-#include <endian.h>
-#include <errno.h>
-#include <kstdio.h>
-#include <list.h>
-#include <mm/kmalloc.h>
-#include <net/arp.h>
-#include <net/eth.h>
-#include <net/frame.h>
-#include <net/inet.h>
-#include <sched/locks.h>
-#include <string.h>
+#include <moose/arch/jiffies.h>
+#include <moose/endian.h>
+#include <moose/errno.h>
+#include <moose/kstdio.h>
+#include <moose/list.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/net/arp.h>
+#include <moose/net/eth.h>
+#include <moose/net/frame.h>
+#include <moose/net/inet.h>
+#include <moose/sched/locks.h>
+#include <moose/string.h>
 
 #define ARP_CACHE_SIZE 256
 #define ARP_TIMEOUT_MSECS 15000
@@ -118,9 +118,9 @@ int arp_get_mac(const u8 *ip_addr, u8 *mac_addr) {
 
     int found = 0;
     memcpy(mac_addr, broadcast_mac_addr, 6);
-    u64 end = jiffies64_to_msecs(get_jiffies64()) + ARP_TIMEOUT_MSECS;
+    u64 end = jiffies_to_msecs(get_jiffies()) + ARP_TIMEOUT_MSECS;
     while (!(found && memcmp(mac_addr, broadcast_mac_addr, 6) != 0) &&
-           jiffies64_to_msecs(get_jiffies64()) < end) {
+           jiffies_to_msecs(get_jiffies()) < end) {
         found = (arp_cache_get(ip_addr, mac_addr) == 0);
     }
 

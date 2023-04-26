@@ -1,16 +1,16 @@
-#include <arch/interrupts.h>
-#include <assert.h>
-#include <bitops.h>
-#include <drivers/io_resource.h>
-#include <drivers/pci.h>
-#include <drivers/rtl8139.h>
-#include <errno.h>
-#include <kstdio.h>
-#include <net/inet.h>
-#include <net/netdaemon.h>
-#include <param.h>
-#include <sched/locks.h>
-#include <string.h>
+#include <moose/arch/interrupts.h>
+#include <moose/assert.h>
+#include <moose/bitops.h>
+#include <moose/drivers/io_resource.h>
+#include <moose/drivers/pci.h>
+#include <moose/drivers/rtl8139.h>
+#include <moose/errno.h>
+#include <moose/kstdio.h>
+#include <moose/net/inet.h>
+#include <moose/net/netdaemon.h>
+#include <moose/param.h>
+#include <moose/sched/locks.h>
+#include <moose/string.h>
 
 #define RTL_REG_MAC0 0x00
 #define TRL_REG_TX_STATUS 0x10

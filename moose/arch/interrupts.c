@@ -1,9 +1,9 @@
-#include <arch/amd64/idt.h>
-#include <arch/interrupts.h>
-#include <assert.h>
-#include <kstdio.h>
-#include <sched/locks.h>
-#include <sched/process.h>
+#include <moose/arch/amd64/idt.h>
+#include <moose/arch/interrupts.h>
+#include <moose/assert.h>
+#include <moose/kstdio.h>
+#include <moose/sched/locks.h>
+#include <moose/sched/sched.h>
 
 static struct {
     struct list_head isr_lists[256];
@@ -86,7 +86,7 @@ fpu_segment_overrun_handler(void *dev __unused,
 
 static irqresult_t bad_tss_handler(void *dev __unused,
                                    const struct registers_state *r) {
-    __abort_in_handler("bad tss segmnet");
+    __abort_in_handler("bad tss segment");
 }
 
 static irqresult_t
@@ -155,10 +155,8 @@ void isr_handler(struct registers_state *regs) {
     eoi(no);
     sti();
 
-    if (get_current()->needs_resched) {
-        get_current()->needs_resched = 0;
+    if (eat_should_invoke_scheduler())
         schedule();
-    }
 }
 
 void enable_interrupt(struct interrupt_handler *handler) {

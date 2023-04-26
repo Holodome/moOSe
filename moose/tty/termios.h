@@ -3,11 +3,15 @@
 //
 #pragma once
 
+<<<<<<< HEAD
+#include <moose/types.h>
+    =======
 #include <types.h>
+    >>>>>>> dev
 
 #define NCCS 32
 
-typedef u32 tcflag_t;
+    typedef u32 tcflag_t;
 typedef u8 cc_t;
 typedef u32 speed_t;
 

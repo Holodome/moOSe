@@ -1,10 +1,10 @@
-#include <assert.h>
-#include <bitops.h>
-#include <blk_device.h>
-#include <errno.h>
-#include <fs/ext2.h>
-#include <kstdio.h>
-#include <mm/kmalloc.h>
+#include <moose/assert.h>
+#include <moose/bitops.h>
+#include <moose/blk_device.h>
+#include <moose/errno.h>
+#include <moose/fs/ext2.h>
+#include <moose/kstdio.h>
+#include <moose/mm/kmalloc.h>
 
 #define EXT2_DIRECT_BLOCKS 12
 #define EXT2_SB_OFFSET 1024
@@ -167,9 +167,9 @@ struct ext2_fs {
     u32 group_inode_bitmap_size;
     u32 group_block_bitmap_size;
 
-    u32 blocks_per_inderect_block;
-    u32 first_2lev_inderect_block;
-    u32 first_3lev_inderect_block;
+    u32 blocks_per_indirect_block;
+    u32 first_2lev_indirect_block;
+    u32 first_3lev_indirect_block;
 };
 
 static ssize_t ext2_write(struct file *filp, const void *buf, size_t count) {
@@ -288,14 +288,14 @@ __used static ssize_t ext2_alloc_ino(struct superblock *sb, int is_dir) {
     blk_read(sb->dev, desc->bg_inode_bitmap << sb->blk_sz_bits, bitmap,
              sizeof(bitmap));
 
-    u64 found = bitmap_first_clear(bitmap, ext2->sb.s_inodes_per_group);
+    u64 found = bitmap_first_set(bitmap, ext2->sb.s_inodes_per_group);
     if (!found)
         ext2_error(sb, "corrupted inode bitmap");
 
     if (desc->bg_free_inodes_count)
         --desc->bg_free_inodes_count;
     else
-        ext2_error(sb, "currupted block group free inode count");
+        ext2_error(sb, "corrupted block group free inode count");
 
     if (ext2->sb.s_free_inode_count)
         --ext2->sb.s_free_inode_count;
@@ -359,14 +359,14 @@ __used static ssize_t ext2_alloc_block(struct superblock *sb) {
     blk_read(sb->dev, desc->bg_block_bitmap << sb->blk_sz_bits, bitmap,
              sizeof(bitmap));
 
-    u64 found = bitmap_first_clear(bitmap, ext2->sb.s_blocks_per_group);
+    u64 found = bitmap_first_set(bitmap, ext2->sb.s_blocks_per_group);
     if (!found)
         ext2_error(sb, "corrupted block bitmap");
 
     if (desc->bg_free_blocks_count)
         --desc->bg_free_blocks_count;
     else
-        ext2_error(sb, "currupted block group free block count");
+        ext2_error(sb, "corrupted block group free block count");
 
     if (ext2->sb.s_free_block_count)
         --ext2->sb.s_free_block_count;
@@ -470,7 +470,7 @@ __used static void ext2_write_inode(struct inode *inode) {
     ei.i_atime = inode->atime.tv_sec;
     ei.i_mtime = inode->mtime.tv_sec;
     ei.i_ctime = inode->ctime.tv_sec;
-    // NOTE: We assume that other inode fields (i_block particullary) are
+    // NOTE: We assume that other inode fields (i_block particularly) are
     // always synced
     blk_write(sb->dev, inode_offset, &ei, sizeof(ei));
 }
@@ -497,11 +497,11 @@ static int ext2_do_mount(struct superblock *sb) {
     ext2->inodes_per_block = blk_sz / sizeof(struct ext2_inode);
     ext2->group_inode_bitmap_size = BITS_TO_BITMAP(inodes_per_group);
     ext2->group_inode_bitmap_size = BITS_TO_BITMAP(inodes_per_group);
-    ext2->blocks_per_inderect_block = blk_sz / sizeof(u32);
-    ext2->first_2lev_inderect_block = 12 + ext2->blocks_per_inderect_block;
-    ext2->first_3lev_inderect_block =
-        ext2->first_2lev_inderect_block +
-        ext2->blocks_per_inderect_block * ext2->blocks_per_inderect_block;
+    ext2->blocks_per_indirect_block = blk_sz / sizeof(u32);
+    ext2->first_2lev_indirect_block = 12 + ext2->blocks_per_indirect_block;
+    ext2->first_3lev_indirect_block =
+        ext2->first_2lev_indirect_block +
+        ext2->blocks_per_indirect_block * ext2->blocks_per_indirect_block;
 
     return 0;
 }
@@ -515,7 +515,7 @@ static blkcnt_t ext2_get_disk_blk(struct ext2_inode *inode,
 
     if (blk < EXT2_DIRECT_BLOCKS) {
         result = inode->i_block[blk];
-    } else if (blk < ext2->first_2lev_inderect_block) {
+    } else if (blk < ext2->first_2lev_indirect_block) {
         off_t table_offset = inode->i_block[12] * sb->blk_sz;
         blkcnt_t l1_idx = blk - EXT2_DIRECT_BLOCKS;
         u32 block;
@@ -523,11 +523,11 @@ static blkcnt_t ext2_get_disk_blk(struct ext2_inode *inode,
                  sizeof(block));
 
         result = block;
-    } else if (blk < ext2->first_3lev_inderect_block) {
+    } else if (blk < ext2->first_3lev_indirect_block) {
         off_t l1_table_offset = inode->i_block[13] * sb->blk_sz;
-        blk -= ext2->first_2lev_inderect_block;
-        blkcnt_t l1_idx = blk / ext2->blocks_per_inderect_block;
-        blkcnt_t l2_idx = blk % ext2->blocks_per_inderect_block;
+        blk -= ext2->first_2lev_indirect_block;
+        blkcnt_t l1_idx = blk / ext2->blocks_per_indirect_block;
+        blkcnt_t l2_idx = blk % ext2->blocks_per_indirect_block;
 
         u32 l1;
         blk_read(sb->dev, l1_table_offset + l1_idx * sizeof(u32), &l1,
@@ -540,13 +540,13 @@ static blkcnt_t ext2_get_disk_blk(struct ext2_inode *inode,
         result = l2;
     } else {
         off_t l1_table_offset = inode->i_block[14] * sb->blk_sz;
-        blk -= ext2->first_3lev_inderect_block;
-        blkcnt_t l1_idx = blk / (ext2->blocks_per_inderect_block *
-                                 ext2->blocks_per_inderect_block);
+        blk -= ext2->first_3lev_indirect_block;
+        blkcnt_t l1_idx = blk / (ext2->blocks_per_indirect_block *
+                                 ext2->blocks_per_indirect_block);
         blk %=
-            ext2->blocks_per_inderect_block * ext2->blocks_per_inderect_block;
-        blkcnt_t l2_idx = blk / ext2->blocks_per_inderect_block;
-        blkcnt_t l3_idx = blk % ext2->blocks_per_inderect_block;
+            ext2->blocks_per_indirect_block * ext2->blocks_per_indirect_block;
+        blkcnt_t l2_idx = blk / ext2->blocks_per_indirect_block;
+        blkcnt_t l3_idx = blk % ext2->blocks_per_indirect_block;
 
         u32 l1;
         blk_read(sb->dev, l1_table_offset + l1_idx * sizeof(u32), &l1,

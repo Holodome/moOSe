@@ -3,9 +3,9 @@
 //
 #pragma once
 
-#include <arch/refcount.h>
-#include <sched/locks.h>
-#include <tty/console.h>
+#include <moose/arch/refcount.h>
+#include <moose/sched/locks.h>
+#include <moose/tty/console.h>
 
 struct vterm_cell {
     char c;
