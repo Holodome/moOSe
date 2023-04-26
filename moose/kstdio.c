@@ -1,19 +1,20 @@
-#include <device.h>
-#include <errno.h>
-#include <kmem.h>
-#include <kstdio.h>
-#include <tty.h>
+#include <moose/assert.h>
+#include <moose/ctype.h>
+#include <moose/kstdio.h>
+#include <moose/string.h>
+#include <moose/tty/vga_console.h>
+#include <moose/tty/vterm.h>
 
 struct printf_opts {
     size_t width;
     char padding_char;
     int base;
     int precision;
-    int is_left_aligned : 1;
-    int is_plus_char : 1;
-    int is_hex_uppercase : 1;
-    int has_precision : 1;
-    int force_prefix : 1;
+    unsigned is_left_aligned : 1;
+    unsigned is_plus_char : 1;
+    unsigned is_hex_uppercase : 1;
+    unsigned has_precision : 1;
+    unsigned force_prefix : 1;
 };
 
 #define outc(_buffer, _size, _counter, _c)                                     \
@@ -35,14 +36,13 @@ int snprintf(char *buffer, size_t size, const char *fmt, ...) {
 #define NUMBER_BUFFER_SIZE (CHAR_BIT * sizeof(uintmax_t))
 
 static size_t print_number(char *buffer, uintmax_t number, int base) {
-    static const char *charset = "0123456789abcdef";
     size_t counter = 0;
     if (number == 0)
         buffer[counter++] = '0';
 
     while (number > 0) {
         int digit = number % base;
-        buffer[counter++] = charset[digit];
+        buffer[counter++] = "0123456789acbdef"[digit];
         number /= base;
     }
 
@@ -63,6 +63,7 @@ static void print_signed(char *buffer, size_t size, size_t *counter,
 
     char number_buffer[NUMBER_BUFFER_SIZE];
     size_t number_length = print_number(number_buffer, number, 10);
+    expects(number_length < sizeof(number_buffer));
 
     if (opts->width >= number_length)
         opts->width -= number_length;
@@ -457,6 +458,11 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
     return (int)counter;
 }
 
+static struct {
+    int is_initialized;
+    struct vterm *term;
+} kstdio_state;
+
 int kprintf(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -467,124 +473,37 @@ int kprintf(const char *fmt, ...) {
 }
 
 int kvprintf(const char *fmt, va_list args) {
+    if (!kstdio_state.is_initialized)
+        return 0;
+
     char buffer[256];
-    int count = vsnprintf(buffer, 256, fmt, args);
-    int write_result = write(tty_device, buffer, strlen(buffer));
-    return write_result < 0 ? write_result : count;
+    int count = vsnprintf(buffer, sizeof(buffer), fmt, args);
+    kprint(buffer, strlen(buffer));
+    return count;
 }
 
-int kputc(int c) { return write(tty_device, (char *)&c, 1); }
-
-int kputs(const char *str) {
-    size_t len = strlen(str);
-    int result = write(tty_device, str, len);
-    if (result < 0)
-        return result;
-
-    kputc('\n');
-    return (int)len;
+void kprint(const char *str, size_t count) {
+    vterm_write(kstdio_state.term, str, count);
 }
 
-char *strerror(int errnum) {
-    static char buf[64];
-    static const char *strs[] = {
-#define E(_name, _str) _str,
-        ERRLIST
-#undef E
-    };
+int init_kstdio(void) {
+    struct console *console = create_empty_console();
+    if (!console)
+        return -1;
 
-    const char *str = NULL;
-    if (errnum == 0) {
-        str = "No error information";
-    } else if (errnum - 1 < (int)ARRAY_SIZE(strs)) {
-        str = strs[errnum - 1];
+    if (vga_init_console(console)) {
+        console_release(console);
+        return -1;
     }
 
-    snprintf(buf, sizeof(buf), "%s", str);
-    return buf;
-}
-
-void perror(const char *msg) {
-    if (msg != NULL && *msg)
-        kprintf("%s: ", msg);
-    kprintf("%s\n", strerror(errno));
-}
-
-int isdigit(int c) { return c >= '0' && c <= '9'; }
-int toupper(int c) { return 'a' <= c && c <= 'z' ? c + 'A' - 'a' : c; };
-
-char *strpbrk(const char *string, const char *lookup) {
-    char *cursor = (char *)string;
-    char symb;
-
-    while ((symb = *cursor++))
-        for (const char *test = lookup; *test; ++test)
-            if (*test == symb)
-                return cursor - 1;
-
-    return NULL;
-}
-
-size_t strspn(const char *string, const char *lookup) {
-    const char *cursor = string;
-    char symb;
-    int is_valid = 1;
-
-    while ((symb = *cursor++) && is_valid) {
-        is_valid = 0;
-
-        for (const char *test = lookup; *test && !is_valid; ++test)
-            is_valid = *test == symb;
-
-        if (!is_valid)
-            --cursor;
+    struct vterm *term = create_vterm(console);
+    if (!term) {
+        console_release(console);
+        return -1;
     }
 
-    return cursor - string - 1;
-}
+    kstdio_state.is_initialized = 1;
+    kstdio_state.term = term;
 
-size_t strcspn(const char *string, const char *lookup) {
-    const char *cursor = string;
-    int is_valid = 1;
-    char symb;
-
-    while ((symb = *cursor++) && is_valid)
-        for (const char *test = lookup; *test && is_valid; ++test)
-            if (symb == *test) {
-                --cursor;
-                is_valid = 0;
-            }
-
-    return cursor - string - 1;
-}
-
-char *strchr(const char *string, int symb) {
-    do {
-        if (*string == symb)
-            return (char *)string;
-    } while (*string++);
-
-    return NULL;
-}
-
-char *strrchr(const char *string, int symb) {
-    const char *result = NULL;
-
-    do {
-        if (*string == symb)
-            result = string;
-    } while (*string++);
-
-    return (char *)result;
-}
-
-size_t strlcpy(char *dst, const char *src, size_t maxlen) {
-    const size_t srclen = strlen(src);
-    if (srclen + 1 < maxlen) {
-        memcpy(dst, src, srclen + 1);
-    } else if (maxlen != 0) {
-        memcpy(dst, src, maxlen - 1);
-        dst[maxlen - 1] = '\0';
-    }
-    return srclen;
+    return 0;
 }

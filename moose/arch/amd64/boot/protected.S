@@ -1,3 +1,5 @@
+#include <moose/param.h>
+
 .global switch_to_32bit
 /* GDT that resembles flat memory model */
 
@@ -14,7 +16,7 @@ gdt_code:
 
 gdt_data:
     .word 0xffff /* segment length */
-    .word 0x0000 /* segment base */
+    .word 0x0000 /* segment base */ 
     .byte 0x00   /* segment base upper bits */
     .byte 0b10010010   /* flags */
     .byte 0b11001111   /* flags + segment length */
@@ -44,7 +46,7 @@ init_32bit:
     mov %ax, %fs
     mov %ax, %gs
 
-    mov $0x90000, %ebp
+    mov $KERNEL_INITIAL_STACK, %ebp
     mov %ebp, %esp
 
-    ljmp $0x0008,$start32
+    ljmp $0x0008, $start32

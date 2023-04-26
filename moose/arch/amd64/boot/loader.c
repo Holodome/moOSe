@@ -1,51 +1,29 @@
-// Note that we use amd64 files here with amd64 types.
-// But it turns out that definitions for basic types (u32) are the same.
-// The only difference is in the size of pointer, but we can work around that
-// (usize sized types) and it makes no difference
-#include <../arch/amd64/ata.c>
-#include <../device.c>
-#include <../disk.c>
-#include <../errno.c>
-#include <../fs/fat.c>
-#include <../kmalloc.c>
+#include <moose/drivers/ata.c>
 
-#include <mbr.h>
+#include <moose/mbr.h>
+#include <moose/param.h>
 
 extern void print(const char *s);
-void __panic(void) { __builtin_unreachable(); }
-int kprintf(const char *fmt __attribute__((unused)), ...) { return 0; }
-void *vsbrk(intptr_t inc __attribute__((unused))) { return NULL; }
+int kprintf(const char *str, ...) {
+    print(str);
+    return 0;
+}
+void __panic(void) {
+    for (;;)
+        ;
+}
 
 int load_kernel(void) {
-    init_memory();
-    int result = disk_init();
-    if (result)
-        return result;
+    char buffer[512];
+    ata_read_block(0, buffer);
+    struct mbr_partition partition;
+    __builtin_memcpy(&partition, buffer + MBR_PARTITION_OFFSET,
+                     sizeof(partition));
+    size_t kernel_size = partition.size;
+    size_t kernel_offset = partition.addr;
 
-    struct pfatfs fs = {.device = disk_part_dev};
-
-    result = pfatfs_mount(&fs);
-    if (result != 0) {
-        print("failed to mount");
-        return result;
-    }
-
-    struct pfatfs_file file;
-    result = pfatfs_open(&fs, "kernel.bin", &file);
-    if (result != 0) {
-        print("failed to open");
-        return result;
-    }
-
-    uintptr_t addr = 0x100000;
-    u32 iterations = (file.size + 511) / 512;
-    for (; iterations--; addr += 512) {
-        result = pfatfs_read(&fs, &file, (void *)addr, 512);
-        if (result < 0) {
-            print("failed to read");
-            return result;
-        }
-    }
+    uintptr_t cursor = KERNEL_PHYSICAL_BASE;
+    ata_pio_read((void *)cursor, kernel_offset, kernel_size);
 
     return 0;
 }

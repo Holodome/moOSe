@@ -1,7 +1,11 @@
-#include <arch/processor.h>
-#include <panic.h>
+#include <moose/arch/cpu.h>
+#include <moose/panic.h>
 
 void __panic(void) {
     dump_registers();
-    halt_processor();
+    halt_cpu();
+}
+
+void ___panic(void) {
+    halt_cpu();
 }
