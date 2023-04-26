@@ -2,7 +2,6 @@
 
 #include <moose/bitops.h>
 #include <moose/list.h>
-#include <moose/rbtree.h>
 #include <moose/sched/locks.h>
 
 #define MAX_PROCESSES 256
@@ -11,7 +10,7 @@
 #define DEFAULT_TIMESLICE 1
 
 #define MAX_NICE 19
-#define MIN_NICE -20
+#define MIN_NICE (-20)
 #define MAX_PRIO 39
 #define DEFAULT_NICE 0
 

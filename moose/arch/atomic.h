@@ -6,9 +6,6 @@
  */
 #pragma once
 
-#define READ_ONCE(_val) (*(volatile typeof(_val) *)&(_val))
-#define WRITE_ONCE(_x, _at) (*(volatile typeof(_at) *)(&_at) = (_x))
-
 typedef struct atomic {
     int v;
 } atomic_t;

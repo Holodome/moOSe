@@ -7,12 +7,9 @@
 #include <moose/assert.h>
 #include <moose/kstdio.h>
 #include <moose/mm/kmalloc.h>
-#include <moose/mm/kmem.h>
 #include <moose/mm/physmem.h>
-#include <moose/panic.h>
+#include <moose/param.h>
 #include <moose/sched/sched.h>
-#include <moose/sys/usrsys.h>
-#include <moose/types.h>
 
 static void zero_bss(void) {
     extern u64 __bss_start;
@@ -21,6 +18,36 @@ static void zero_bss(void) {
     u64 *p = &__bss_start;
     while (p < &__bss_end)
         *p++ = 0;
+}
+
+static size_t get_total_kernel_size(void) {
+    extern char __start;
+    extern char __end;
+    return &__end - &__start;
+}
+
+int init_virt_mem(const struct mem_range *ranges, size_t range_count) {
+    // preallocate kernel physical space
+    size_t kernel_size_in_pages = get_total_kernel_size() >> PAGE_SIZE_BITS;
+    if (alloc_region(KERNEL_PHYSICAL_BASE, kernel_size_in_pages))
+        return -1;
+
+    // preallocate currently used page tables
+    if (alloc_region(0, 8))
+        return -1;
+
+    // all physical memory map to PHYSMEM_VIRTUAL_BASE
+    for (size_t i = 0; i < range_count; i++) {
+        if (map_virtual_region(
+                ranges[i].base, PHYSMEM_VIRTUAL_BASE + ranges[i].base,
+                align_po2(ranges[i].size, PAGE_SIZE) >> PAGE_SIZE_BITS))
+            return -1;
+    }
+
+    // physical memory identity unmap
+    unmap_virtual_region(0x0, IDENTITY_MAP_SIZE >> PAGE_SIZE_BITS);
+
+    return 0;
 }
 
 static void init_memory(void) {

@@ -1,6 +1,11 @@
 #pragma once
 
-#include <moose/mm/kmem.h>
+#include <moose/types.h>
+
+struct mem_range {
+    u64 base;
+    u64 size;
+};
 
 // 1 - 2^BUDDY_MAX_ORDER pages in block
 #define MAX_ORDER 12

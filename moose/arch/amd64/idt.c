@@ -1,9 +1,5 @@
 #include <moose/arch/amd64/asm.h>
 #include <moose/arch/amd64/idt.h>
-#include <moose/arch/cpu.h>
-#include <moose/assert.h>
-#include <moose/kstdio.h>
-#include <moose/panic.h>
 #include <moose/param.h>
 
 // clang-format off

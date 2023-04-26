@@ -16,6 +16,8 @@
 #define MSR_GS_BASE 0xc0000101
 #define MSR_IA32_EFER 0xc0000080
 
+#define MAX_CPUS 64
+
 struct process;
 
 struct debug_registers {
@@ -107,6 +109,8 @@ struct tss_entry {
 static struct gdt_entry gdt[256] __aligned(16);
 static struct gdt_reg gdtr;
 static struct tss_entry tss;
+static struct percpu cpus[MAX_CPUS];
+static int ncpus;
 
 static void gdte_set_base(u32 base, struct gdt_entry *e) {
     e->base_lo = base & 0xffffu;
@@ -288,8 +292,8 @@ void set_syscall_result(u64 result, struct registers_state *state) {
 static void init_percpu(void) {
     // TODO: This is certainly not nice
     extern struct process idle_process;
-    struct percpu *percpu = kzalloc(sizeof(*percpu));
-    expects(percpu);
+    expects(ncpus < MAX_CPUS);
+    struct percpu *percpu = cpus + ncpus++;
     percpu->this = percpu;
     percpu->current = &idle_process;
     write_msr(MSR_GS_BASE, (u64)percpu);
@@ -297,7 +301,8 @@ static void init_percpu(void) {
 
 static void setup_syscall(void) {
     if (!cpu_supports(CPUID_SYSCALL))
-        panic("cpu must suport syscall instruction");
+        panic("cpu must support syscall instruction");
+
     write_msr(MSR_EFER, read_msr(MSR_EFER) | 0x1);
 
     u64 star = (0x13ul << 48u) | (0x08ul << 32u);
@@ -306,6 +311,7 @@ static void setup_syscall(void) {
     write_msr(MSR_SFMASK, 0x257fd5u);
 
     struct percpu *percpu = get_percpu();
+    // FIXME: This should not be like this
     percpu->kernel_stack =
         (u64)kmalloc(sizeof(union process_stack)) + sizeof(union process_stack);
 }
@@ -375,4 +381,9 @@ void init_cpu(void) {
     init_cpuid();
     init_gdt();
     setup_syscall();
+}
+
+void delay_us(u32 us) {
+    while (us--)
+        (void)port_in8(0x80);
 }

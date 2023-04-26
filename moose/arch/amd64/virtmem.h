@@ -1,6 +1,5 @@
 #pragma once
 
-#include <moose/mm/kmem.h>
 #include <moose/types.h>
 
 #define ENTRIES_PER_TABLE 512
@@ -98,8 +97,6 @@ struct page_directory {
 struct page_table {
     struct pt_entry entries[ENTRIES_PER_TABLE];
 };
-
-int init_virt_mem(const struct mem_range *ranges, size_t ranges_size);
 
 int alloc_virtual_page(u64 virt_addr);
 int alloc_virtual_pages(u64 virt_addr, size_t page_count);

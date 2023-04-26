@@ -1,8 +1,6 @@
 #include <moose/arch/amd64/rtc.h>
 #include <moose/arch/cpu.h>
 #include <moose/arch/interrupts.h>
-#include <moose/kstdio.h>
-#include <moose/sched/sched.h>
 #include <moose/time.h>
 
 #define RATE 8

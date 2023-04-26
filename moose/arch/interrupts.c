@@ -1,6 +1,5 @@
 #include <moose/arch/amd64/idt.h>
 #include <moose/arch/interrupts.h>
-#include <moose/assert.h>
 #include <moose/kstdio.h>
 #include <moose/sched/locks.h>
 #include <moose/sched/sched.h>
