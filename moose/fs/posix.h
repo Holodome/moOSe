@@ -9,7 +9,7 @@
 #define SEEK_END 1
 #define SEEK_CUR 2
 
-// <moose/sys/stat.h>
+// <sys/stat.h>
 
 // note: these are shamelessly taken from linux
 

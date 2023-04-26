@@ -227,4 +227,3 @@ void free_virtual_pages(u64 virt_addr, size_t page_count) {
     for (; page_count; --page_count, virt_addr += PAGE_SIZE)
         free_virtual_page(virt_addr);
 }
-

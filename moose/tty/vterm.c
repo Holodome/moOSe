@@ -1,4 +1,3 @@
-#include <moose/ctype.h>
 #include <moose/mm/kmalloc.h>
 #include <moose/string.h>
 #include <moose/tty/console.h>

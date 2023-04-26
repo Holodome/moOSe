@@ -74,6 +74,7 @@ __noreturn void kmain(void) {
     launch_process("other", other_task, NULL);
 
     for (;;) {
+        kprintf("hello\n");
         wait_for_int();
     }
 
