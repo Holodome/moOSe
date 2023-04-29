@@ -4,6 +4,7 @@
 #include <drivers/io_resource.h>
 #include <drivers/pci.h>
 #include <drivers/rtl8139.h>
+#include <errno.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
 #include <net/device.h>
@@ -12,7 +13,6 @@
 #include <param.h>
 #include <sched/locks.h>
 #include <string.h>
-#include <errno.h>
 
 #define RTL_REG_MAC0 0x00
 #define TRL_REG_TX_STATUS 0x10
@@ -105,7 +105,8 @@ static void rtl8139_receive(struct net_device *dev) {
         if (rx_ptr + frame_size >= rtl8139->rx_buffer + RX_BUFFER_SIZE) {
             u16 part_size = (rtl8139->rx_buffer + RX_BUFFER_SIZE) - rx_ptr;
             memcpy(frame, rx_ptr, part_size);
-            memcpy(frame + part_size, rtl8139->rx_buffer, frame_size - part_size);
+            memcpy(frame + part_size, rtl8139->rx_buffer,
+                   frame_size - part_size);
         } else {
             memcpy(frame, rx_ptr, frame_size);
         }
@@ -232,10 +233,7 @@ static int close_rtl8139(struct net_device *dev) {
 }
 
 static struct net_device_ops rtl8139_ops = {
-    .open = open_rtl8139,
-    .close = close_rtl8139,
-    .transmit = rtl8139_send
-};
+    .open = open_rtl8139, .close = close_rtl8139, .transmit = rtl8139_send};
 
 struct net_device *create_rtl8139(void) {
     struct net_device *net_dev = create_net_device("eth0");

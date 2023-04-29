@@ -5,15 +5,15 @@
 #include <arch/cpu.h>
 #include <arch/interrupts.h>
 #include <assert.h>
+#include <drivers/pci.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
+#include <net/inet.h>
 #include <panic.h>
 #include <sched/process.h>
 #include <types.h>
-#include <net/inet.h>
-#include <drivers/pci.h>
 
 static void zero_bss(void) {
     extern u64 __bss_start;
@@ -74,10 +74,10 @@ __noreturn void kmain(void) {
     init_pci();
     init_inet();
 
-//    launch_process("other", other_task, NULL);
+    //    launch_process("other", other_task, NULL);
 
     for (;;) {
-//        kprintf("hello\n");
+        //        kprintf("hello\n");
         wait_for_int();
     }
 

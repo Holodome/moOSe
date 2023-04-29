@@ -25,7 +25,8 @@ static int is_local_ip_addr(const u8 *ip_addr) {
     return memcmp(temp, local_net_ip_addr, 4) == 0;
 }
 
-void ipv4_send_frame(struct net_device *dev, struct net_frame *frame, const u8 *ip_addr, u8 protocol) {
+void ipv4_send_frame(struct net_device *dev, struct net_frame *frame,
+                     const u8 *ip_addr, u8 protocol) {
     u8 dst_mac[6];
     const u8 *src_mac = is_local_ip_addr(ip_addr) ? ip_addr : gateway_ip_addr;
     if (arp_get_mac(dev, src_mac, dst_mac)) {
@@ -87,5 +88,6 @@ void ipv4_receive_frame(struct net_device *dev, struct net_frame *frame) {
     }
 }
 
-void ipv6_receive_frame(__unused struct net_device *dev, __unused struct net_frame *frame) {
+void ipv6_receive_frame(__unused struct net_device *dev,
+                        __unused struct net_frame *frame) {
 }

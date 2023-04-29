@@ -1,10 +1,10 @@
 #include <errno.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
+#include <net/device.h>
 #include <net/eth.h>
 #include <net/frame.h>
 #include <net/inet.h>
-#include <net/device.h>
 #include <net/netdaemon.h>
 #include <sched/locks.h>
 #include <sched/process.h>
@@ -45,7 +45,8 @@ __noreturn static void net_daemon_task(void *arg __unused) {
 }
 
 int init_net_daemon(void) {
-    queue = kzalloc(sizeof(*queue) + sizeof(struct daemon_queue_entry) * QUEUE_SIZE);
+    queue = kzalloc(sizeof(*queue) +
+                    sizeof(struct daemon_queue_entry) * QUEUE_SIZE);
     if (queue == NULL)
         return -ENOMEM;
 
@@ -59,7 +60,8 @@ int init_net_daemon(void) {
     return 0;
 }
 
-void net_daemon_add_frame(struct net_device *dev, const void *data, size_t size) {
+void net_daemon_add_frame(struct net_device *dev, const void *data,
+                          size_t size) {
     if (size > ETH_FRAME_MAX_SIZE) {
         kprintf("net daemon add frame error: invalid frame size\n");
         return;

@@ -9,7 +9,8 @@
 #define ICMP_CONTROL_SEQ_BASE 0x0a
 #define ICMP_CONTROL_SEQ_SIZE 32
 
-void icmp_send_echo_request(struct net_device *dev, struct net_frame *frame, const u8 *ip_addr) {
+void icmp_send_echo_request(struct net_device *dev, struct net_frame *frame,
+                            const u8 *ip_addr) {
     pull_net_frame_head(frame, sizeof(struct icmp_header));
     struct icmp_header *header = frame->head;
 
@@ -31,7 +32,8 @@ void icmp_send_echo_request(struct net_device *dev, struct net_frame *frame, con
     ipv4_send_frame(dev, frame, ip_addr, IP_PROTOCOL_ICMP);
 }
 
-static void icmp_send_echo_reply(struct net_device *dev, struct net_frame *frame) {
+static void icmp_send_echo_reply(struct net_device *dev,
+                                 struct net_frame *frame) {
     struct net_frame *reply_frame = get_empty_send_net_frame();
     if (reply_frame == NULL)
         return;
@@ -49,7 +51,8 @@ static void icmp_send_echo_reply(struct net_device *dev, struct net_frame *frame
     memcpy(&reply_frame->icmp_header, reply_frame->head, sizeof(*header));
     reply_frame->transport_kind = TRANSPORT_KIND_ICMP;
 
-    ipv4_send_frame(dev, reply_frame, frame->ipv4_header.src_ip, IP_PROTOCOL_ICMP);
+    ipv4_send_frame(dev, reply_frame, frame->ipv4_header.src_ip,
+                    IP_PROTOCOL_ICMP);
     release_net_frame(reply_frame);
 }
 

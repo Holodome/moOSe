@@ -1,7 +1,7 @@
-#include <net/device.h>
-#include <mm/kmalloc.h>
-#include <string.h>
 #include <kstdio.h>
+#include <mm/kmalloc.h>
+#include <net/device.h>
+#include <string.h>
 
 static LIST_HEAD(net_device_list);
 

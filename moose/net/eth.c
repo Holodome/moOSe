@@ -1,9 +1,9 @@
 #include <endian.h>
 #include <kstdio.h>
 #include <net/arp.h>
+#include <net/device.h>
 #include <net/eth.h>
 #include <net/frame.h>
-#include <net/device.h>
 #include <net/inet.h>
 #include <net/ip.h>
 #include <string.h>

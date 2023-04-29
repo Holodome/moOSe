@@ -1,11 +1,11 @@
 #include <arch/cpu.h>
+#include <assert.h>
 #include <bitops.h>
 #include <drivers/io_resource.h>
 #include <drivers/pci.h>
 #include <errno.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
-#include <assert.h>
 
 #define PCI_CONFIG_ADDRESS 0xcf8
 #define PCI_CONFIG_DATA 0xcfc

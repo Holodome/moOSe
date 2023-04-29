@@ -1,8 +1,8 @@
 #pragma once
 
+#include <bitops.h>
 #include <list.h>
 #include <types.h>
-#include <bitops.h>
 
 #define IFNAME_SIZE 16
 

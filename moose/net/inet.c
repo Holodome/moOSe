@@ -1,11 +1,11 @@
+#include <assert.h>
 #include <drivers/rtl8139.h>
 #include <endian.h>
-#include <assert.h>
 #include <kstdio.h>
 #include <net/arp.h>
+#include <net/device.h>
 #include <net/frame.h>
 #include <net/inet.h>
-#include <net/device.h>
 #include <net/netdaemon.h>
 
 u8 gateway_ip_addr[4] = {10, 0, 2, 2};

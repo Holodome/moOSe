@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <net/device.h>
+#include <types.h>
 
 #define ETH_HW_TYPE 1
 

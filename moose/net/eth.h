@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <net/device.h>
+#include <types.h>
 
 struct net_frame;
 

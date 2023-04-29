@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
 #include <net/device.h>
+#include <types.h>
 
 #define ICMP_ECHO_REPLY 0
 #define ICMP_ECHO_REQUEST 8
@@ -17,5 +17,6 @@ struct icmp_header {
 
 static_assert(sizeof(struct icmp_header) == 8);
 
-void icmp_send_echo_request(struct net_device *dev, struct net_frame *frame, const u8 *ip_addr);
+void icmp_send_echo_request(struct net_device *dev, struct net_frame *frame,
+                            const u8 *ip_addr);
 void icmp_receive_frame(struct net_device *dev, struct net_frame *frame);
