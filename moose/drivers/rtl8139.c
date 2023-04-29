@@ -208,6 +208,7 @@ static int open_rtl8139(struct net_device *dev) {
         return -1;
     }
 
+    rtl8139->tx_index = 0;
     rtl8139->io_addr = res->base;
     configure_rtl8139(rtl8139);
     read_mac_addr(dev);
@@ -216,7 +217,7 @@ static int open_rtl8139(struct net_device *dev) {
     rtl8139->irq =
         (struct interrupt_handler){.number = isr,
                                    .name = "rtl8139",
-                                   .dev = rtl8139,
+                                   .dev = dev,
                                    .handle_interrupt = rtl8139_handler};
     enable_interrupt(&rtl8139->irq);
 
@@ -232,10 +233,17 @@ static int close_rtl8139(struct net_device *dev) {
     return 0;
 }
 
-static struct net_device_ops rtl8139_ops = {
+static const struct net_device_ops rtl8139_ops = {
     .open = open_rtl8139, .close = close_rtl8139, .transmit = rtl8139_send};
 
 struct net_device *create_rtl8139(void) {
+    struct pci_device *pci =
+        get_pci_device(RTL8139_VENDOR_ID, RTL8139_DEVICE_ID);
+    if (pci == NULL) {
+        kprintf("rtl8139 is not connected to pci bus\n");
+        return NULL;
+    }
+
     struct net_device *net_dev = create_net_device("eth0");
     if (net_dev == NULL)
         return NULL;
@@ -243,13 +251,6 @@ struct net_device *create_rtl8139(void) {
     struct rtl8139 *rtl8139 = kzalloc(sizeof(*rtl8139));
     if (rtl8139 == NULL) {
         destroy_net_device(net_dev);
-        return NULL;
-    }
-
-    struct pci_device *pci =
-        get_pci_device(RTL8139_VENDOR_ID, RTL8139_DEVICE_ID);
-    if (pci == NULL) {
-        kprintf("rtl8139 is not connected to pci bus\n");
         return NULL;
     }
 

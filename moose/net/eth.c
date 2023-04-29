@@ -29,6 +29,7 @@ void eth_send_frame(struct net_device *dev, struct net_frame *frame,
 
     memcpy(&frame->eth_header, frame->head, sizeof(*header));
     frame->link_kind = LINK_KIND_ETH;
+
     dev->ops->transmit(dev, frame->head, frame->size);
 }
 
