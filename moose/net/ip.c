@@ -25,10 +25,10 @@ static int is_local_ip_addr(const u8 *ip_addr) {
     return memcmp(temp, local_net_ip_addr, 4) == 0;
 }
 
-void ipv4_send_frame(struct net_frame *frame, const u8 *ip_addr, u8 protocol) {
+void ipv4_send_frame(struct net_device *dev, struct net_frame *frame, const u8 *ip_addr, u8 protocol) {
     u8 dst_mac[6];
     const u8 *src_mac = is_local_ip_addr(ip_addr) ? ip_addr : gateway_ip_addr;
-    if (arp_get_mac(src_mac, dst_mac)) {
+    if (arp_get_mac(dev, src_mac, dst_mac)) {
         kprintf("failed to get mac addr for ip ");
         debug_print_ip_addr(ip_addr);
         return;
@@ -46,7 +46,7 @@ void ipv4_send_frame(struct net_frame *frame, const u8 *ip_addr, u8 protocol) {
     header->id = 0;
     header->ttl = 64;
     header->protocol = protocol;
-    memcpy(header->src_ip, nic.ip_addr, 4);
+    memcpy(header->src_ip, dev->ip_addr, 4);
     memcpy(header->dst_ip, ip_addr, 4);
     header->checksum = 0;
     header->checksum = inet_checksum(header, sizeof(struct ipv4_header));
@@ -55,10 +55,10 @@ void ipv4_send_frame(struct net_frame *frame, const u8 *ip_addr, u8 protocol) {
     memcpy(&frame->ipv4_header, frame->head, sizeof(*header));
     frame->inet_kind = INET_KIND_IPV4;
 
-    eth_send_frame(frame, dst_mac, ETH_TYPE_IPV4);
+    eth_send_frame(dev, frame, dst_mac, ETH_TYPE_IPV4);
 }
 
-void ipv4_receive_frame(struct net_frame *frame) {
+void ipv4_receive_frame(struct net_device *dev, struct net_frame *frame) {
     struct ipv4_header *header = frame->head;
 
     header->total_len = be16toh(header->total_len);
@@ -74,12 +74,12 @@ void ipv4_receive_frame(struct net_frame *frame) {
     if (version == IPV4_VERSION) {
         switch (header->protocol) {
         case IP_PROTOCOL_ICMP:
-            icmp_receive_frame(frame);
+            icmp_receive_frame(dev, frame);
             break;
         case IP_PROTOCOL_TCP:
             break;
         case IP_PROTOCOL_UDP:
-            udp_receive_frame(frame);
+            udp_receive_frame(dev, frame);
             break;
         default:
             kprintf("ip protocol %d is unsupported\n", header->protocol);
@@ -87,5 +87,5 @@ void ipv4_receive_frame(struct net_frame *frame) {
     }
 }
 
-void ipv6_receive_frame(__attribute__((unused)) struct net_frame *frame) {
+void ipv6_receive_frame(__unused struct net_device *dev, __unused struct net_frame *frame) {
 }

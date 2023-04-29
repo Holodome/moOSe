@@ -1,6 +1,6 @@
-#include <fs/ramfs.h>
-
 #include <assert.h>
+#include <errno.h>
+#include <fs/ramfs.h>
 #include <mm/kmalloc.h>
 #include <string.h>
 
@@ -41,7 +41,7 @@ struct ramfs {
 };
 
 static int ramfs_setattr(struct inode *inode __unused) {
-    return 0;
+    return -ENOTSUP;
 }
 static void ramfs_release_sb(struct superblock *sb);
 static void ramfs_free_inode(struct inode *inode);

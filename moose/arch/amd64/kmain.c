@@ -3,15 +3,17 @@
 #include <arch/amd64/rtc.h>
 #include <arch/amd64/virtmem.h>
 #include <arch/cpu.h>
-#include <drivers/keyboard.h>
-#include <idle.h>
+#include <arch/interrupts.h>
+#include <assert.h>
 #include <kstdio.h>
-#include <kthread.h>
 #include <mm/kmalloc.h>
 #include <mm/kmem.h>
 #include <mm/physmem.h>
 #include <panic.h>
+#include <sched/process.h>
 #include <types.h>
+#include <net/inet.h>
+#include <drivers/pci.h>
 
 static void zero_bss(void) {
     extern u64 __bss_start;
@@ -22,28 +24,18 @@ static void zero_bss(void) {
         *p++ = 0;
 }
 
-__noreturn void kmain(void) {
-    zero_bss();
-    init_kmalloc();
-    kputs("running moOSe kernel");
-    kprintf("build %s %s\n", __DATE__, __TIME__);
-
+static void init_memory(void) {
     const struct memmap_entry *memmap;
     u32 memmap_size;
     get_memmap(&memmap, &memmap_size);
-    kprintf("Bios-provided physical RAM map:\n");
     int usable_region_count = 0;
     for (u32 i = 0; i < memmap_size; ++i) {
         const struct memmap_entry *entry = memmap + i;
-        kprintf("%#016llx-%#016llx: %s(%u)\n", (unsigned long long)entry->base,
-                (unsigned long long)(entry->base + entry->length),
-                get_memmap_type_str(entry->type), (unsigned)entry->type);
         usable_region_count += entry->type == MULTIBOOT_MEMORY_AVAILABLE;
     }
 
-    init_idt();
-    init_keyboard();
     struct mem_range *ranges = kmalloc(usable_region_count * sizeof(*ranges));
+    expects(ranges);
     for (u32 i = 0, j = 0; i < memmap_size; ++i) {
         const struct memmap_entry *entry = memmap + i;
         if (entry->type == MULTIBOOT_MEMORY_AVAILABLE) {
@@ -54,14 +46,40 @@ __noreturn void kmain(void) {
     }
 
     if (init_phys_mem(ranges, usable_region_count))
-        panic("failed to initialize physical memory\n");
+        panic("failed to initialize physical memory");
 
     if (init_virt_mem(ranges, usable_region_count))
-        panic("failed to initialize virtual memory\n");
+        panic("failed to initialize virtual memory");
+}
 
+void other_task(void *arg __unused) {
+    for (;;) {
+        kprintf("world\n");
+        wait_for_int();
+    }
+}
+
+__noreturn void kmain(void) {
+    zero_bss();
+    init_kmalloc();
+    init_kstdio();
+    kprintf("running moOSe kernel\n");
+    kprintf("build %s %s\n", __DATE__, __TIME__);
+
+    init_memory();
+    init_scheduler();
+    init_interrupts();
+    init_idt();
     init_rtc();
-    if (launch_first_task(idle_task))
-        panic("failed to create idle task\n");
+    init_pci();
+    init_inet();
+
+//    launch_process("other", other_task, NULL);
+
+    for (;;) {
+//        kprintf("hello\n");
+        wait_for_int();
+    }
 
     halt_cpu();
 }

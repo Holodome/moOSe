@@ -2,6 +2,7 @@
 #include <drivers/ata.h>
 #include <drivers/disk.h>
 #include <mbr.h>
+#include <panic.h>
 #include <string.h>
 
 static struct blk_device disk_dev_;
@@ -36,7 +37,6 @@ static int partition_write_block(struct blk_device *dev __unused, size_t idx,
 
 static int partition1_read_block(struct blk_device *dev __unused, size_t idx,
                                  void *buf) {
-    /* kprintf("reading %zu (%zx)\n", idx, (idx + partition1_start) * 512); */
     return ata_read_block(idx + partition1_start, buf);
 }
 
@@ -51,12 +51,12 @@ void init_disk(void) {
     disk_dev->block_size_log = 9;
     disk_dev->read_block = disk_read_block;
     disk_dev->write_block = disk_write_block;
-    init_blk_device(disk_dev);
+    if (init_blk_device(disk_dev))
+        panic("Failed to initialize sda");
 
     struct mbr_partition partition;
     blk_read(disk_dev, MBR_PARTITION_OFFSET, &partition, sizeof(partition));
     partition_start = partition.addr;
-    kprintf("sda1 start=%u\n", partition_start);
 
     strlcpy(disk_part_dev->name, "sda1", sizeof(disk_dev->name));
     disk_part_dev->block_size = 512;
@@ -64,12 +64,12 @@ void init_disk(void) {
     disk_part_dev->read_block = partition_read_block;
     disk_part_dev->write_block = partition_write_block;
     disk_part_dev->capacity = partition.size;
-    init_blk_device(disk_part_dev);
+    if (init_blk_device(disk_part_dev))
+        panic("Failed to initialize sda1");
 
     blk_read(disk_dev, MBR_PARTITION_OFFSET + MBR_PARTITION_SIZE, &partition,
              sizeof(partition));
     partition1_start = partition.addr;
-    kprintf("sda2 start=%u\n", partition1_start);
 
     strlcpy(disk_part1_dev->name, "sda2", sizeof(disk_dev->name));
     disk_part1_dev->block_size = 512;
@@ -77,5 +77,6 @@ void init_disk(void) {
     disk_part1_dev->read_block = partition1_read_block;
     disk_part1_dev->write_block = partition1_write_block;
     disk_part1_dev->capacity = partition.size;
-    init_blk_device(disk_part1_dev);
+    if (init_blk_device(disk_part1_dev))
+        panic("Failed to initialize sda2");
 }

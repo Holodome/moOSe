@@ -1,57 +1,65 @@
-#include <fs/posix.h>
+#include <errno.h>
 #include <kstdio.h>
-#include <kthread.h>
 #include <mm/kmalloc.h>
 #include <net/eth.h>
 #include <net/frame.h>
 #include <net/inet.h>
+#include <net/device.h>
 #include <net/netdaemon.h>
-#include <sched/rwlock.h>
+#include <sched/locks.h>
+#include <sched/process.h>
 #include <string.h>
 
 #define QUEUE_SIZE 32
 
+struct daemon_queue_entry {
+    struct net_frame *frame;
+    struct net_device *dev;
+    int free;
+};
+
 struct daemon_queue {
-    struct net_frame **frames;
+    struct daemon_queue_entry *entries;
     rwlock_t lock;
 };
 
 static struct daemon_queue *queue;
 
-__attribute__((noreturn)) static void net_daemon_task(void) {
-    u64 flags;
+__noreturn static void net_daemon_task(void *arg __unused) {
+    cpuflags_t flags;
+    struct daemon_queue_entry *entry;
     for (;;) {
-        write_lock_irqsave(&queue->lock, flags);
+        flags = write_lock_irqsave(&queue->lock);
         for (int i = 0; i < QUEUE_SIZE; i++) {
-            if (queue->frames[i]) {
-                eth_receive_frame(queue->frames[i]);
-                release_net_frame(queue->frames[i]);
-                queue->frames[i] = NULL;
+            entry = &queue->entries[i];
+            if (!entry->free) {
+                eth_receive_frame(entry->dev, entry->frame);
+                release_net_frame(entry->frame);
+                entry->free = 1;
             }
         }
         write_unlock_irqrestore(&queue->lock, flags);
     }
+
+    exit_current();
 }
 
 int init_net_daemon(void) {
-    queue = kzalloc(sizeof(*queue) + sizeof(struct net_frame *) * QUEUE_SIZE);
+    queue = kzalloc(sizeof(*queue) + sizeof(struct daemon_queue_entry) * QUEUE_SIZE);
     if (queue == NULL)
         return -ENOMEM;
 
-    queue->frames = (struct net_frame **)(queue + 1);
+    queue->entries = (struct daemon_queue_entry *)(queue + 1);
+    for (size_t i = 0; i < QUEUE_SIZE; i++)
+        queue->entries[i].free = 1;
 
-    rwlock_init(&queue->lock);
+    init_rwlock(&queue->lock);
 
-    if (launch_task(net_daemon_task)) {
-        kfree(queue->frames);
-        kfree(queue);
-        return -1;
-    }
-
+    launch_process("net", net_daemon_task, NULL);
     return 0;
 }
 
-void net_daemon_add_frame(const void *data, size_t size) {
+void net_daemon_add_frame(struct net_device *dev, const void *data, size_t size) {
     if (size > ETH_FRAME_MAX_SIZE) {
         kprintf("net daemon add frame error: invalid frame size\n");
         return;
@@ -66,12 +74,15 @@ void net_daemon_add_frame(const void *data, size_t size) {
     memcpy(frame->buffer, data, size);
     frame->size = size;
 
-    u64 flags;
-    write_lock_irqsave(&queue->lock, flags);
+    cpuflags_t flags = write_lock_irqsave(&queue->lock);
 
+    struct daemon_queue_entry *entry;
     for (int i = 0; i < QUEUE_SIZE; i++) {
-        if (queue->frames[i] == NULL) {
-            queue->frames[i] = frame;
+        entry = &queue->entries[i];
+        if (entry->free) {
+            entry->frame = frame;
+            entry->dev = dev;
+            entry->free = 0;
             write_unlock_irqrestore(&queue->lock, flags);
             return;
         }

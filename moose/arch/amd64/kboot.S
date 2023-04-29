@@ -18,8 +18,3 @@ kboot64:
     add %rbx, %rax
 
     jmp *%rax
-halt:
-    cli
-    hlt
-    jmp halt
-

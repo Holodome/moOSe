@@ -14,7 +14,7 @@ Try the Fast A20 method last
 Test if A20 is enabled in a loop with a time-out (as the fast A20 method may work slowly)
 If none of the above worked, give up
 
-Note that enalbing only with 8042 is implemented
+Note that enabling only with 8042 is implemented
 */
 .code32
 .global enable_a20

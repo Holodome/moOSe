@@ -1,12 +1,10 @@
-#include <fs/ext2.h>
-
 #include <assert.h>
 #include <bitops.h>
 #include <blk_device.h>
-#include <endian.h>
+#include <errno.h>
+#include <fs/ext2.h>
 #include <kstdio.h>
 #include <mm/kmalloc.h>
-#include <string.h>
 
 #define EXT2_DIRECT_BLOCKS 12
 #define EXT2_SB_OFFSET 1024
@@ -234,7 +232,7 @@ static void ext2_error_(struct superblock *sb, const char *func_name,
     va_start(args, fmt);
     kprintf("ext2 error in %s: ", func_name);
     kvprintf(fmt, args);
-    kputc('\n');
+    kprintf("\n");
     va_end(args);
 }
 
@@ -286,7 +284,7 @@ __used static ssize_t ext2_alloc_ino(struct superblock *sb, int is_dir) {
     if (desc == NULL)
         return -ENOSPC;
 
-    u64 bitmap[ext2->group_inode_bitmap_size];
+    bitmap_t bitmap[ext2->group_inode_bitmap_size];
     blk_read(sb->dev, desc->bg_inode_bitmap << sb->blk_sz_bits, bitmap,
              sizeof(bitmap));
 
@@ -666,8 +664,8 @@ int ext2_mount(struct superblock *sb) {
 
 // 0 - success
 // 1 - no entries left
-int ext2_read_dentry_at(struct ext2_inode *ei, struct superblock *sb,
-                        off_t *offset, struct ext2_dentry1 *ed) {
+static int ext2_read_dentry_at(struct ext2_inode *ei, struct superblock *sb,
+                               off_t *offset, struct ext2_dentry1 *ed) {
     if (*offset >= ei->i_size)
         return 1;
     size_t read =

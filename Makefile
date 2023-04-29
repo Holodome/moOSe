@@ -18,14 +18,11 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(subst .o,.d,$@)
 ASFLAGS = -msyntax=att --warn --fatal-warnings
 LDFLAGS = -Map $(subst .elf,.map,$@)
 
-CFLAGS  = -Wall -Werror -Wextra -std=gnu11 -ffreestanding -nostdlib -nostartfiles \
-			-Wl,-r -Imoose/include -Os -mno-sse -mno-sse2 -mno-sse3 -fno-strict-aliasing \
-			-mcmodel=large -fno-strict-overflow -Wno-sign-compare
-
-ifneq ($(DEBUG),)
-	ASFLAGS += -g
-	CFLAGS += -ggdb -O0
-endif
+CFLAGS  = -Imoose \
+		  -Wall -Werror -Wextra -Wno-sign-compare -Wpacked \
+		  -Os -g -std=gnu11 -fno-strict-aliasing -fno-strict-overflow \
+		  -ffreestanding -nostdlib -nostartfiles \
+		  -Wl,-r -mno-sse -mno-sse2 -mno-sse3 -mcmodel=large -mno-red-zone 
 
 TARGET_IMG := moose.img
 
@@ -41,13 +38,12 @@ $(TARGET_IMG): moose/moose.img
 
 qemu: all
 	$(QEMU) -d guest_errors \
-	-m 4g \
 	-device pci-bridge,id=bridge1,bus=pci.0,chassis_nr=4 \
 	-device rtl8139,netdev=moose0,bus=pci.0 -netdev user,id=moose0 \
-	-hda $(TARGET_IMG)
+	-drive file=$(TARGET_IMG),format=raw,index=0,if=ide
 
 format:
-	$(Q)find . \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} \;
+	$(Q)find moose \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} \;
 
 clean:
 	$(Q)rm -f $(shell find . -name "*.o" \
@@ -77,7 +73,7 @@ include moose/Makefile
 
 %.ld.out: %.ld
 	@echo "CPP $<"
-	$(Q)gcc -CC -E -P -x c -Imoose/include $< > $@
+	$(Q)gcc -CC -E -P -x c -Imoose $< > $@
 
 %.i: %.c
 	$(Q)$(CC) $(CFLAGS) -E -o $@ $^

@@ -1,7 +1,7 @@
-#include <arch/amd64/asm.h>
-#include <arch/amd64/idt.h>
+#include <arch/interrupts.h>
 #include <assert.h>
 #include <bitops.h>
+#include <drivers/io_resource.h>
 #include <drivers/pci.h>
 #include <drivers/rtl8139.h>
 #include <kstdio.h>
@@ -10,8 +10,9 @@
 #include <net/inet.h>
 #include <net/netdaemon.h>
 #include <param.h>
-#include <sched/spinlock.h>
+#include <sched/locks.h>
 #include <string.h>
+#include <errno.h>
 
 #define RTL_REG_MAC0 0x00
 #define TRL_REG_TX_STATUS 0x10
@@ -36,7 +37,7 @@
 
 struct rtl8139 {
     u32 io_addr;
-    struct pci_device *dev;
+    struct pci_device *pci;
 
     u8 rx_buffer[RX_BUFFER_SIZE] __attribute__((aligned(4)));
     u8 tx_buffer[TX_BUFFER_SIZE] __attribute__((aligned(4)));
@@ -44,20 +45,20 @@ struct rtl8139 {
     u16 rx_offset;
 
     spinlock_t lock;
+    struct interrupt_handler irq;
 };
 
-static struct net_device *net_dev;
-
-static void read_mac_addr(struct rtl8139 *rtl8139, u8 *mac_addr) {
+static void read_mac_addr(struct net_device *dev) {
+    struct rtl8139 *rtl8139 = dev->private;
     u32 mac1 = port_in32(rtl8139->io_addr + RTL_REG_MAC0);
     u32 mac2 = port_in32(rtl8139->io_addr + RTL_REG_MAC0 + 4);
 
-    mac_addr[0] = mac1 >> 0;
-    mac_addr[1] = mac1 >> 8;
-    mac_addr[2] = mac1 >> 16;
-    mac_addr[3] = mac1 >> 24;
-    mac_addr[4] = mac2 >> 0;
-    mac_addr[5] = mac2 >> 8;
+    dev->mac_addr[0] = mac1 >> 0;
+    dev->mac_addr[1] = mac1 >> 8;
+    dev->mac_addr[2] = mac1 >> 16;
+    dev->mac_addr[3] = mac1 >> 24;
+    dev->mac_addr[4] = mac2 >> 0;
+    dev->mac_addr[5] = mac2 >> 8;
 }
 
 static int rtl8139_send(struct net_device *dev, const void *frame,
@@ -68,9 +69,7 @@ static int rtl8139_send(struct net_device *dev, const void *frame,
     }
 
     struct rtl8139 *rtl8139 = dev->private;
-
-    u64 flags;
-    spin_lock_irqsave(&rtl8139->lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&rtl8139->lock);
 
     memcpy(rtl8139->tx_buffer, frame, size);
 
@@ -95,20 +94,23 @@ static void rtl8139_receive(struct net_device *dev) {
     // check that rx buffer is not empty
     while ((port_in8(rtl8139->io_addr + RTL_REG_CMD) & 0x1) != 1) {
         u8 *rx_ptr = rtl8139->rx_buffer + rtl8139->rx_offset;
-        u16 frame_size = *((u16 *)(rx_ptr + 2)) - 4;
+        u16 frame_size;
+        // note that frame_size is actually correctly aligned and we could as
+        // well deference the pointer directly
+        memcpy(&frame_size, rx_ptr + 2, sizeof(frame_size));
+        frame_size -= 4;
 
         // skip 4 bytes rtl header
         rx_ptr += 4;
         if (rx_ptr + frame_size >= rtl8139->rx_buffer + RX_BUFFER_SIZE) {
             u16 part_size = (rtl8139->rx_buffer + RX_BUFFER_SIZE) - rx_ptr;
             memcpy(frame, rx_ptr, part_size);
-            memcpy(frame + part_size, rtl8139->rx_buffer,
-                   frame_size - part_size);
+            memcpy(frame + part_size, rtl8139->rx_buffer, frame_size - part_size);
         } else {
             memcpy(frame, rx_ptr, frame_size);
         }
 
-        net_daemon_add_frame(frame, frame_size);
+        net_daemon_add_frame(dev, frame, frame_size);
 
         rtl8139->rx_offset =
             (rtl8139->rx_offset + frame_size + 4 + 4 + 3) & ~0x3;
@@ -118,35 +120,45 @@ static void rtl8139_receive(struct net_device *dev) {
     }
 }
 
-static void rtl8139_handler(struct registers_state *regs
-                            __attribute__((unused))) {
+static irqresult_t rtl8139_handler(void *dev,
+                                   const struct registers_state *r __unused) {
+    struct net_device *net_dev = dev;
     struct rtl8139 *rtl8139 = net_dev->private;
-    u16 isr = port_in16(rtl8139->io_addr + RTL_REG_INT_STATUS);
+    u16 status = port_in16(rtl8139->io_addr + RTL_REG_INT_STATUS);
 
-    if (isr & RTL_RER || isr & RTL_TER) {
-        panic("rtl8139 tx/rx error\n");
+    if (status & RTL_RER || status & RTL_TER) {
+        if (status & RTL_RER)
+            net_dev->stats.rx_errors++;
+
+        if (status & RTL_RER)
+            net_dev->stats.tx_errors++;
+
+        kprintf("rtl8139 tx/rx error\n");
     }
 
-    if (isr & RTL_TOK) {
+    if (status & RTL_TOK) {
         kprintf("rtl8139 frame was sent\n");
+        net_dev->stats.tx_frames++;
     }
 
-    if (isr & RTL_ROK) {
+    if (status & RTL_ROK) {
         rtl8139_receive(net_dev);
         kprintf("rtl8139 frame was recieved\n");
+        net_dev->stats.rx_frames++;
     }
 
     port_out16(rtl8139->io_addr + RTL_REG_INT_STATUS, RTL_TOK | RTL_ROK);
+    return IRQ_HANDLED;
 }
 
-static void init_rtl8139(struct rtl8139 *rtl8139) {
+static void configure_rtl8139(struct rtl8139 *rtl8139) {
+    struct pci_device *pci = rtl8139->pci;
     u32 io_addr = rtl8139->io_addr;
-    rtl8139->tx_index = 0;
 
     // pci bus mastering
-    u32 command = read_pci_config_u16(rtl8139->dev->bdf, PCI_COMMAND);
+    u32 command = read_pci_config_u16(pci->bdf, PCI_COMMAND);
     command |= BIT(2);
-    write_pci_config_u16(rtl8139->dev->bdf, PCI_COMMAND, command);
+    write_pci_config_u16(pci->bdf, PCI_COMMAND, command);
 
     // power on device
     port_out8(io_addr + RTL_REG_CONFIG1, 0x0);
@@ -172,63 +184,86 @@ static void init_rtl8139(struct rtl8139 *rtl8139) {
     port_out32(io_addr + RTL_REG_TX_CONFIG, tx_config);
 
     port_out8(io_addr + RTL_REG_CMD, 0x0c);
-
-    u8 isr = rtl8139->dev->interrupt_line;
-    register_isr(isr, rtl8139_handler);
 }
 
-struct net_device *create_rtl8139(void) {
-    net_dev = kzalloc(sizeof(*net_dev) + sizeof(struct rtl8139));
-    if (net_dev == NULL)
-        return NULL;
-
-    net_dev->private = net_dev + 1;
-    struct rtl8139 *rtl8139 = net_dev->private;
-
-    struct pci_device *dev =
-        get_pci_device(RTL8139_VENDOR_ID, RTL8139_DEVICE_ID);
-    if (dev == NULL) {
-        kfree(net_dev);
-        kprintf("rtl8139 is not connected to pci bus\n");
-        return NULL;
-    }
-
-    if (enable_pci_device(dev)) {
-        kfree(net_dev);
+static int open_rtl8139(struct net_device *dev) {
+    struct rtl8139 *rtl8139 = dev->private;
+    if (enable_pci_device(rtl8139->pci)) {
         kprintf("failed to enable rtl8139\n");
-        return NULL;
+        return -EIO;
     }
-
-    spin_lock_init(&rtl8139->lock);
 
     // find io port resource
-    struct resource *res = NULL;
-    for (size_t i = 0; i < dev->resource_count; i++) {
-        if (dev->resources[i]->kind == PORT_RESOURCE) {
-            res = dev->resources[i];
+    struct io_resource *res = NULL;
+    for (size_t i = 0; i < rtl8139->pci->resource_count; i++) {
+        if (rtl8139->pci->resources[i]->kind == IO_RES_PORT) {
+            res = rtl8139->pci->resources[i];
             break;
         }
     }
 
     if (res == NULL) {
-        kfree(net_dev);
-        release_pci_device(dev);
-        return NULL;
+        release_pci_device(rtl8139->pci);
+        return -1;
     }
 
     rtl8139->io_addr = res->base;
-    rtl8139->dev = dev;
+    configure_rtl8139(rtl8139);
+    read_mac_addr(dev);
 
-    init_rtl8139(rtl8139);
-    read_mac_addr(rtl8139, net_dev->mac_addr);
+    u8 isr = rtl8139->pci->interrupt_line;
+    rtl8139->irq =
+        (struct interrupt_handler){.number = isr,
+                                   .name = "rtl8139",
+                                   .dev = rtl8139,
+                                   .handle_interrupt = rtl8139_handler};
+    enable_interrupt(&rtl8139->irq);
 
-    net_dev->send = rtl8139_send;
+    return 0;
+}
+
+static int close_rtl8139(struct net_device *dev) {
+    // TODO: disable/reset rtl8139
+    struct rtl8139 *rtl8139 = dev->private;
+    disable_interrupt(&rtl8139->irq);
+    memset(&rtl8139->irq, 0, sizeof(struct interrupt_handler));
+    release_pci_device(rtl8139->pci);
+    return 0;
+}
+
+static struct net_device_ops rtl8139_ops = {
+    .open = open_rtl8139,
+    .close = close_rtl8139,
+    .transmit = rtl8139_send
+};
+
+struct net_device *create_rtl8139(void) {
+    struct net_device *net_dev = create_net_device("eth0");
+    if (net_dev == NULL)
+        return NULL;
+
+    struct rtl8139 *rtl8139 = kzalloc(sizeof(*rtl8139));
+    if (rtl8139 == NULL) {
+        destroy_net_device(net_dev);
+        return NULL;
+    }
+
+    struct pci_device *pci =
+        get_pci_device(RTL8139_VENDOR_ID, RTL8139_DEVICE_ID);
+    if (pci == NULL) {
+        kprintf("rtl8139 is not connected to pci bus\n");
+        return NULL;
+    }
+
+    init_spin_lock(&rtl8139->lock);
+    net_dev->private = rtl8139;
+    net_dev->ops = &rtl8139_ops;
+    rtl8139->pci = pci;
 
     return net_dev;
 }
 
 void destroy_rtl8139(struct net_device *dev) {
-    struct rtl8139 *rtl8139 = dev->private;
-    release_pci_device(rtl8139->dev);
+    close_rtl8139(dev);
     kfree(dev);
 }

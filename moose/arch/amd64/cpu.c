@@ -2,7 +2,9 @@
 #include <arch/cpu.h>
 #include <kstdio.h>
 
-struct registers {
+struct process;
+
+struct debug_registers {
     u64 rdi;
     u64 rsi;
     u64 rbp;
@@ -27,12 +29,46 @@ struct registers {
     u64 cr3;
 };
 
-static_assert(sizeof(struct registers) == 0xa8);
+static_assert(sizeof(struct debug_registers) == 0xa8);
 
-extern void get_registers(struct registers *regs) __used;
-extern void set_stack(u64 sp, u64 old_stack_base) __used;
+static __noinline __naked void
+get_registers(struct debug_registers *r __unused) {
+    asm volatile("pushq %rax\n"
+                 "movq %rdi, %rax\n"
+                 "movq %rdi, 0x0(%rax)\n"
+                 "movq %rsi, 0x8(%rax)\n"
+                 "movq %rbp, 0x10(%rax)\n"
+                 "movq %rsp, 0x18(%rax)\n"
+                 "movq %rbx, 0x20(%rax)\n"
+                 "movq %rdx, 0x28(%rax)\n"
+                 "movq %rcx, 0x30(%rax)\n"
+                 "movq %rax, 0x38(%rax)\n"
+                 "movq %r8, 0x40(%rax)\n"
+                 "movq %r9, 0x48(%rax)\n"
+                 "movq %r10, 0x50(%rax)\n"
+                 "movq %r11, 0x58(%rax)\n"
+                 "movq %r12, 0x60(%rax)\n"
+                 "movq %r13, 0x68(%rax)\n"
+                 "movq %r14, 0x70(%rax)\n"
+                 "movq %r15, 0x78(%rax)\n"
+                 "pushq %rbx\n"
+                 "leaq 0(%rip), %rbx\n"
+                 "movq %rbx, 0x80(%rax)\n"
+                 "pushfq\n"
+                 "popq %rbx\n"
+                 "movq %rbx, 0x88(%rax)\n"
+                 "movq %cr0, %rbx\n"
+                 "movq %rbx, 0x90(%rax)\n"
+                 "movq %cr2, %rbx\n"
+                 "movq %rbx, 0x98(%rax)\n"
+                 "movq %cr3, %rbx\n"
+                 "movq %rbx, 0xa0(%rax)\n"
+                 "popq %rbx\n"
+                 "popq %rax\n"
+                 "retq\n");
+}
 
-static void print_registers(const struct registers *r) {
+static void print_registers(const struct debug_registers *r) {
     kprintf("rip: %#018lx rflags: %#018lx\n", r->rip, r->rflags);
     kprintf("rdi: %#018lx rsi: %#018lx rbp: %#018lx\n", r->rdi, r->rsi, r->rbp);
     kprintf("rsp: %#018lx rbx: %#018lx rdx: %#018lx\n", r->rsp, r->rbx, r->rdx);
@@ -43,8 +79,83 @@ static void print_registers(const struct registers *r) {
     kprintf("cr0: %#018lx cr2: %#018lx cr3: %#018lx\n", r->cr0, r->cr2, r->cr3);
 }
 
+void print_registers_state(const struct registers_state *r) {
+    kprintf("rip: %#018lx rflags: %#018lx\n", r->rip, r->rflags);
+    kprintf("rdi: %#018lx rsi: %#018lx rbp: %#018lx\n", r->rdi, r->rsi, r->rbp);
+    kprintf("rsp: %#018lx rbx: %#018lx rdx: %#018lx\n", r->rsp, r->rbx, r->rdx);
+    kprintf("rcx: %#018lx rax: %#018lx r8:  %#018lx\n", r->rcx, r->rax, r->r8);
+    kprintf("r9:  %#018lx r10: %#018lx r11: %#018lx\n", r->r9, r->r10, r->r11);
+    kprintf("r12: %#018lx r13: %#018lx r14: %#018lx\n", r->r12, r->r13, r->r14);
+    kprintf("r15: %#018lx\n", r->r15);
+}
+
 void dump_registers(void) {
-    struct registers regs;
+    struct debug_registers regs;
     get_registers(&regs);
     print_registers(&regs);
+}
+
+void init_process_registers(struct registers_state *regs, void (*fn)(void *),
+                            void *arg, u64 stack_end) {
+    regs->rip = (u64)fn;
+    regs->rflags = read_cpu_flags() & ~X86_FLAGS_IF;
+    kprintf("initial flags: %d\n", __IRQS_DISABLED(regs->rflags));
+    regs->rsp = stack_end;
+    regs->rbp = stack_end;
+    regs->rdi = (u64)arg;
+}
+
+__naked __noinline void switch_process(struct process *from __unused,
+                                       struct process *to __unused) {
+    asm volatile("pushq %r15\n"
+                 "pushq %r14\n"
+                 "pushq %r13\n"
+                 "pushq %r12\n"
+                 "pushq %r11\n"
+                 "pushq %r10\n"
+                 "pushq %r9\n"
+                 "pushq %r8\n"
+                 "pushq %rax\n"
+                 "pushq %rcx\n"
+                 "pushq %rdx\n"
+                 "pushq %rbx\n"
+                 "pushq %rsp\n"
+                 "pushq %rbp\n"
+                 "pushq %rsi\n"
+                 "pushq %rdi\n"
+                 "pushfq\n"
+                 "pushq %rbp\n"
+                 // save current stack
+                 "movq %rsp, 24(%rdi)\n"
+                 // save exit point for swithced-from process
+                 "leaq 1f(%rip), %rax\n"
+                 "movq %rax, 144(%rdi)\n"
+                 // load new stack
+                 "movq 24(%rsi), %rsp\n"
+                 /* "movq 160(%rsi), %rax\n" */
+                 /* "pushq %rax\n" */
+                 /* "popfq\n" */
+                 // imitate call to jump to curent process exit
+                 "pushq 144(%rsi)\n"
+                 "jmp switch_to\n"
+                 "1:\n"
+                 "popq %rbp\n"
+                 "popfq\n"
+                 "popq %rdi\n"
+                 "popq %rsi\n"
+                 "popq %rbp\n"
+                 "addq $8, %rsp\n"
+                 "popq %rbx\n"
+                 "popq %rdx\n"
+                 "popq %rcx\n"
+                 "popq %rax\n"
+                 "popq %r8\n"
+                 "popq %r9\n"
+                 "popq %r10\n"
+                 "popq %r11\n"
+                 "popq %r12\n"
+                 "popq %r13\n"
+                 "popq %r14\n"
+                 "popq %r15\n"
+                 "retq\n");
 }

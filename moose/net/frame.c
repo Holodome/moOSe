@@ -1,16 +1,16 @@
 #include <assert.h>
-#include <fs/posix.h>
+#include <errno.h>
 #include <mm/kmalloc.h>
 #include <net/frame.h>
 #include <net/inet.h>
-#include <sched/spinlock.h>
+#include <sched/locks.h>
 #include <string.h>
 
 #define FREE_FRAMES_COUNT 32
 
 static LIST_HEAD(free_list);
 
-static spinlock_t lock = SPIN_LOCK_INIT();
+static spinlock_t lock = INIT_SPIN_LOCK();
 
 static struct net_frame *alloc_net_frame(void) {
     struct net_frame *frame = kmalloc(sizeof(*frame) + FRAME_BUFFER_SIZE);
@@ -50,8 +50,7 @@ void destroy_net_frames(void) {
 }
 
 static struct net_frame *get_empty_net_frame(void) {
-    u64 flags;
-    spin_lock_irqsave(&lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&lock);
 
     struct net_frame *frame =
         list_first_or_null(&free_list, struct net_frame, list);
@@ -93,8 +92,7 @@ struct net_frame *get_empty_receive_net_frame(void) {
 }
 
 void release_net_frame(struct net_frame *frame) {
-    u64 flags;
-    spin_lock_irqsave(&lock, flags);
+    cpuflags_t flags = spin_lock_irqsave(&lock);
     list_add(&frame->list, &free_list);
     spin_unlock_irqrestore(&lock, flags);
 }
