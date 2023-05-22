@@ -21,14 +21,13 @@ struct arp_header {
     u8 dst_mac[6];
     u8 dst_ip[4];
 };
-
 static_assert(sizeof(struct arp_header) == 28);
 
 int init_arp_cache(void);
 void destroy_arp_cache(void);
 
 void arp_send_request(struct net_device *dev, struct net_frame *frame,
-                      const u8 *ip_addr);
+                      const struct ip_addr *ip_addr);
 void arp_receive_frame(struct net_device *dev, struct net_frame *frame);
-int arp_get_mac(struct net_device *dev, const u8 *ip_addr, u8 *mac_addr);
+int arp_get_mac(struct net_device *dev, const struct ip_addr *ip_addr, struct mac_addr *mac_addr);
 void debug_clear_arp_cache(void);

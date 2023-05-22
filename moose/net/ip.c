@@ -16,20 +16,17 @@
 #define FLAGS_BITS 3
 #define FRAGMENT_BITS 13
 
-static int is_local_ip_addr(const u8 *ip_addr) {
-    u8 temp[4];
-    memcpy(temp, ip_addr, 4);
-    for (u8 i = 0; i < 4; i++)
-        temp[i] &= local_net_mask[i];
-
-    return memcmp(temp, local_net_ip_addr, 4) == 0;
-}
-
 void ipv4_send_frame(struct net_device *dev, struct net_frame *frame,
-                     const u8 *ip_addr, u8 protocol) {
-    u8 dst_mac[6];
-    const u8 *src_mac = is_local_ip_addr(ip_addr) ? ip_addr : gateway_ip_addr;
-    if (arp_get_mac(dev, src_mac, dst_mac)) {
+                     const struct ip_addr *ip_addr, u8 protocol) {
+    struct mac_addr dst_mac;
+    struct ip_addr src_ip;
+    if (is_subnet_ip_addr(ip_addr)) {
+        copy_ip_addr(&src_ip, ip_addr);
+    } else {
+        copy_ip_addr(&src_ip, &gateway_ip_addr);
+    }
+
+    if (arp_get_mac(dev, &src_ip, &dst_mac)) {
         kprintf("failed to get mac addr for ip ");
         debug_print_ip_addr(ip_addr);
         return;
@@ -47,7 +44,7 @@ void ipv4_send_frame(struct net_device *dev, struct net_frame *frame,
     header->id = 0;
     header->ttl = 64;
     header->protocol = protocol;
-    memcpy(header->src_ip, dev->ip_addr, 4);
+    memcpy(header->src_ip, &dev->ip_addr, 4);
     memcpy(header->dst_ip, ip_addr, 4);
     header->checksum = 0;
     header->checksum = inet_checksum(header, sizeof(struct ipv4_header));
@@ -56,7 +53,7 @@ void ipv4_send_frame(struct net_device *dev, struct net_frame *frame,
     memcpy(&frame->ipv4_header, frame->head, sizeof(*header));
     frame->inet_kind = INET_KIND_IPV4;
 
-    eth_send_frame(dev, frame, dst_mac, ETH_TYPE_IPV4);
+    eth_send_frame(dev, frame, &dst_mac, ETH_TYPE_IPV4);
 }
 
 void ipv4_receive_frame(struct net_device *dev, struct net_frame *frame) {

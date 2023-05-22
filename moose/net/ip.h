@@ -1,6 +1,7 @@
 #pragma once
 
 #include <net/device.h>
+#include <net/inet.h>
 #include <types.h>
 
 #define IPV4_VERSION 4
@@ -31,6 +32,6 @@ struct ipv4_header {
 static_assert(sizeof(struct ipv4_header) == 20);
 
 void ipv4_send_frame(struct net_device *dev, struct net_frame *frame,
-                     const u8 *ip_addr, u8 protocol);
+                     const struct ip_addr *ip_addr, u8 protocol);
 void ipv4_receive_frame(struct net_device *dev, struct net_frame *frame);
 void ipv6_receive_frame(struct net_device *dev, struct net_frame *frame);

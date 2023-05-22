@@ -15,8 +15,8 @@
 #define ARP_TIMEOUT_MSECS 15000
 
 struct arp_cache_entry {
-    u8 ip_addr[4];
-    u8 mac_addr[6];
+    struct ip_addr ip_addr;
+    struct mac_addr mac_addr;
     struct list_head list;
 };
 
@@ -64,13 +64,13 @@ void destroy_arp_cache(void) {
     kfree(cache);
 }
 
-static int arp_cache_get(const u8 *ip_addr, u8 *mac_addr) {
+static int arp_cache_get(const struct ip_addr *ip_addr, struct mac_addr *mac_addr) {
     cpuflags_t flags = read_lock_irqsave(&cache->lock);
 
     struct arp_cache_entry *entry;
     list_for_each_entry(entry, &cache->entries, list) {
-        if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
-            memcpy(mac_addr, entry->mac_addr, 6);
+        if (ip_addr_equals(&entry->ip_addr, ip_addr)) {
+            copy_mac_addr(mac_addr, &entry->mac_addr);
             read_unlock_irqrestore(&cache->lock, flags);
             return 0;
         }
@@ -80,12 +80,12 @@ static int arp_cache_get(const u8 *ip_addr, u8 *mac_addr) {
     return -1;
 }
 
-static void arp_cache_add(const u8 *ip_addr, const u8 *mac_addr) {
+static void arp_cache_add(const struct ip_addr *ip_addr, const struct mac_addr *mac_addr) {
     cpuflags_t flags = write_lock_irqsave(&cache->lock);
 
     struct arp_cache_entry *entry;
     list_for_each_entry(entry, &cache->entries, list) {
-        if (memcmp(entry->ip_addr, ip_addr, 4) == 0) {
+        if (ip_addr_equals(&entry->ip_addr, ip_addr)) {
             write_unlock_irqrestore(&cache->lock, flags);
             return;
         }
@@ -102,11 +102,11 @@ static void arp_cache_add(const u8 *ip_addr, const u8 *mac_addr) {
 
     write_unlock_irqrestore(&cache->lock, flags);
 
-    memcpy(entry->ip_addr, ip_addr, 4);
-    memcpy(entry->mac_addr, mac_addr, 6);
+    copy_ip_addr(&entry->ip_addr, ip_addr);
+    copy_mac_addr(&entry->mac_addr, mac_addr);
 }
 
-int arp_get_mac(struct net_device *dev, const u8 *ip_addr, u8 *mac_addr) {
+int arp_get_mac(struct net_device *dev, const struct ip_addr *ip_addr, struct mac_addr *mac_addr) {
     if (arp_cache_get(ip_addr, mac_addr) == 0)
         return 0;
 
@@ -114,12 +114,13 @@ int arp_get_mac(struct net_device *dev, const u8 *ip_addr, u8 *mac_addr) {
     if (frame == NULL)
         return -ENOMEM;
 
+    debug_print_ip_addr(ip_addr);
     arp_send_request(dev, frame, ip_addr);
 
     int found = 0;
-    memcpy(mac_addr, broadcast_mac_addr, 6);
+    copy_mac_addr(mac_addr, &broadcast_mac_addr);
     u64 end = jiffies64_to_msecs(get_jiffies64()) + ARP_TIMEOUT_MSECS;
-    while (!(found && memcmp(mac_addr, broadcast_mac_addr, 6) != 0) &&
+    while (!(found && !mac_addr_equals(mac_addr, &broadcast_mac_addr)) &&
            jiffies64_to_msecs(get_jiffies64()) < end) {
         found = (arp_cache_get(ip_addr, mac_addr) == 0);
     }
@@ -129,7 +130,7 @@ int arp_get_mac(struct net_device *dev, const u8 *ip_addr, u8 *mac_addr) {
 }
 
 void arp_send_request(struct net_device *dev, struct net_frame *frame,
-                      const u8 *ip_addr) {
+                      const struct ip_addr *ip_addr) {
     pull_net_frame_head(frame, sizeof(struct arp_header));
     struct arp_header *header = frame->head;
 
@@ -138,15 +139,15 @@ void arp_send_request(struct net_device *dev, struct net_frame *frame,
     header->hw_len = 6;
     header->protocol_len = 4;
     header->operation = htobe16(ARP_REQUEST);
-    memcpy(header->src_mac, dev->mac_addr, 6);
-    memcpy(header->src_ip, dev->ip_addr, 4);
-    memset(header->dst_mac, 0, 6);
+    memcpy(header->src_mac, &dev->mac_addr, 6);
+    memcpy(header->src_ip, &dev->ip_addr, 4);
+    memcpy(header->dst_mac, &null_mac_addr, 6);
     memcpy(header->dst_ip, ip_addr, 4);
 
     frame->inet_kind = INET_KIND_ARP;
     memcpy(&frame->arp_header, frame->head, sizeof(*header));
 
-    eth_send_frame(dev, frame, broadcast_mac_addr, ETH_TYPE_ARP);
+    eth_send_frame(dev, frame, &broadcast_mac_addr, ETH_TYPE_ARP);
 }
 
 static void arp_send_reply(struct net_device *dev, struct net_frame *frame) {
@@ -161,9 +162,9 @@ static void arp_send_reply(struct net_device *dev, struct net_frame *frame) {
     struct arp_header *reply_header = reply_frame->head;
 
     memcpy(reply_frame->head, frame->head, sizeof(*reply_header));
-    memcpy(reply_header->src_mac, dev->mac_addr, 6);
-    memcpy(reply_header->dst_mac, header->src_mac, 6);
+    memcpy(reply_header->src_mac, &dev->mac_addr, 6);
     memcpy(reply_header->src_ip, header->dst_ip, 4);
+    memcpy(reply_header->dst_mac, header->src_mac, 6);
     memcpy(reply_header->dst_ip, header->src_ip, 4);
 
     reply_header->operation = htobe16(ARP_REPLY);
@@ -171,7 +172,10 @@ static void arp_send_reply(struct net_device *dev, struct net_frame *frame) {
     memcpy(&reply_frame->arp_header, reply_header, sizeof(*reply_header));
     reply_frame->inet_kind = INET_KIND_ARP;
 
-    eth_send_frame(dev, reply_frame, reply_header->dst_mac, ETH_TYPE_ARP);
+    struct mac_addr dst_mac;
+    memcpy(&dst_mac, reply_header->dst_mac, 6);
+
+    eth_send_frame(dev, reply_frame, &dst_mac, ETH_TYPE_ARP);
     release_net_frame(reply_frame);
 }
 
@@ -194,13 +198,15 @@ void arp_receive_frame(struct net_device *dev, struct net_frame *frame) {
 
     switch (header->operation) {
     case ARP_REQUEST:
-        if (memcmp(header->dst_ip, dev->ip_addr, 4) == 0) {
-            arp_cache_add(header->src_ip, header->src_mac);
+        if (memcmp(header->dst_ip, &dev->ip_addr, 4) == 0) {
+            arp_cache_add((struct ip_addr *)&header->src_ip,
+                          (struct mac_addr *)&header->src_mac);
             arp_send_reply(dev, frame);
         }
         break;
     case ARP_REPLY:
-        arp_cache_add(header->src_ip, header->src_mac);
+        arp_cache_add((struct ip_addr *)&header->src_ip,
+                      (struct mac_addr *)&header->src_mac);
         break;
     default:
         kprintf("unsupported arp operation\n");

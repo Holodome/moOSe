@@ -53,12 +53,12 @@ static void read_mac_addr(struct net_device *dev) {
     u32 mac1 = port_in32(rtl8139->io_addr + RTL_REG_MAC0);
     u32 mac2 = port_in32(rtl8139->io_addr + RTL_REG_MAC0 + 4);
 
-    dev->mac_addr[0] = mac1 >> 0;
-    dev->mac_addr[1] = mac1 >> 8;
-    dev->mac_addr[2] = mac1 >> 16;
-    dev->mac_addr[3] = mac1 >> 24;
-    dev->mac_addr[4] = mac2 >> 0;
-    dev->mac_addr[5] = mac2 >> 8;
+    dev->mac_addr.octets[0] = mac1 >> 0;
+    dev->mac_addr.octets[1] = mac1 >> 8;
+    dev->mac_addr.octets[2] = mac1 >> 16;
+    dev->mac_addr.octets[3] = mac1 >> 24;
+    dev->mac_addr.octets[4] = mac2 >> 0;
+    dev->mac_addr.octets[5] = mac2 >> 8;
 }
 
 static int rtl8139_send(struct net_device *dev, const void *frame,

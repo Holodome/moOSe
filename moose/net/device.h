@@ -3,6 +3,7 @@
 #include <bitops.h>
 #include <list.h>
 #include <types.h>
+#include <net/inet.h>
 
 #define IFNAME_SIZE 16
 
@@ -13,7 +14,7 @@ struct net_device;
 struct net_device_ops {
     int (*open)(struct net_device *dev);
     int (*close)(struct net_device *dev);
-    void (*set_mac_addr)(struct net_device *dev, u8 *mac_addr);
+    void (*set_mac_addr)(struct net_device *dev, struct mac_addr *mac_addr);
     int (*transmit)(struct net_device *dev, const void *frame, size_t size);
 };
 
@@ -30,10 +31,10 @@ struct net_device {
     void *private;
     u16 flags;
 
-    u8 mac_addr[6];
-    u8 ip_addr[4];
-    u8 broadcast_ip_addr[4];
-    u8 net_mask[4];
+    struct mac_addr mac_addr;
+    struct ip_addr ip_addr;
+    struct ip_addr broadcast_ip_addr;
+    struct ip_addr netmask;
 
     char name[IFNAME_SIZE + 1];
     struct list_head list;

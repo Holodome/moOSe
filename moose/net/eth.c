@@ -9,12 +9,12 @@
 #include <string.h>
 
 void eth_send_frame(struct net_device *dev, struct net_frame *frame,
-                    const u8 *dst_mac_addr, u16 eth_type) {
+                    const struct mac_addr *dst_addr, u16 eth_type) {
     pull_net_frame_head(frame, sizeof(struct eth_header));
     struct eth_header *header = frame->head;
 
-    memcpy(header->dst_mac, dst_mac_addr, sizeof(header->dst_mac));
-    memcpy(header->src_mac, dev->mac_addr, sizeof(header->src_mac));
+    copy_mac_addr(&header->dst_mac, dst_addr);
+    copy_mac_addr(&header->src_mac, &dev->mac_addr);
     header->eth_type = htobe16(eth_type);
 
     // pad frame with zeros, to be at least mininum size

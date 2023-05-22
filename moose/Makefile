@@ -39,6 +39,7 @@ KERNEL_OBJS := \
 	$(D)/net/icmp.o \
 	$(D)/net/udp.o \
 	$(D)/net/frame.o \
+	$(D)/net/route.o \
 	$(D)/net/device.o \
 	$(D)/tty/console.o \
 	$(D)/tty/vga_console.o \
