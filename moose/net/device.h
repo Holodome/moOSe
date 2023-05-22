@@ -2,8 +2,8 @@
 
 #include <bitops.h>
 #include <list.h>
-#include <types.h>
 #include <net/inet.h>
+#include <types.h>
 
 #define IFNAME_SIZE 16
 

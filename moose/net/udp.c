@@ -7,7 +7,8 @@
 #include <string.h>
 
 void udp_send_frame(struct net_device *dev, struct net_frame *frame,
-                    const struct ip_addr *dst_ip_addr, u16 src_port, u16 dst_port) {
+                    const struct ip_addr *dst_ip_addr, u16 src_port,
+                    u16 dst_port) {
     pull_net_frame_head(frame, sizeof(struct udp_header));
     struct udp_header *header = frame->head;
 

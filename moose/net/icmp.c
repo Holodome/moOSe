@@ -51,7 +51,8 @@ static void icmp_send_echo_reply(struct net_device *dev,
     memcpy(&reply_frame->icmp_header, reply_frame->head, sizeof(*header));
     reply_frame->transport_kind = TRANSPORT_KIND_ICMP;
 
-    ipv4_send_frame(dev, reply_frame, (struct ip_addr *)frame->ipv4_header.src_ip,
+    ipv4_send_frame(dev, reply_frame,
+                    (struct ip_addr *)frame->ipv4_header.src_ip,
                     IP_PROTOCOL_ICMP);
     release_net_frame(reply_frame);
 }
@@ -72,7 +73,8 @@ void icmp_receive_frame(struct net_device *dev, struct net_frame *frame) {
         for (int i = 0; i < ICMP_CONTROL_SEQ_SIZE; i++) {
             if (control_seq[i] != ICMP_CONTROL_SEQ_BASE + i) {
                 kprintf("icmp: reply is corrupted, from host ");
-                debug_print_ip_addr((struct ip_addr *)&frame->ipv4_header.src_ip);
+                debug_print_ip_addr(
+                    (struct ip_addr *)&frame->ipv4_header.src_ip);
                 return;
             }
         }

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <list.h>
-#include <net/inet.h>
 #include <net/device.h>
+#include <net/inet.h>
 
 struct ip_route {
     struct ip_addr dst;

@@ -29,5 +29,6 @@ void destroy_arp_cache(void);
 void arp_send_request(struct net_device *dev, struct net_frame *frame,
                       const struct ip_addr *ip_addr);
 void arp_receive_frame(struct net_device *dev, struct net_frame *frame);
-int arp_get_mac(struct net_device *dev, const struct ip_addr *ip_addr, struct mac_addr *mac_addr);
+int arp_get_mac(struct net_device *dev, const struct ip_addr *ip_addr,
+                struct mac_addr *mac_addr);
 void debug_clear_arp_cache(void);

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <ctype.h>
 #include <drivers/rtl8139.h>
 #include <endian.h>
 #include <kstdio.h>
@@ -8,7 +9,6 @@
 #include <net/inet.h>
 #include <net/netdaemon.h>
 #include <string.h>
-#include <ctype.h>
 
 struct ip_addr gateway_ip_addr;
 struct ip_addr dns_ip_addr;
@@ -102,8 +102,9 @@ void debug_print_mac_addr(const struct mac_addr *mac_addr) {
 }
 
 void debug_print_ip_addr(const struct ip_addr *ip_addr) {
-    kprintf("IP: %d.%d.%d.%d\n", ip_addr->addr.octets[0], ip_addr->addr.octets[1],
-            ip_addr->addr.octets[2], ip_addr->addr.octets[3]);
+    kprintf("IP: %d.%d.%d.%d\n", ip_addr->addr.octets[0],
+            ip_addr->addr.octets[1], ip_addr->addr.octets[2],
+            ip_addr->addr.octets[3]);
 }
 
 void debug_print_frame_hexdump(const void *frame, size_t size) {
@@ -137,7 +138,8 @@ struct ip_addr *copy_ip_addr(struct ip_addr *dst, const struct ip_addr *src) {
     return dst;
 }
 
-struct mac_addr *copy_mac_addr(struct mac_addr *dst, const struct mac_addr *src) {
+struct mac_addr *copy_mac_addr(struct mac_addr *dst,
+                               const struct mac_addr *src) {
     for (size_t i = 0; i < 6; i++)
         dst->octets[i] = src->octets[i];
     return dst;

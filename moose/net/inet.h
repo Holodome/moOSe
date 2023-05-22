@@ -38,7 +38,8 @@ extern struct mac_addr null_mac_addr;
 int ip_addr_equals(const struct ip_addr *a, const struct ip_addr *b);
 int mac_addr_equals(const struct mac_addr *a, const struct mac_addr *b);
 struct ip_addr *copy_ip_addr(struct ip_addr *dst, const struct ip_addr *src);
-struct mac_addr *copy_mac_addr(struct mac_addr *dst, const struct mac_addr *src);
+struct mac_addr *copy_mac_addr(struct mac_addr *dst,
+                               const struct mac_addr *src);
 int inet_pton(struct ip_addr *addr, const char *str);
 int inet_ntop(char *str, const struct ip_addr *addr);
 int is_subnet_ip_addr(const struct ip_addr *ip_addr);

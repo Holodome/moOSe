@@ -64,7 +64,8 @@ void destroy_arp_cache(void) {
     kfree(cache);
 }
 
-static int arp_cache_get(const struct ip_addr *ip_addr, struct mac_addr *mac_addr) {
+static int arp_cache_get(const struct ip_addr *ip_addr,
+                         struct mac_addr *mac_addr) {
     cpuflags_t flags = read_lock_irqsave(&cache->lock);
 
     struct arp_cache_entry *entry;
@@ -80,7 +81,8 @@ static int arp_cache_get(const struct ip_addr *ip_addr, struct mac_addr *mac_add
     return -1;
 }
 
-static void arp_cache_add(const struct ip_addr *ip_addr, const struct mac_addr *mac_addr) {
+static void arp_cache_add(const struct ip_addr *ip_addr,
+                          const struct mac_addr *mac_addr) {
     cpuflags_t flags = write_lock_irqsave(&cache->lock);
 
     struct arp_cache_entry *entry;
@@ -106,7 +108,8 @@ static void arp_cache_add(const struct ip_addr *ip_addr, const struct mac_addr *
     copy_mac_addr(&entry->mac_addr, mac_addr);
 }
 
-int arp_get_mac(struct net_device *dev, const struct ip_addr *ip_addr, struct mac_addr *mac_addr) {
+int arp_get_mac(struct net_device *dev, const struct ip_addr *ip_addr,
+                struct mac_addr *mac_addr) {
     if (arp_cache_get(ip_addr, mac_addr) == 0)
         return 0;
 
