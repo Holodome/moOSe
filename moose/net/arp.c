@@ -117,7 +117,6 @@ int arp_get_mac(struct net_device *dev, const struct ip_addr *ip_addr,
     if (frame == NULL)
         return -ENOMEM;
 
-    debug_print_ip_addr(ip_addr);
     arp_send_request(dev, frame, ip_addr);
 
     int found = 0;

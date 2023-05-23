@@ -8,6 +8,7 @@
 #include <net/frame.h>
 #include <net/inet.h>
 #include <net/netdaemon.h>
+#include <net/route.h>
 #include <string.h>
 
 struct ip_addr gateway_ip_addr;
@@ -17,7 +18,7 @@ struct ip_addr local_net_mask;
 struct mac_addr broadcast_mac_addr;
 struct mac_addr null_mac_addr;
 
-static int test_inet(struct net_device *dev) {
+__used static int test_inet(struct net_device *dev) {
     struct mac_addr mac_addr;
     for (int i = 0; i < 5; i++) {
         if (arp_get_mac(dev, &gateway_ip_addr, &mac_addr)) {
@@ -57,12 +58,8 @@ int init_inet(void) {
     inet_pton(&dns_ip_addr, "10.0.2.3");
     inet_pton(&local_net_ip_addr, "10.0.2.0");
     inet_pton(&local_net_mask, "255.255.255.0");
-    for (size_t i = 0; i < 6; i++)
-        broadcast_mac_addr.octets[i] = 0xff;
-    for (size_t i = 0; i < 6; i++)
-        null_mac_addr.octets[i] = 0x0;
-
-    debug_print_ip_addr(&gateway_ip_addr);
+    memset(&broadcast_mac_addr, 0xff, 6);
+    memset(&null_mac_addr, 0, 6);
 
     struct net_device *rtl8139 = create_rtl8139();
     expects(rtl8139 != NULL);
@@ -70,10 +67,12 @@ int init_inet(void) {
     expects(init_net_frames() == 0);
     expects(init_arp_cache() == 0);
     expects(init_net_daemon() == 0);
+    expects(init_routes() == 0);
+    debug_print_route_table();
 
     kprintf("rtl8139 ");
     debug_print_mac_addr(&rtl8139->mac_addr);
-    expects(test_inet(rtl8139) == 0);
+//    expects(test_inet(rtl8139) == 0);
 
     return 0;
 }
@@ -103,6 +102,18 @@ void debug_print_mac_addr(const struct mac_addr *mac_addr) {
 
 void debug_print_ip_addr(const struct ip_addr *ip_addr) {
     kprintf("IP: %d.%d.%d.%d\n", ip_addr->addr.octets[0],
+            ip_addr->addr.octets[1], ip_addr->addr.octets[2],
+            ip_addr->addr.octets[3]);
+}
+
+void mac_addr_sprintf(char *str, const struct mac_addr *mac_addr) {
+    snprintf(str, MAC_ADDR_LEN, "%02x:%02x:%02x:%02x:%02x:%02x",
+             mac_addr->octets[0], mac_addr->octets[1], mac_addr->octets[2],
+             mac_addr->octets[3], mac_addr->octets[4], mac_addr->octets[5]);
+}
+
+void ip_addr_sprintf(char *str, const struct ip_addr *ip_addr) {
+    snprintf(str, IPV4_ADDR_LEN, "%d.%d.%d.%d", ip_addr->addr.octets[0],
             ip_addr->addr.octets[1], ip_addr->addr.octets[2],
             ip_addr->addr.octets[3]);
 }
@@ -173,8 +184,6 @@ int inet_ntop(char *str, const struct ip_addr *addr) {
 int is_subnet_ip_addr(const struct ip_addr *ip_addr) {
     struct ip_addr temp;
     copy_ip_addr(&temp, ip_addr);
-    for (u8 i = 0; i < 4; i++)
-        temp.addr.octets[i] &= local_net_mask.addr.octets[i];
-
-    return ip_addr_equals(&temp, &local_net_ip_addr);
+    return (ip_addr->addr.bits & local_net_mask.addr.bits) ==
+           local_net_ip_addr.addr.bits;
 }

@@ -49,3 +49,6 @@ u16 inet_checksum(const void *data, size_t size);
 void debug_print_frame_hexdump(const void *frame, size_t size);
 void debug_print_mac_addr(const struct mac_addr *mac_addr);
 void debug_print_ip_addr(const struct ip_addr *ip_addr);
+
+void mac_addr_sprintf(char *str, const struct mac_addr *mac_addr);
+void ip_addr_sprintf(char *str, const struct ip_addr *ip_addr);

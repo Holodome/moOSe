@@ -21,6 +21,16 @@ struct net_device *create_net_device(const char *name) {
     return dev;
 }
 
+struct net_device *get_net_device(const char *name) {
+    struct net_device *dev;
+    list_for_each_entry(dev, &net_device_list, list) {
+        if (strcmp(dev->name, name) == 0)
+            return dev;
+    }
+
+    return NULL;
+}
+
 void destroy_net_device(struct net_device *dev) {
     list_remove(&dev->list);
     kfree(dev);

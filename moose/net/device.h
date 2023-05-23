@@ -43,4 +43,5 @@ struct net_device {
 };
 
 struct net_device *create_net_device(const char *name);
+struct net_device *get_net_device(const char *name);
 void destroy_net_device(struct net_device *dev);
