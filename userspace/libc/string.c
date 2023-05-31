@@ -1,5 +1,7 @@
 #include <string.h>
 
+__BEGIN_DECLS
+
 char *strpbrk(const char *string, const char *lookup) {
     char *cursor = (char *)string;
     char symb;
@@ -285,3 +287,5 @@ void *memchr(const void *src_, int ch, size_t c) {
 
     return NULL;
 }
+
+__END_DECLS

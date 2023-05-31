@@ -1,5 +1,9 @@
 #pragma once 
 
+#include <sys/cdefs.h>
+
+__BEGIN_DECLS
+
 int isdigit(int c);
 int isalnum(int c);
 int isalpha(int c);
@@ -16,3 +20,5 @@ int isodigit(int c);
 int tolower(int c);
 int toupper(int c);
 int toascii(int c);
+
+__END_DECLS

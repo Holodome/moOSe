@@ -1,6 +1,8 @@
 #include <ctype.h>
 #include <string.h>
 
+__BEGIN_DECLS
+
 int isdigit(int c) {
     return c >= '0' && c <= '9';
 }
@@ -48,3 +50,5 @@ int tolower(int c) {
 int toascii(int c) {
     return c & 0x7f;
 }
+
+__END_DECLS

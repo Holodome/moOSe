@@ -43,16 +43,21 @@ typedef i64 off_t;
 
 typedef u32 blkcnt_t;
 typedef u32 blksize_t;
-typedef u32 dev_t;
+typedef u64 dev_t;
 typedef u16 mode_t;
-typedef u32 nlink_t;
+typedef u64 nlink_t;
 
 typedef i64 time_t;
 typedef u32 useconds_t;
-typedef u32 suseconds_t;
+typedef i64 suseconds_t;
 typedef i32 iseconds_t;
-typedef u32 clock_t;
+typedef u64 clock_t;
 
 typedef i64 off_t;
 typedef u32 pid_t;
+typedef u64 fsblkcnt_t;
+typedef u64 fsfilcnt_t;
+typedef u32 id_t;
+
 typedef u64 bitmap_t;
+

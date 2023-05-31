@@ -1,6 +1,9 @@
-#pragma once 
+#pragma once
 
 #include <stddef.h>
+#include <sys/cdefs.h>
+
+__BEGIN_DECLS
 
 void *memcpy(void *dst, const void *src, size_t c);
 void *memset(void *dst, int ch, size_t c);
@@ -29,3 +32,5 @@ char *strnchr(const char *s, int ch, size_t c);
 char *strnchrnul(const char *s, int ch, size_t c);
 size_t strnlen(const char *s, size_t c);
 char *strsep(char **sp, const char *sep);
+
+__END_DECLS
