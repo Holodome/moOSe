@@ -1,9 +1,10 @@
-#include <arch/jiffies.h>
-#include <drivers/disk.h>
+#include <arch/amd64/rtc.h>
+#include <disk.h>
+#include <errno.h>
 #include <fs/fat.h>
+#include <kmem.h>
 #include <kstdio.h>
 #include <shell.h>
-#include <string.h>
 
 enum shell_command {
     CMD_LS,
@@ -25,7 +26,7 @@ struct cmd {
 };
 
 static struct {
-    struct fatfs fs;
+    struct pfatfs fs;
 } shell = {};
 
 static int parse_command_name(const char *name, size_t name_length,
@@ -111,19 +112,19 @@ static int parse_cmd(const char *str, struct cmd *cmd) {
 }
 
 static void do_cat(const char *filename) {
-    struct fatfs_file file = {0};
-    int result = fatfs_open(&shell.fs, filename, &file);
+    pfatfs_file file = {0};
+    int result = pfatfs_open(&shell.fs, filename, &file);
     if (result != 0) {
-        kprintf("Open err\n");
+        kprintf("Open err: %s\n", strerror(-result));
         return;
     }
 
     char buffer[512];
     for (size_t i = 0; i < (file.size + sizeof(buffer) - 1) / sizeof(buffer);
          ++i) {
-        ssize_t result = fatfs_read(&shell.fs, &file, buffer, sizeof(buffer));
+        ssize_t result = pfatfs_read(&shell.fs, &file, buffer, sizeof(buffer));
         if (result < 0) {
-            kprintf("Read err\n");
+            kprintf("Read err: %s\n", strerror(-result));
             return;
         }
 
@@ -133,111 +134,111 @@ static void do_cat(const char *filename) {
 }
 
 static void do_ls(const char *filename) {
-    struct fatfs_file file = {0};
-    int result = fatfs_open(&shell.fs, filename, &file);
+    pfatfs_file file = {0};
+    int result = pfatfs_open(&shell.fs, filename, &file);
     if (result != 0) {
-        kprintf("Open err\n");
+        kprintf("Open err: %s\n", strerror(-result));
         return;
     }
 
-    if (file.type != FATFS_FILE_DIR) {
+    if (file.type != PFATFS_FILE_DIR) {
         kprintf("Opened file is not a dir\n");
         return;
     }
 
     size_t i = 0;
     for (;; ++i) {
-        struct fatfs_file new_file = {0};
-        result = fatfs_readdir(&shell.fs, &file, &new_file);
+        pfatfs_file new_file = {0};
+        result = pfatfs_readdir(&shell.fs, &file, &new_file);
         if (result == -ENOENT) {
             break;
         }
         if (result < 0) {
-            kprintf("Read err\n");
+            kprintf("Read err: %s\n", strerror(-result));
             return;
         }
         kprintf("%zu: %11s %c %ub\n", i, (char *)new_file.name,
-                new_file.type == FATFS_FILE_DIR ? 'D' : 'F', new_file.size);
+                new_file.type == PFATFS_FILE_DIR ? 'D' : 'F', new_file.size);
     }
 }
 
 static void do_mkdir(const char *filename) {
-    int result = fatfs_mkdir(&shell.fs, filename);
+    int result = pfatfs_mkdir(&shell.fs, filename);
     if (result != 0) {
-        kprintf("Mkdir err\n");
+        kprintf("Mkdir err: %s\n", strerror(-result));
     }
 }
 
 static void do_rm(const char *filename) {
-    int result = fatfs_remove(&shell.fs, filename);
+    int result = pfatfs_remove(&shell.fs, filename);
     if (result != 0) {
-        kprintf("Rm err\n");
+        kprintf("Rm err: %s\n", strerror(-result));
     }
 }
 
 static void do_create(const char *filename) {
-    struct fatfs_file file;
-    int result = fatfs_create(&shell.fs, filename, NULL, &file);
+    pfatfs_file file;
+    int result = pfatfs_create(&shell.fs, filename, NULL, &file);
     if (result < 0) {
-        kprintf("Create err\n");
+        kprintf("Create err: %s\n", strerror(-result));
     }
 }
 
 static void do_rename(const char *a, const char *b) {
-    int result = fatfs_rename(&shell.fs, a, b);
+    int result = pfatfs_rename(&shell.fs, a, b);
     if (result < 0) {
-        kprintf("Rename err\n");
+        kprintf("Rename err: %s\n", strerror(-result));
     }
 }
 
 static void do_write(const char *str, const char *filename) {
-    struct fatfs_file file = {0};
-    int result = fatfs_open(&shell.fs, filename, &file);
+    pfatfs_file file = {0};
+    int result = pfatfs_open(&shell.fs, filename, &file);
     if (result != 0) {
-        kprintf("Open err\n");
+        kprintf("Open err: %s\n", strerror(-result));
         return;
     }
 
-    if (file.type == FATFS_FILE_DIR) {
+    if (file.type == PFATFS_FILE_DIR) {
         kprintf("Opened file is a dir\n");
         return;
     }
 
-    if (fatfs_seek(&shell.fs, &file, 0, SEEK_END) != 0) {
+    if (pfatfs_seek(&shell.fs, &file, 0, SEEK_END) != 0) {
         kprintf("seek failed\n");
         return;
     }
 
-    ssize_t write_result = fatfs_write(&shell.fs, &file, str, strlen(str));
+    ssize_t write_result = pfatfs_write(&shell.fs, &file, str, strlen(str));
     if (write_result < 0) {
         kprintf("write failed\n");
     }
 }
 
 static void do_tree(const char *path) {
-    struct fatfs_file stack[16];
+    struct pfatfs_file stack[16];
     size_t stack_size = 1;
-    int result = fatfs_open(&shell.fs, path, stack);
+    int result = pfatfs_open(&shell.fs, path, stack);
     if (result != 0) {
-        kprintf("Open err\n");
+        kprintf("Open err: %s\n", strerror(-result));
         return;
     }
     kprintf("/\n");
 
     while (stack_size) {
-        struct fatfs_file *file = stack + stack_size - 1;
-        result = fatfs_readdir(&shell.fs, file, stack + stack_size);
+        struct pfatfs_file *file = stack + stack_size - 1;
+        result = pfatfs_readdir(&shell.fs, file, stack + stack_size);
         if (result == -ENOENT) {
             --stack_size;
         } else if (result < 0) {
-            kprintf("Readdir err\n");
+            kprintf("Readdir err: %s\n", strerror(-result));
             break;
         } else {
             for (size_t i = 0; i < stack_size * 2; ++i)
                 kputc(' ');
             kprintf("%11s\n", file[1].name);
 
-            if (file[1].type == FATFS_FILE_DIR)
+            if (file[1].type == PFATFS_FILE_DIR)
                 ++stack_size;
         }
     }
@@ -246,8 +247,7 @@ static void do_tree(const char *path) {
 static void execute(const struct cmd *cmd) {
     switch (cmd->cmd) {
     case CMD_TIME:
-        kprintf("time: %lus\n",
-                (unsigned long)jiffies64_to_msecs(get_jiffies64()));
+        kprintf("time: %zus\n", get_seconds());
         break;
     case CMD_TREE:
         do_tree(cmd->a);
@@ -288,8 +288,8 @@ static void execute(const struct cmd *cmd) {
 }
 
 int init_shell(void) {
-    shell.fs.dev = disk_part_dev;
-    int result = fatfs_mount(&shell.fs);
+    shell.fs.device = disk_part_dev;
+    int result = pfatfs_mount(&shell.fs);
     if (result)
         return -1;
 

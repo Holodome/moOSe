@@ -1,5 +1,5 @@
-#include <arch/amd64/memmap.h>
-#include <param.h>
+#include <moose/arch/amd64/memmap.h>
+#include <moose/param.h>
 
 #define MEMMAP_ADDR FIXUP_PTR((u8 *)0x500)
 
@@ -16,7 +16,7 @@ const char *get_memmap_type_str(u32 type) {
                                     "acpi nvs", "bad"};
     --type;
     const char *result = NULL;
-    if (type < sizeof(strings) / sizeof(strings[0])) {
+    if (type < ARRAY_SIZE(strings)) {
         result = strings[type];
     }
 

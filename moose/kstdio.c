@@ -1,18 +1,20 @@
-#include <ctype.h>
-#include <drivers/tty.h>
-#include <kstdio.h>
-#include <string.h>
+#include <moose/assert.h>
+#include <moose/ctype.h>
+#include <moose/kstdio.h>
+#include <moose/string.h>
+#include <moose/tty/vga_console.h>
+#include <moose/tty/vterm.h>
 
 struct printf_opts {
     size_t width;
     char padding_char;
     int base;
     int precision;
-    int is_left_aligned : 1;
-    int is_plus_char : 1;
-    int is_hex_uppercase : 1;
-    int has_precision : 1;
-    int force_prefix : 1;
+    unsigned is_left_aligned : 1;
+    unsigned is_plus_char : 1;
+    unsigned is_hex_uppercase : 1;
+    unsigned has_precision : 1;
+    unsigned force_prefix : 1;
 };
 
 #define outc(_buffer, _size, _counter, _c)                                     \
@@ -34,14 +36,13 @@ int snprintf(char *buffer, size_t size, const char *fmt, ...) {
 #define NUMBER_BUFFER_SIZE (CHAR_BIT * sizeof(uintmax_t))
 
 static size_t print_number(char *buffer, uintmax_t number, int base) {
-    static const char *charset = "0123456789abcdef";
     size_t counter = 0;
     if (number == 0)
         buffer[counter++] = '0';
 
     while (number > 0) {
         int digit = number % base;
-        buffer[counter++] = charset[digit];
+        buffer[counter++] = "0123456789acbdef"[digit];
         number /= base;
     }
 
@@ -62,6 +63,7 @@ static void print_signed(char *buffer, size_t size, size_t *counter,
 
     char number_buffer[NUMBER_BUFFER_SIZE];
     size_t number_length = print_number(number_buffer, number, 10);
+    expects(number_length < sizeof(number_buffer));
 
     if (opts->width >= number_length)
         opts->width -= number_length;
@@ -456,6 +458,11 @@ int vsnprintf(char *buffer, size_t size, const char *fmt, va_list args) {
     return (int)counter;
 }
 
+static struct {
+    int is_initialized;
+    struct vterm *term;
+} kstdio_state;
+
 int kprintf(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -466,22 +473,37 @@ int kprintf(const char *fmt, ...) {
 }
 
 int kvprintf(const char *fmt, va_list args) {
+    if (!kstdio_state.is_initialized)
+        return 0;
+
     char buffer[256];
-    int count = vsnprintf(buffer, 256, fmt, args);
-    int write_result = tty_write(buffer, strlen(buffer));
-    return write_result < 0 ? write_result : count;
+    int count = vsnprintf(buffer, sizeof(buffer), fmt, args);
+    kprint(buffer, strlen(buffer));
+    return count;
 }
 
-int kputc(int c) {
-    return tty_write((char *)&c, 1);
+void kprint(const char *str, size_t count) {
+    vterm_write(kstdio_state.term, str, count);
 }
 
-int kputs(const char *str) {
-    size_t len = strlen(str);
-    int result = tty_write(str, len);
-    if (result < 0)
-        return result;
+int init_kstdio(void) {
+    struct console *console = create_empty_console();
+    if (!console)
+        return -1;
 
-    kputc('\n');
-    return (int)len;
+    if (vga_init_console(console)) {
+        console_release(console);
+        return -1;
+    }
+
+    struct vterm *term = create_vterm(console);
+    if (!term) {
+        console_release(console);
+        return -1;
+    }
+
+    kstdio_state.is_initialized = 1;
+    kstdio_state.term = term;
+
+    return 0;
 }

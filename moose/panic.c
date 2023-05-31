@@ -1,9 +1,9 @@
-#include <arch/cpu.h>
-#include <panic.h>
+#include <moose/arch/cpu.h>
+#include <moose/panic.h>
 
 void __panic(void) {
     dump_registers();
-    ___panic();
+    halt_cpu();
 }
 
 void ___panic(void) {

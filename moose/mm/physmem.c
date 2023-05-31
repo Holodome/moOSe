@@ -1,9 +1,9 @@
-#include <arch/amd64/types.h>
-#include <assert.h>
-#include <bitops.h>
-#include <mm/kmalloc.h>
-#include <mm/physmem.h>
-#include <param.h>
+#include <moose/arch/amd64/types.h>
+#include <moose/assert.h>
+#include <moose/bitops.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/mm/physmem.h>
+#include <moose/param.h>
 
 struct free_area {
     u32 size;
@@ -18,11 +18,11 @@ struct mem_zone {
 
 static struct phys_mem {
     struct mem_zone *zones;
-    u32 zones_size;
+    u32 zone_count;
 } phys_mem;
 
 static void free_phys_mem(void) {
-    for (size_t i = 0; i < phys_mem.zones_size; ++i) {
+    for (size_t i = 0; i < phys_mem.zone_count; ++i) {
         struct mem_zone *zone = &phys_mem.zones[i];
         for (u32 j = 0; j <= MAX_ORDER; j++)
             kfree(zone->free_area[j].bitmap);
@@ -30,13 +30,13 @@ static void free_phys_mem(void) {
     kfree(phys_mem.zones);
 }
 
-int init_phys_mem(const struct mem_range *ranges, size_t ranges_size) {
-    phys_mem.zones = kzalloc(ranges_size * sizeof(*phys_mem.zones));
+int init_phys_mem(const struct mem_range *ranges, size_t range_count) {
+    phys_mem.zones = kzalloc(range_count * sizeof(*phys_mem.zones));
     if (phys_mem.zones == NULL)
         return -1;
 
-    phys_mem.zones_size = ranges_size;
-    for (u32 i = 0; i < ranges_size; ++i) {
+    phys_mem.zone_count = range_count;
+    for (u32 i = 0; i < range_count; ++i) {
         const struct mem_range *entry = ranges + i;
         struct mem_zone *zone = phys_mem.zones + i;
         zone->base_addr = entry->base;
@@ -54,7 +54,7 @@ int init_phys_mem(const struct mem_range *ranges, size_t ranges_size) {
             zone->mem_size = block_count << PAGE_SIZE_BITS;
         }
 
-        // alloc order bitmaps
+        // alloc per order bitmaps
         for (int j = max_order; j >= 0; j--) {
             u32 bitmap_size = bits_to_bitmap(block_count << j);
             u64 *bitmap = kzalloc(bitmap_size * sizeof(u64));
@@ -72,7 +72,8 @@ int init_phys_mem(const struct mem_range *ranges, size_t ranges_size) {
     return 0;
 }
 
-static int test_buddies(struct free_area *free_area, u32 order, u64 index) {
+static int test_buddies(const struct free_area *free_area, u32 order,
+                        u64 index) {
     for (u32 i = 0; i <= order; i++) {
         u32 bit_count = 1 << i;
         u32 area_index = order - i;
@@ -105,7 +106,7 @@ static void clear_buddies(struct free_area *free_area, u32 order, u64 index) {
 ssize_t alloc_pages(u32 order) {
     assert(order <= MAX_ORDER);
     // finds first available memory zone
-    for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
+    for (u32 zone_idx = 0; zone_idx < phys_mem.zone_count; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];
         struct free_area *area = &zone->free_area[order];
         if (area->bitmap == NULL)
@@ -125,7 +126,7 @@ ssize_t alloc_pages(u32 order) {
 void free_pages(u64 addr, u32 order) {
     assert((addr & 0xfff) == 0);
     assert(order <= MAX_ORDER);
-    for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
+    for (u32 zone_idx = 0; zone_idx < phys_mem.zone_count; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];
         if (addr >= zone->base_addr &&
             addr < zone->base_addr + zone->mem_size) {
@@ -145,7 +146,7 @@ void free_page(u64 addr) {
 
 int alloc_region(u64 addr, u64 count) {
     assert((addr & 0xfff) == 0);
-    for (u32 zone_idx = 0; zone_idx < phys_mem.zones_size; zone_idx++) {
+    for (u32 zone_idx = 0; zone_idx < phys_mem.zone_count; zone_idx++) {
         struct mem_zone *zone = &phys_mem.zones[zone_idx];
         if (addr < zone->base_addr || addr >= zone->base_addr + zone->mem_size)
             continue;

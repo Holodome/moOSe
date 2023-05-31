@@ -1,12 +1,12 @@
 .code16
 
 boot:
-    mov $0x9000, %bp
-    mov %bp, %sp
+    movw $0x9000, %bp
+    movw %bp, %sp
 
-    xor %ax, %ax
-    mov %ax, %ss
-    mov %ax, %ds
+    xorw %ax, %ax
+    movw %ax, %ss
+    movw %ax, %ds
 
     /* size of stage 2 bootloader is located at 0x01b0 */
     movw $0x7c00 + 0x01b0, %di
@@ -18,11 +18,11 @@ boot:
     movw $0, 10(%si)
     movw $0, 12(%si)
     movw $0, 14(%si)
-    mov $0x42, %ah
+    movb $0x42, %ah
     int $0x13
     jc halt
 
-    mov $0x1000, %eax
+    movl $0x1000, %eax
     jmp *%eax
 halt:
     jmp halt

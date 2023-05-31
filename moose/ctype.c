@@ -1,5 +1,5 @@
-#include <ctype.h>
-#include <string.h>
+#include <moose/ctype.h>
+#include <moose/string.h>
 
 int isdigit(int c) {
     return c >= '0' && c <= '9';
@@ -41,10 +41,10 @@ int isodigit(int c) {
 
 int toupper(int c) {
     return islower(c) ? c + 'A' - 'a' : c;
-};
+}
 int tolower(int c) {
     return isupper(c) ? c + 'a' - 'A' : c;
-};
+}
 int toascii(int c) {
     return c & 0x7f;
 }

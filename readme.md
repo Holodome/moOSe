@@ -1,21 +1,18 @@
 # moOSe
 
-An unix-like operating system with aim at simplicity.
+A unix-like operating system with aim at simplicity.
+
+![screenshot](screenshots/v0.1.png)
 
 ## Features 
 
 * amd64 kernel
 * Custom bootloader
-* MBR HDD image
-* FAT12, FAT16, FAT32 support
-* ATA PIO
-* 8042 keyboard controller
-* VGA display output
-* Physical memory allocator
-* Virtual memory allocator
-* brk and malloc
-* System time using RTC
-* Interactive shell
+* FAT12, FAT16, FAT32, ext2, ramfs filesystems
+* ATA IO
+* Multilevel feedback queue scheduler
+* System calls
+* Basic IP networking
 
 ## Compiling & running
 
@@ -30,7 +27,11 @@ OS image *moose.img* is a virtual hard disk formatted with MBR.
 
 to run pass it to qemu:
 ```
-qemu-system-x86_64 -hda moose.img
+qemu-system-x86_64 -d guest_errors \
+	-device pci-bridge,id=bridge1,bus=pci.0,chassis_nr=4 \
+	-device rtl8139,netdev=moose0,bus=pci.0 -netdev user,id=moose0 \
+	-drive file=moose.img,format=raw,index=0,if=ide \
+	-no-reboot
 ```
 
 Alternatively, `make qemu` can be used to build and launch qemu.

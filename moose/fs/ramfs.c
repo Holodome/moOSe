@@ -1,8 +1,8 @@
-#include <fs/ramfs.h>
-
-#include <assert.h>
-#include <mm/kmalloc.h>
-#include <string.h>
+#include <moose/assert.h>
+#include <moose/errno.h>
+#include <moose/fs/ramfs.h>
+#include <moose/mm/kmalloc.h>
+#include <moose/string.h>
 
 #define RAMFS_BLOCK_SIZE 4096
 #define RAMFS_BLOCK_SIZE_BITS 12
@@ -41,7 +41,7 @@ struct ramfs {
 };
 
 static int ramfs_setattr(struct inode *inode __unused) {
-    return 0;
+    return -ENOTSUP;
 }
 static void ramfs_release_sb(struct superblock *sb);
 static void ramfs_free_inode(struct inode *inode);

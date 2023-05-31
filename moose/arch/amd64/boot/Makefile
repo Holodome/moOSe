@@ -24,5 +24,5 @@ $(D)/%.o: $(D)/%.c
 
 $(D)/%.o: $(D)/%.S
 	@echo "CC $<"
-	$(Q)$(CC) $(DEPFLAGS) -fdata-sections -ffunction-sections -Os -Imoose/include -D__i686__ -m32 -c -o $@ $<
+	$(Q)$(CC) $(DEPFLAGS) -fdata-sections -ffunction-sections -Os -I. -D__i686__ -m32 -c -o $@ $<
 
